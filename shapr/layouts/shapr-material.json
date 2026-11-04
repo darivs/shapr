@@ -100,8 +100,8 @@
         {
           "id": "work-body",
           "type": "row",
-          "padding": 8,
-          "gap": 8,
+          "padding": 12,
+          "gap": 12,
           "children": [
             {
               "id": "main",
@@ -109,7 +109,7 @@
               "content": {
                 "tab": "active",
                 "pane": {
-                  "gap": 8,
+                  "gap": 12,
                   "radius": 16,
                   "background": "background",
                   "lone": true,
