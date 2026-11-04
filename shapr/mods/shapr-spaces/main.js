@@ -30,6 +30,7 @@ function place(s, ps) {
   return ps.find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder;
 }
 const where = (s, ps) => JSON.stringify([s.machine ?? null, place(s, ps)]);
+const symbol = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 const base = (path) => path.replace(/\/+$/, "").split("/").pop();
 // Changes made outside Herdr (an editor's save, a commit in another app): looked
 // for this often, in repos the list shows, while the window is in front.
@@ -325,43 +326,28 @@ export default class Spaces extends View {
     });
   }
 
-  // Only what's unusual, after the name: "herdr · spike ↑2 ↓1". The repo or
-  // branch goes when the name already says it (a worktree is named after its branch),
-  // and master/main go: nearly every space is on one.
-  gitTail(g, tree, name, r) {
-    const raw = g.branch ?? "detached";
-    const same = (a) => a.toLowerCase() === name.toLowerCase();
-    const branch = same(raw) || raw === "master" || raw === "main" ? "" : raw;
-    const repo = tree || same(g.name) ? "" : g.name;
-    const where = [repo, branch].filter(Boolean).join(" · ");
-    // Ahead and behind in primary and tertiary: red stays for blocked.
-    return h_flex()
-      .flex_1()
-      .min_w(0)
-      .gap(SPACE.xs)
-      .justify_end()
-      .items_center()
-      .when(Boolean(where), (el) => el.child(label(where, { style: "bodySmall", role: "onSurfaceVariant", truncate: true })))
-      .when(g.ahead > 0, (el) => el.child(label(`↑${g.ahead}`, { style: "labelSmall", role: "primary" }).flex_none()))
-      .when(g.behind > 0, (el) => el.child(label(`↓${g.behind}`, { style: "labelSmall", role: "tertiary" }).flex_none()));
+  // Ahead and behind as one quiet count at the row's end: "↑16 ↓6", "↑2".
+  count(g) {
+    const n = [g.ahead > 0 ? `↑${g.ahead}` : "", g.behind > 0 ? `↓${g.behind}` : ""].filter(Boolean).join(" ");
+    return n ? label(n, { style: "labelMedium", role: "onSurfaceVariant" }) : null;
   }
 
-  // A drawer item: the space's avatar (a worktree: the branch glyph, one step in), its
-  // name, the git tail; the active space on secondary-container. A blocked space pulses.
+  // A drawer item: the space's folder (a worktree: call_split, one step in), outlined at rest and
+  // filled when active, its name and its quiet count. The active space adds its branch as a second
+  // line (a worktree's branch is its name); every row's tooltip has the repo and branch. A blocked
+  // space shows its status mark.
   row({ w, i, g, tree }, r) {
-    const t = theme();
     const on = w.active;
-    const colors = shared("space.colors") ?? {};
-    const color = colors[w.id] ?? "ansi6";
-    const fill = color.startsWith("#") ? color : (t[color] ?? r.primary);
-    const avatar = tree
-      ? div().w(24).flex_none().flex().justify_center().child(svg("mods/shapr-workspace-chrome/call_split.svg").size(16).text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant))
-      : type(div(), "labelMedium", true).size(24).flex_none().flex().items_center().justify_center().rounded(SHAPE.sm).bg(fill).text_color(onStatus())
-        .child([...w.name][0]?.toUpperCase() ?? "?");
-    const text = h_flex().w_full().min_w(0).gap(SPACE.sm).items_center()
-      .child(div().min_w(0).max_w(132).truncate().child(w.name))
-      .child(g ? this.gitTail(g, tree, w.name, r) : div().flex_1());
-    return navItem(`space-${w.id}`, text, { leading: avatar, active: on, badge: w.status === "blocked" ? statusMark("blocked") : null })
+    const branch = g ? g.branch ?? "detached" : null;
+    return navItem(`space-${w.id}`, w.name, {
+      icon: symbol(tree ? "call_split" : "folder"),
+      activeIcon: symbol(tree ? "call_split" : "folder-fill"),
+      active: on,
+      supporting: on && g && !tree ? branch : null,
+      badge: w.status === "blocked" ? statusMark("blocked") : null,
+      trailing: g ? this.count(g) : null,
+      tip: g ? `${g.name} · ${branch}` : null,
+    })
       .relative()
       .when(Boolean(tree), (el) => el.pl(SPACE.xxl))
       .cursor_pointer()

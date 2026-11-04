@@ -63,7 +63,7 @@ test("a space row shows its icon, its name and one quiet count; the active row a
   assert.deepEqual(ink(shapr, "↑16 ↓6"), [h.theme.muted]);
   assert.deepEqual(ink(shapr, "main"), [h.theme.muted]);
   // Worktrees sit one step in under their space.
-  const order = argsOf(tree, "id").map(([id]) => id).filter((id) => /^space-/.test(id));
+  const order = argsOf(tree, "id").map(([id]) => id).filter((id) => /^space-s\d$/.test(id));
   assert.deepEqual(order, ["space-s1", "space-s2", "space-s3"]);
   assert.ok(inset(wt) > inset(shapr), `worktree ${inset(wt)}, space ${inset(shapr)}`);
 });
