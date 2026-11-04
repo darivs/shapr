@@ -52,16 +52,18 @@ function decodePng(buf) {
 // (window 300) and the footer's divider at y 1200 (window 600), in one line color. Everything else
 // is a gradient (red x / 4, green y / 8, blue 7), so a cut or a box shows where it fell.
 const LINE = [73, 69, 78];
-function fixture({ zoom = 1 } = {}) {
+// lines: false draws none of them; layout: the app home's shapr-material.json then.
+function fixture({ zoom = 1, lines = true, layout = null } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "shots-"));
   const home = join(dir, "home");
-  mkdirSync(home, { recursive: true });
+  mkdirSync(join(home, "layouts"), { recursive: true });
   writeFileSync(join(home, "window.json"), JSON.stringify({ state: "windowed", bounds: [0, 0, 400, 700] }));
   writeFileSync(join(home, "settings.json"), JSON.stringify({ zoom }));
+  if (layout) writeFileSync(join(home, "layouts", "shapr-material.json"), JSON.stringify(layout));
   const width = 800, height = 1400, data = Buffer.alloc(width * height * 4);
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
-      const line = x === 200 || x === 201 || (x < 200 && [600, 601, 1200, 1201].includes(y));
+      const line = lines && (x === 200 || x === 201 || (x < 200 && [600, 601, 1200, 1201].includes(y)));
       data.set(line ? [...LINE, 255] : [x >> 2, y >> 3, 7, 255], (y * width + x) * 4);
     }
   const file = join(dir, "shot.png");
@@ -95,4 +97,33 @@ test("--mask covers every sidebar row below the demo space's, in each list, with
   const fillColor = pixel(img, 30, 248);
   assert.notDeepEqual(fillColor, pixel(before, 30, 248));
   for (const [x, y] of [[0, 248], [199, 400], [100, 599], [0, 1074], [199, 1199]]) assert.deepEqual(pixel(img, x, y), fillColor, `masked ${x},${y}`);
+});
+
+// No line marks the sidebar now: its width and the lists' split come from the app home's layout
+// (sidebar 100, spaces and agents weight 1 each), the brand bar and footer from the density
+// (48 and 136). The lists run from window y 48 to 564, the agents list from 306. The demo space,
+// active, keeps its two-line row (48 + 36 + 56 = 140); the agents list its heading with 8 above, the
+// "Pinned" header with 4 above and four rows (306 + 44 + 40 + 160 = 550).
+test("--crop and --mask find the sidebar and its lists from the layout when no line marks them", () => {
+  const layout = { id: "root", type: "row", children: [
+    { id: "sidebar", type: "column", size: { px: 100 }, children: [
+      { id: "brand", type: "block", size: { px: 48 } },
+      { id: "sidebar-lists", type: "column", children: [{ id: "spaces", type: "block", size: { weight: 1 } }, { id: "agents", type: "block", size: { weight: 1 } }] },
+      { id: "sidebar-footer", type: "block", size: { px: 136 } },
+    ] },
+    { id: "work", type: "column", size: { weight: 1 } },
+  ] };
+  const { dir, file, shots } = fixture({ lines: false, layout });
+  const side = join(dir, "side.png");
+  assert.equal(shots("--crop", "sidebar", file, side).status, 0);
+  assert.deepEqual([decodePng(readFileSync(side)).width, decodePng(readFileSync(side)).height], [200, 1400]);
+  const before = decodePng(readFileSync(file));
+  const r = shots("--mask", file);
+  assert.equal(r.status, 0, r.stderr);
+  const img = decodePng(readFileSync(file));
+  for (const [x, y] of [[30, 279], [30, 612], [30, 1099], [30, 1128], [150, 1300], [210, 500], [500, 1100]])
+    assert.deepEqual(pixel(img, x, y), pixel(before, x, y), `kept ${x},${y}`);
+  const fillColor = pixel(img, 30, 280);
+  assert.notDeepEqual(fillColor, pixel(before, 30, 280));
+  for (const [x, y] of [[0, 280], [199, 611], [0, 1100], [199, 1127]]) assert.deepEqual(pixel(img, x, y), fillColor, `masked ${x},${y}`);
 });
