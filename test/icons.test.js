@@ -95,3 +95,9 @@ test("every icon file shapr ships is a Material Symbols Outlined symbol that som
   const named = new Set(references().refs.map(([, p]) => p.replace(/\/shapr\/mods\/[^/]+\/kit\/icons\//, "/kit/icons/")));
   assert.deepEqual(files.filter((p) => !named.has(p)).map((p) => relative(root, p)), [], "no code names these");
 });
+
+test("no Lucide license remains, and Apache-2.0 covers the symbols", () => {
+  assert.equal(existsSync(join(root, "LICENSES", "ISC-lucide.txt")), false);
+  for (const f of ["README.md", "LICENSES/README.md"]) assert.doesNotMatch(readFileSync(join(root, f), "utf8"), /lucide|\bISC\b/i, f);
+  assert.match(readFileSync(join(root, "LICENSES", "README.md"), "utf8"), /Material Symbols.*Apache-2\.0\.txt/);
+});
