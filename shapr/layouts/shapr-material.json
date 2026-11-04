@@ -110,15 +110,11 @@
                 "tab": "active",
                 "pane": {
                   "gap": 8,
-                  "radius": 12,
+                  "radius": 16,
                   "background": "background",
                   "lone": true,
-                  "border": {
-                    "width": 1,
-                    "color": "border"
-                  },
                   "focus": {
-                    "width": 1,
+                    "width": 2,
                     "color": "solid"
                   },
                   "header": {
