@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // The shot loop's image tools.
 // Usage:
-//   bin/shots --crop sidebar|work <in.png> [<out.png>]
-//       cuts an image to one area. Writes over <in.png> when no <out.png>.
+//   bin/shots [--crop sidebar|work] [--mask] <in.png> [<out.png>]
+//       cuts an image to one area, and covers every sidebar row outside the demo space (bin/demo
+//       puts it first in the spaces list and pins its agents) with a solid box, so the image can
+//       be committed. Writes over <in.png> when no <out.png>.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -85,18 +87,71 @@ export function crop(img, [x, y, w, h]) {
   return { width: w, height: h, data };
 }
 
+/** The image with each box [x, y, w, h] filled with one solid color [r, g, b]. */
+export function fill(img, boxes, [r, g, b]) {
+  const data = Buffer.from(img.data);
+  for (const [bx, by, bw, bh] of boxes)
+    for (let y = Math.max(0, by); y < Math.min(img.height, by + bh); y++)
+      for (let x = Math.max(0, bx); x < Math.min(img.width, bx + bw); x++) data.set([r, g, b, 255], (y * img.width + x) * 4);
+  return { ...img, data };
+}
+
 // Where things are -----------------------------------------------------------------------------
 
-const find = (node, id) => {
-  if (node?.id === id) return node;
-  for (const c of node?.children ?? []) { const f = find(c, id); if (f) return f; }
-  return null;
-};
+const at = (img, x, y) => img.data.readUInt32BE((y * img.width + x) * 4);
 
-/** The window's areas in image pixels, from the layout's sizes (px at zoom 1), the zoom and the image's scale. */
-export function areas({ width, height, scale, zoom = 1, layout }) {
-  const u = zoom * scale, side = (find(layout, "sidebar")?.size?.px ?? 268) * u;
-  return { sidebar: [0, 0, side, height], work: [side, 0, width - side, height] };
+// The sidebar's edge: the first column, left of the middle, that one color fills top to bottom
+// (its border line), where the column before it is another color.
+function sidebarEdge(img) {
+  const mid = img.height >> 1;
+  for (let x = 1; x < img.width * 0.6; x++) {
+    const c = at(img, x, mid);
+    if (c === at(img, x - 1, mid)) continue;
+    let same = 0;
+    for (let y = 0; y < img.height; y++) if (at(img, x, y) === c) same++;
+    if (same >= img.height * 0.95) return { x, color: c };
+  }
+  throw new Error("no sidebar edge in the shot");
+}
+
+// The rows the sidebar's line color crosses from side to side (a divider, 1 or more px): their tops.
+function dividers(img, edge) {
+  const out = [];
+  for (let y = 0, prev = false; y < img.height; y++) {
+    let same = 0;
+    for (let x = 0; x < edge.x; x++) if (at(img, x, y) === edge.color) same++;
+    const line = same >= edge.x * 0.9;
+    if (line && !prev) out.push(y);
+    prev = line;
+  }
+  return out;
+}
+
+// The sidebar's background: the color most of its leftmost columns show (rows never start there).
+function background(img, [x, y, , h]) {
+  const count = new Map();
+  for (let r = y; r < y + h; r++) count.set(at(img, x + 2, r), (count.get(at(img, x + 2, r)) ?? 0) + 1);
+  const c = [...count].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0;
+  return [c >>> 24, (c >>> 16) & 255, (c >>> 8) & 255];
+}
+
+const DENSITY = { compact: -4, standard: 0, comfortable: 4 };
+
+/**
+ * The window's areas in image pixels: sidebar and work from the edge the shot shows, and the
+ * boxes --mask covers. Under the brand bar (a control and 8 above and below), the demo space keeps
+ * the "Spaces" heading and its one row; under the agents list's border it keeps the heading, the
+ * "Pinned" header and one row an agent (bin/demo pins them). Everything else down to the next
+ * divider is covered. u is image px a window px at zoom 1 (scale x zoom).
+ */
+export function areas(img, { u = 2, density = "standard", agents = 4 } = {}) {
+  const edge = sidebarEdge(img), off = DENSITY[density] ?? 0, row = (40 + off) * u;
+  const top = (32 + off + 16) * u, lines = dividers(img, edge).filter((y) => y > top);
+  const foot = lines.at(-1) ?? img.height, list = lines.length > 1 ? lines[0] : null;
+  const box = (from, to) => [0, from, edge.x, Math.max(0, to - from)];
+  const mask = [box(Math.round(top + 36 * u + row), list ?? foot)];
+  if (list !== null) mask.push(box(Math.round(list + (1 + 36 + 40) * u + agents * row), foot));
+  return { sidebar: [0, 0, edge.x, img.height], work: [edge.x, 0, img.width - edge.x, img.height], mask };
 }
 
 const readJson = (p, d) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return d; } };
@@ -104,22 +159,31 @@ const readJson = (p, d) => { try { return JSON.parse(readFileSync(p, "utf8")); }
 function liveAreas(img) {
   const win = readJson(join(home, "window.json"), {});
   const scale = win.bounds ? img.width / win.bounds[2] : 2;
-  const layout = readJson(join(home, "layouts", "shapr-material.json"), {});
   const zoom = readJson(join(home, "settings.json"), {}).zoom ?? 1;
-  return areas({ width: img.width, height: img.height, scale, zoom, layout: layout.root ?? layout });
+  const density = readJson(join(home, "shared.json"), {})["shapr.settings"]?.density;
+  return areas(img, { u: scale * zoom, density });
+}
+
+/** --mask, then --crop, on one image file. */
+function edit(file, out, { cropTo, mask }) {
+  let img = decodePng(readFileSync(file));
+  const a = liveAreas(img);
+  if (mask) img = fill(img, a.mask, background(img, a.sidebar));
+  if (cropTo) img = crop(img, a[cropTo]);
+  writeFileSync(out, encodePng(img));
 }
 
 function main(argv) {
   const opts = {}, rest = [];
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--crop") opts.cropTo = argv[++i];
+    else if (argv[i] === "--mask") opts.mask = true;
     else rest.push(argv[i]);
   }
-  if (!["sidebar", "work"].includes(opts.cropTo)) throw new Error("--crop sidebar|work");
+  if (opts.cropTo !== undefined && !["sidebar", "work"].includes(opts.cropTo)) throw new Error("--crop sidebar|work");
   const [file, out = file] = rest;
-  if (!file || !existsSync(file)) throw new Error("usage: bin/shots --crop sidebar|work <in.png> [<out.png>]");
-  const img = decodePng(readFileSync(file));
-  writeFileSync(out, encodePng(crop(img, liveAreas(img)[opts.cropTo])));
+  if (!(opts.mask || opts.cropTo) || !file || !existsSync(file)) throw new Error("usage: bin/shots [--crop sidebar|work] [--mask] <in.png> [<out.png>]");
+  edit(file, out, opts);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
