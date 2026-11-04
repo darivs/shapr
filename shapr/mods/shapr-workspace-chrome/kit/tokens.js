@@ -15,7 +15,7 @@ export function prefs() {
 }
 
 // Type ---------------------------------------------------------------------
-// [size, weight, line height] per MD3 style, in thin weights (D11): display and headline at 300,
+// [size, weight, line height] per MD3 style, in thin weights: display and headline at 300,
 // title large, body and labels at 400, title medium and small at 500. Hierarchy comes from size
 // and role, not weight. Emphasized takes one step up to the next static cut of Roboto Flex, at
 // most 500 (300 → 400, 400 → 500, 500 stays).
