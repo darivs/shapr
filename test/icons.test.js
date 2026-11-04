@@ -79,3 +79,19 @@ test("every icon path the code names resolves to a file", () => {
     .map(([at, p]) => `${at}: ${relative(root, p)}`);
   assert.deepEqual(missing, []);
 });
+
+// What @material-symbols/svg-300 (outlined/<name>.svg, outlined/<name>-fill.svg) ships: one path
+// on Material Symbols' 960 grid, no stroke. Lucide's are strokes on a 24 grid.
+const SYMBOL_NAME = /^[a-z0-9_]+(-fill)?\.svg$/;
+const SYMBOL = /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="48" height="48" viewBox="0 -960 960 960"><path d="[^"]+"\/><\/svg>\n?$/;
+const shipped = () => [...walk(KIT_ICONS), ...walk(MODS, (p) => isCopy(p) || /\/fonts$|\/theme$/.test(p))]
+  .filter((p) => p.endsWith(".svg") && !/\/shapr-tabs\/win-[a-z]+\.svg$/.test(p));
+
+test("every icon file shapr ships is a Material Symbols Outlined symbol that some code names", () => {
+  const files = shipped();
+  assert.ok(files.length >= 10, `only ${files.length} icon files found`);
+  const foreign = files.filter((p) => !SYMBOL_NAME.test(p.split("/").pop()) || !SYMBOL.test(readFileSync(p, "utf8")));
+  assert.deepEqual(foreign.map((p) => relative(root, p)), [], "not a Material Symbols Outlined file");
+  const named = new Set(references().refs.map(([, p]) => p.replace(/\/shapr\/mods\/[^/]+\/kit\/icons\//, "/kit/icons/")));
+  assert.deepEqual(files.filter((p) => !named.has(p)).map((p) => relative(root, p)), [], "no code names these");
+});
