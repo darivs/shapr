@@ -3,7 +3,7 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window } from "herdr";
-import { roles, type, label, iconButton, press, H, SHAPE, RADIUS, SPACE } from "./kit/index.js";
+import { roles, type, TYPE, label, iconButton, icon, listItem, panelCard, panelHeader, panelWell, SPACE } from "./kit/index.js";
 
 function location() {
   const space = spaces().find(s => s.active), f = focused();
@@ -18,14 +18,6 @@ const PER_FOLDER = 500, TOTAL = 5000;
 // A git mark in a color role (status colors stay for agents): added tertiary, deleted and
 // conflicted error, modified primary.
 const MARK = { A: "tertiary", D: "error", U: "error", M: "primary" };
-
-// A dense tree row: H.sm tall (32 at standard density), rounded like a list item, indented per
-// depth, with a hover state layer. The kit's listItem is 40 tall with a fixed 16 inset.
-function treeRow(id, depth, onClick, children) {
-  const r = roles();
-  const row = h_flex().id(id).h(H.sm).w_full().flex_none().pl(SPACE.sm + depth * SPACE.lg).pr(SPACE.md).gap(SPACE.sm).items_center().rounded(RADIUS.row);
-  return press(type(row, "bodyMedium").text_color(r.onSurface), onClick, { layer: r.hover }).children(children);
-}
 
 // A note inside a panel body: empty, loading, error and limit messages.
 const note = (text, style = "bodyMedium") => label(text, { style, role: "onSurfaceVariant" }).px(SPACE.sm).py(SPACE.sm);
@@ -147,11 +139,12 @@ export default class Files extends View {
         if (this.file !== path || !this.current(context)) return;
         if (text === null) { this.fileError = "This file is no longer available"; return; }
         if (text.includes("\0")) { this.fileError = "Binary file · no text preview"; return; }
+        // Syntax takes the terminal palette (ansi slots are no MD3 roles); comments are disabled ink.
         const t = theme(), ext = path.includes(".") ? path.split(".").pop() : "txt";
         this.code = EditorState.new({ language: LANG[ext] ?? ext, readonly: true,
           value: text.length > 400000 ? text.slice(0, 400000) + "\n… (file truncated)" : text,
-          font_family: settings().font_family, font_size: 12,
-          syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
+          font_family: settings().font_family, font_size: TYPE.bodySmall[0],
+          syntax: { keyword: t.ansi5, string: t.ansi2, comment: roles().disabled, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
       } catch { if (this.file === path && this.current(context)) this.fileError = "Cannot preview this file (binary, too large, or unreadable)"; }
       finally { cx.notify(); }
     });
@@ -162,11 +155,13 @@ export default class Files extends View {
     for (const entry of this.entries.get(prefix) ?? []) {
       if (out.length >= TOTAL) break;
       const path = prefix ? `${prefix}/${entry.name}` : entry.name, open = this.folders.has(path), mark = this.marks[`${this.root}/${path}`];
-      out.push(treeRow(`file-${path}`, depth, (_e, cx) => entry.dir ? this.toggle(path, cx) : this.show(path, cx), [
-        entry.dir ? svg(`mods/shapr-files/chevron-${open ? "down" : "right"}.svg`).size(16).flex_none().text_color(r.onSurfaceVariant) : div().w(16).flex_none(),
-        svg(`mods/shapr-files/${entry.dir ? "folder" : "file"}.svg`).size(18).flex_none().text_color(r.onSurfaceVariant),
-        div().flex_1().min_w(0).truncate().child(entry.name),
-      ]).when(Boolean(mark), el => el.child(label(mark, { style: "labelMedium", role: MARK[mark] ?? "primary" }).flex_none())));
+      out.push(listItem(`file-${path}`, entry.name, {
+        dense: true, indent: depth * SPACE.lg, onClick: (_e, cx) => entry.dir ? this.toggle(path, cx) : this.show(path, cx),
+        leading: h_flex().gap(SPACE.sm).items_center()
+          .child(entry.dir ? svg(`mods/shapr-files/chevron-${open ? "down" : "right"}.svg`).size(16).flex_none().text_color(r.onSurfaceVariant) : div().w(16).flex_none())
+          .child(svg(`mods/shapr-files/${entry.dir ? "folder" : "file"}.svg`).size(18).flex_none().text_color(r.onSurfaceVariant)),
+        trailing: mark ? label(mark, { style: "labelMedium", role: MARK[mark] ?? "primary" }) : null,
+      }));
       if (entry.dir && open) this.rows(path, depth + 1, out, r);
     }
     return out;
@@ -174,19 +169,18 @@ export default class Files extends View {
 
   render(cx) {
     if (key() !== this.context?.key) this.refresh(cx);
-    const r = roles(), inner = SHAPE.sm;
-    // An MD3 panel: surface-container-low, rounded large, an outline-variant edge like the pane beside it.
-    return type(v_flex().id("files").size_full().min_h(0).rounded(SHAPE.lg).overflow_hidden().bg(r.surfaceLow).border_1().border_color(r.outlineVariant).text_color(r.onSurface), "bodyMedium")
-      .child(h_flex().h(H.xl).flex_none().pl(this.file ? SPACE.sm : SPACE.lg).pr(SPACE.lg).gap(SPACE.sm).items_center()
-        .when(Boolean(this.file), el => el.child(iconButton("files-back", "mods/shapr-files/arrow-left.svg", { size: "sm", tip: "Back to files", onClick: () => this.show(null) })))
-        .child(label("Files", { style: "titleMedium" }).flex_none())
-        .child(label(this.file ?? this.root?.split(/[\\/]/).pop() ?? "", { style: "bodySmall", role: "onSurfaceVariant", truncate: true, grow: true }).text_right()))
+    const r = roles();
+    return type(panelCard(v_flex().id("files")), "bodyMedium")
+      .child(panelHeader("Files", {
+        leading: this.file ? iconButton("files-back", icon("arrow-left"), { size: "sm", tip: "Back to files", onClick: () => this.show(null) }) : null,
+        detail: this.file ?? this.root?.split(/[\\/]/).pop() ?? "",
+      }))
       .when(!this.file, el => el.child(v_flex().id("files-tree").flex_1().min_h(0).overflow_y_scrollbar().px(SPACE.sm).pb(SPACE.sm).children(this.rows("", 0, [], r))
         .when(Boolean(this.error) || !this.entries.get("")?.length, el => el.child(note(this.error || (this.loading ? "Loading files…" : this.root ? "No files" : "No folder"))))
         .when(this.limited, el => el.child(note("File list limited to 500 entries per folder and 5,000 total", "bodySmall")))))
       .when(Boolean(this.file), el => el.child(this.code
         // The code sits in a terminal-ground well; its vertical inset keeps the editor's square ground inside the corners.
-        ? v_flex().flex_1().min_h(0).mx(SPACE.sm).mb(SPACE.sm).py(inner).rounded(inner).overflow_hidden().bg(r.surfaceLowest).child(Editor.new(this.code).flex_1().min_h(0))
+        ? panelWell().child(Editor.new(this.code).flex_1().min_h(0))
         : note(this.fileError || "Loading file…").px(SPACE.lg)));
   }
 }

@@ -2,7 +2,7 @@
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, settings } from "herdr";
-import { roles, type, lineOf, label, button, fieldBox, press, H, SHAPE, RADIUS, SPACE } from "./kit/index.js";
+import { roles, type, lineOf, label, button, fieldBox, listItem, panelCard, panelHeader, panelWell, H, SPACE } from "./kit/index.js";
 
 function location() {
   const space = spaces().find((s) => s.active), f = focused();
@@ -184,32 +184,32 @@ export default class Changes extends View {
     if (key() !== this.context) this.refresh(cx);
     const r = roles(), add = this.files.reduce((n, f) => n + f.add, 0), del = this.files.reduce((n, f) => n + f.del, 0);
     const enabled = Boolean(this.message.trim() && this.root && !this.busy && !this.loading);
-    const rowH = H.sm, step = rowH + ROW_GAP, inner = SHAPE.sm, n = this.files.length;
+    const rowH = H.sm, step = rowH + ROW_GAP, n = this.files.length;
     // The list grows with its files up to six and a half rows (the half row says it scrolls).
     const listH = Math.min(Math.round(step * 6.5), Math.max(rowH, n * step - ROW_GAP) + SPACE.sm);
     const count = (text, role) => label(text, { style: "labelMedium", role }).flex_none();
-    // An MD3 panel: surface-container-low, rounded large, an outline-variant edge like the pane beside it.
-    return type(v_flex().id("changes").size_full().min_h(0).rounded(SHAPE.lg).overflow_hidden().bg(r.surfaceLow).border_1().border_color(r.outlineVariant).text_color(r.onSurface), "bodyMedium").track_focus(this.handle)
+    // The file count: an outlined pill beside the title.
+    const pill = type(div(), "labelSmall").h(20).px(SPACE.sm).flex_none().flex().items_center().rounded_full().border_1().border_color(r.outlineVariant).text_color(r.onSurfaceVariant).child(`${n} ${n === 1 ? "file" : "files"}`);
+    return type(panelCard(v_flex().id("changes")), "bodyMedium").track_focus(this.handle)
       .on_key_down((e, cx) => {
         if (e.key === "escape" && this.typing) { this.typing = false; this.handle.focus(); cx.stop_propagation(); cx.notify(); }
       })
-      .child(h_flex().h(H.xl).flex_none().px(SPACE.lg).gap(SPACE.sm).items_center()
-        .child(label("Changes", { style: "titleMedium", truncate: true }))
-        .child(type(div(), "labelSmall").h(20).px(SPACE.sm).flex_none().flex().items_center().rounded_full().border_1().border_color(r.outlineVariant).text_color(r.onSurfaceVariant).child(`${n} ${n === 1 ? "file" : "files"}`))
-        .child(div().flex_1().min_w(0)).child(count(`+${add}`, "tertiary")).child(count(`−${del}`, "error")))
+      .child(panelHeader("Changes", { detail: h_flex().child(pill), actions: [count(`+${add}`, "tertiary"), count(`−${del}`, "error")] }))
       .child(v_flex().id("changes-list").flex_none().h(listH).overflow_y_scrollbar().px(SPACE.sm).pb(SPACE.sm).gap(ROW_GAP).children(this.files.map((f) => {
         const parts = f.path.split("/"), name = parts.pop(), on = this.open === f.path;
-        let row = type(h_flex().id(`change-${f.path}`).h(rowH).w_full().flex_none().pl(SPACE.md).pr(SPACE.md).gap(SPACE.sm).items_center().rounded(RADIUS.row), "bodyMedium")
-          .text_color(on ? r.onSecondaryContainer : r.onSurface).when(on, (e) => e.bg(r.secondaryContainer));
-        row = press(row, (_e, cx) => this.pick(f.path, cx), { layer: on ? "lift" : r.hover });
-        return row
-          .child(label(f.status, { style: "labelMedium", role: STATUS[f.status] ?? "primary" }).w(14).flex_none())
-          .child(h_flex().flex_1().min_w(0).child(div().min_w(0).truncate().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant).child(parts.length ? parts.join("/") + "/" : "")).child(div().max_w(260).min_w(0).truncate().child(name)))
-          .when(f.add > 0, (e) => e.child(count(`+${f.add}`, "tertiary"))).when(f.del > 0, (e) => e.child(count(`−${f.del}`, "error")));
+        const headline = h_flex().w_full().min_w(0)
+          .child(div().min_w(0).truncate().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant).child(parts.length ? parts.join("/") + "/" : ""))
+          .child(div().max_w(260).min_w(0).truncate().child(name));
+        const counts = f.add > 0 || f.del > 0 ? h_flex().gap(SPACE.sm).items_center()
+          .when(f.add > 0, (e) => e.child(count(`+${f.add}`, "tertiary"))).when(f.del > 0, (e) => e.child(count(`−${f.del}`, "error"))) : null;
+        return listItem(`change-${f.path}`, headline, {
+          dense: true, selected: on, onClick: (_e, cx) => this.pick(f.path, cx),
+          leading: label(f.status, { style: "labelMedium", role: STATUS[f.status] ?? "primary" }).w(14), trailing: counts,
+        });
       })).when(!n, (e) => e.child(label(this.error || (this.loading ? "Loading changes…" : this.root ? "No uncommitted changes" : "No folder"), { role: "onSurfaceVariant" }).px(SPACE.sm).py((rowH - lineOf("bodyMedium")) / 2))))
       .when(this.limited, el => el.child(label("Showing the first 1,000 changed files", { style: "bodySmall", role: "onSurfaceVariant" }).px(SPACE.lg).pb(SPACE.sm)))
-      // The diff sits in a terminal-ground well; its vertical inset keeps the rows' own grounds inside the corners.
-      .child(div().flex_1().min_h(0).mx(SPACE.sm).py(inner).rounded(inner).bg(r.surfaceLowest).overflow_hidden()
+      // The diff sits in the panel's well, without its bottom inset: the commit row below brings its own.
+      .child(panelWell(div()).mb(0)
         .child(type(div().size_full().relative(), "bodySmall").font_family(settings().font_family ?? "JetBrains Mono").text_color(r.onSurface)
           .child(div().id("changes-diff-x").size_full().overflow_x_scrollbar()
             .child(div().w_full().min_w(this.diffWidth).h_full().child(v_virtual_list("changes-diff", this.rows.length, 20, (i) => String(i),
