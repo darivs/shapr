@@ -50,9 +50,11 @@ const kidStatus = (k, listed) => {
   const s = listed.get(k.address) ?? k.status;
   return s === "error" ? "blocked" : s === "done" ? "idle" : s;
 };
+// An icon shapr-workspace-chrome holds for the chrome's mods.
+const chrome = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 const SORTS = [
-  { id: "priority", label: "Priority", icon: "clock" },
-  { id: "grouped", label: "Grouped by space", icon: "layers" },
+  { id: "priority", label: "Priority", icon: chrome("clock") },
+  { id: "grouped", label: "Grouped by space", icon: chrome("layers") },
 ];
 // The sort popup's size: exactly its menu, a header and one item per sort (kit menuHeight).
 const SORT_W = 224;
@@ -148,7 +150,7 @@ export default class Agents extends View {
     return menuSurface(v_flex().size_full())
       .child(menuHeader("Sort agents"))
       .children(SORTS.map((s) => menuItem(`sort-${s.id}`, s.label, {
-        icon: `mods/shapr-workspace-chrome/${s.icon}.svg`,
+        icon: s.icon,
         selected: s.id === on,
         onClick: () => {
           setShared("agents.sort", s.id);
@@ -303,7 +305,7 @@ export default class Agents extends View {
       const idle = a.status === "idle" && !a.focused;
       const isPinned = a.pinned;
       const hovered = this.hovered === a.address;
-      const pin = iconButton(`pin-${a.address}`, `mods/shapr-workspace-chrome/${isPinned ? "pin-off" : "pin"}.svg`, {
+      const pin = iconButton(`pin-${a.address}`, chrome(isPinned ? "pin-off" : "pin"), {
         size: "xs",
         tip: isPinned ? "Unpin" : "Pin to the top",
         onClick: () => {
@@ -394,7 +396,7 @@ export default class Agents extends View {
       .when(!collapsed, (el) =>
         el.child(
           heading("Agents", {
-            trailing: iconButton("ag-sort", `mods/shapr-workspace-chrome/${sort.icon}.svg`, {
+            trailing: iconButton("ag-sort", sort.icon, {
               size: "sm",
               tip: `Sort agents: ${sort.label}`,
               onClick: () => openOverlay({ mod: "shapr-agents", kind: "popup", frame: "none", width: SORT_W, height: sortHeight(), props: { sortMenu: true } }),

@@ -89,9 +89,15 @@ export function menuSize(p, git) {
 function menuIcon(command) {
   if (command.endsWith(".close")) return icon("x");
   if (command.endsWith(".new")) return icon("plus");
-  const name = command.endsWith(".rename") ? "square-pen" : command === "worktree" ? "git-branch" : command === "app.help" ? "terminal" : command === "app.theme" ? "settings" : command === "pane.split" ? "panel-right" : command === "pane.zoom" ? "square" : "terminal";
-  return `mods/shapr-workspace-chrome/${name}.svg`;
+  if (command.endsWith(".rename")) return chrome("square-pen");
+  if (command === "worktree") return chrome("git-branch");
+  if (command === "app.theme") return chrome("settings");
+  if (command === "pane.split") return chrome("panel-right");
+  if (command === "pane.zoom") return chrome("square");
+  return chrome("terminal");
 }
+// An icon shapr-workspace-chrome holds for the chrome's mods.
+const chrome = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
 // The key bound to a command, for the hint on the right.
 function shortcut(name, args) {
