@@ -1,11 +1,16 @@
-// Context menus (Herdr's items). Opened as a popup with
+// style: md3
+// Context menus (Herdr's items), as an MD3 menu. Opened as a popup with
 // props { tab: "pane" | "tab" | "space" | "global", target }.
 // ↑/↓ move, Enter runs, Esc closes. An item is [label, command, args];
-// a command "worktree" opens the worktree dialog instead.
+// a command "worktree" opens the worktree dialog instead, and a rename or a space close
+// (which Herdr would ask about in its own dialog) opens shapr-prompt or shapr-confirm with the
+// props Herdr's take. Openers size it with menuHeight({ items, dividers }) of what items() gives:
+// dividers go before a close, before Keybinds and before the first theme.
 
-import { View, div, svg } from "gpui-kit";
-import { v_flex, h_flex } from "gpui-base";
-import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";
+import { View } from "gpui-kit";
+import { v_flex } from "gpui-base";
+import { run, props, closeOverlay, openOverlay, keys, terminals, spaces, panes, exec } from "herdr";
+import { menuSurface, menuItem, menuDivider, dialogHeight, fieldHeight, roles, icon, H, ROW, TYPE } from "./kit/index.js";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
 function place(s) {
@@ -72,8 +77,19 @@ function items(p, git) {
   }
 }
 
+// A divider goes before a close, before Keybinds and before the first theme.
+const dividerBefore = (list, i) => i > 0 && (list[i][1].endsWith(".close") || list[i][1] === "app.help" || (list[i][1] === "app.theme" && list[i - 1][1] !== "app.theme"));
+
+/** The menu's exact height for these props (and git state, for a space). */
+export function menuSize(p, git) {
+  const list = items(p, git);
+  return { items: list.length, dividers: list.filter((_, i) => dividerBefore(list, i)).length };
+}
+
 function menuIcon(command) {
-  const name = command.endsWith(".close") ? "x" : command.endsWith(".rename") ? "square-pen" : command.endsWith(".new") ? "plus" : command === "worktree" ? "git-branch" : command === "app.help" ? "terminal" : command === "app.theme" ? "settings" : command === "pane.split" ? "panel-right" : command === "pane.zoom" ? "square" : "terminal";
+  if (command.endsWith(".close")) return icon("x");
+  if (command.endsWith(".new")) return icon("plus");
+  const name = command.endsWith(".rename") ? "square-pen" : command === "worktree" ? "git-branch" : command === "app.help" ? "terminal" : command === "app.theme" ? "settings" : command === "pane.split" ? "panel-right" : command === "pane.zoom" ? "square" : "terminal";
   return `mods/shapr-workspace-chrome/${name}.svg`;
 }
 
@@ -83,6 +99,29 @@ function shortcut(name, args) {
   const value = args && Object.values(args)[0];
   const k = keys().find((b) => b.section === "global" && (b.action === name || b.action === `${name}:${value}`));
   return k ? k.keys : "";
+}
+
+// Lines a text takes at a width, for sizing a dialog before it draws (Roboto Flex runs about
+// 0.55 em a character; the estimate errs long).
+const lines = (text, style, width) => Math.max(1, Math.ceil((String(text ?? "").length * TYPE[style][0] * 0.55) / width));
+
+// The dialogs this menu opens, sized to what they draw (see each mod's header).
+const PROMPT_W = 400, CONFIRM_W = 360, WORKTREE_W = 460, WORKTREE_OPEN_W = 560, INNER = 48;
+export function promptSpec(p) {
+  return { mod: "shapr-prompt", kind: "dialog", frame: "none", width: PROMPT_W, height: dialogHeight({ extra: [fieldHeight({ supporting: Boolean(p.hint) })] }), props: p };
+}
+export function confirmSpec(p) {
+  const w = CONFIRM_W - INNER;
+  return { mod: "shapr-confirm", kind: "dialog", frame: "none", width: CONFIRM_W, height: dialogHeight({ headlineLines: lines(p.title, "headlineSmall", w), bodyLines: p.detail ? lines(p.detail, "bodyMedium", w) : 0 }), props: p };
+}
+export function worktreeSpec(p) {
+  const w = WORKTREE_W - INNER;
+  if (p.action === "open") return { mod: "shapr-worktree", kind: "dialog", frame: "none", width: WORKTREE_OPEN_W, height: dialogHeight({ extra: [H.lg, 5 * ROW.two] }), props: p };
+  if (p.action === "remove") {
+    const name = spaces().find((s) => s.id === p.space)?.name ?? "";
+    return { mod: "shapr-worktree", kind: "dialog", frame: "none", width: WORKTREE_W, height: dialogHeight({ headlineLines: lines(`Remove worktree ${name}?`, "headlineSmall", w), bodyLines: 3 }), props: p };
+  }
+  return { mod: "shapr-worktree", kind: "dialog", frame: "none", width: WORKTREE_W, height: dialogHeight({ bodyLines: 3, extra: [fieldHeight()] }), props: p };
 }
 
 export default class Menu extends View {
@@ -101,53 +140,58 @@ export default class Menu extends View {
       });
   }
 
-  choose(i, cx) {
+  choose(i) {
     const it = items(props(), this.git)[i];
     if (!it) return;
     closeOverlay(props()?.overlay);
-    if (it[1] === "worktree") openOverlay({ mod: "shapr-worktree", kind: "dialog", ...(it[2].action === "open" ? { width: 560, height: 480 } : { width: 440, height: 260 }), props: it[2] });
-    else run(it[1], it[2]);
+    const [, command, args] = it;
+    if (command === "worktree") return openOverlay(worktreeSpec(args));
+    // Herdr asks for a rename's name and before closing a space: ask in shapr's own dialogs,
+    // with the props Herdr's prompt and confirm take, then run the same command.
+    if (command === "tab.rename" || command === "space.rename") {
+      const tab = command === "tab.rename";
+      const thing = tab ? spaces().flatMap((s) => s.tabs ?? []).find((t) => t.id === args.id) : spaces().find((s) => s.id === args.id);
+      return openOverlay(promptSpec({
+        title: tab ? "rename tab" : "rename space",
+        value: thing?.named ? thing.name : "",
+        hint: tab ? "empty: its number" : "empty: named after its folder",
+        command: { name: command, args },
+      }));
+    }
+    if (command === "space.close") {
+      const s = spaces().find((x) => x.id === args.id);
+      const n = s?.tabs?.length ?? 0;
+      return openOverlay(confirmSpec({
+        title: "Close space?",
+        detail: `${s?.name ? `${s.name}: ` : ""}${n === 1 ? "its tab" : `its ${n} tabs`} and their terminals end.`,
+        command: { name: "space.close", args: { ...args, confirmed: true } },
+      }));
+    }
+    if (command === "app.help") return openOverlay({ mod: "shapr-help", kind: "dialog", frame: "none", width: 560, height: 0.8 });
+    run(command, args);
   }
 
-  render(cx) {
-    const t = theme();
+  render() {
+    const r = roles();
     const list = items(props(), this.git);
-    return v_flex()
+    return menuSurface(v_flex())
       .id("menu")
       .track_focus(this.handle)
       .w_full()
-      .min_h(0)
-      .p(5)
-      .bg(t.popover)
-      .text_size(12.8)
+      .max_h_full()
+      .overflow_y_scrollbar()
       .on_key_down((e, cx) => {
         if (e.key === "down") this.at = (this.at + 1) % list.length;
         else if (e.key === "up") this.at = (this.at + list.length - 1) % list.length;
-        else if (e.key === "enter") this.choose(this.at, cx);
+        else if (e.key === "enter") this.choose(this.at);
         else if (e.key === "escape") closeOverlay(props().overlay);
         else return;
         cx.notify();
       })
-      .children(
-        list.map((it, i) =>
-          v_flex()
-            .when(i > 0 && (it[1].endsWith(".close") || it[1] === "app.help" || (it[1] === "app.theme" && list[i - 1][1] !== "app.theme")), el => el.child(div().mx(7).my(4).h(1).bg(t.border)))
-            .child(h_flex()
-            .id(`mi-${i}`)
-            .h(31)
-            .px(8)
-            .gap(9)
-            .rounded(7)
-            .items_center()
-            .justify_between()
-            .text_color(t.foreground)
-            .when(i === this.at, (el) => el.bg(t.selected))
-            .hover((s) => s.bg(t.hover))
-            .on_click((_e, cx) => this.choose(i, cx))
-            .child(svg(menuIcon(it[1])).size(14).flex_none().text_color(t.muted))
-            .child(div().flex_1().child(it[0]))
-            .child(div().text_size(11).text_color(t.dim).child(shortcut(it[1], it[2])))),
-        ),
-      );
+      .children(list.flatMap((it, i) => [
+        dividerBefore(list, i) ? menuDivider() : null,
+        menuItem(`mi-${i}`, it[0], { icon: menuIcon(it[1]), hint: shortcut(it[1], it[2]) || null, danger: it[1].endsWith(".close"), onClick: () => this.choose(i) })
+          .when(i === this.at, (el) => el.bg(r.hover)),
+      ]).filter(Boolean));
   }
 }

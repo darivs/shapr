@@ -1,5 +1,11 @@
 {
   "place": "none",
+  "overlay": {
+    "kind": "popup",
+    "width": 280,
+    "height": 269,
+    "frame": "none"
+  },
   "cloned_from": {
     "name": "menu",
     "version": "0.1.12",

@@ -3,7 +3,8 @@
   "title": "Add a machine",
   "overlay": {
     "kind": "dialog",
-    "width": 560
+    "width": 560,
+    "frame": "none"
   },
   "cloned_from": {
     "name": "machine-add",

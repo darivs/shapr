@@ -1,9 +1,16 @@
+// style: md3
 // Worktree dialog: { space, action: "new" | "open" | "remove" } or
 // { folder, machine } for a repo without a space; optional { branch, tab, argv }.
+// An MD3 dialog (open it with frame: "none"); openers size it to what it draws:
+//   new:    width 460, dialogHeight({ bodyLines: 3, extra: [fieldHeight()] })
+//   remove: width 460, dialogHeight({ headlineLines: lines of "Remove worktree <space>?" at 412, bodyLines: 3 })
+//   open:   width 560, dialogHeight({ extra: [H.lg, 5 * ROW.two] }) (five checkouts, more scroll)
+// Text past that (warnings, a git error) scrolls inside the dialog's body.
 
-import { View, div } from "gpui-kit";
-import { v_flex, h_flex, InputState, Input, Scrollbar } from "gpui-base";
-import { run, props, closeOverlay, theme, spaces, panes, exec, home } from "herdr";
+import { View, div, svg } from "gpui-kit";
+import { v_flex, h_flex, InputState, Input } from "gpui-base";
+import { run, props, closeOverlay, spaces, panes, exec, home } from "herdr";
+import { dialogSurface, dialogHeadline, dialogBody, dialogActions, textField, fieldBox, listItem, label, circularProgress, roles, icon, type } from "./kit/index.js";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
 function place(s) {
@@ -238,73 +245,50 @@ export default class Worktree extends View {
     if (e.key === "enter" && props()?.action === "remove") return this.go(cx);
   }
 
-  renderOpen(t) {
+  renderOpen() {
+    const k = roles();
     const r = this.repo;
     const rows = this.shown();
     const all = this.list ?? [];
     const row = (c, i) => {
       const on = i === this.at;
       const there = spaceOf(c.path, all, this.on);
-      return v_flex()
-        .id(`wt-${i}`)
-        .flex_none()
-        .h(44)
-        .px(10)
-        .justify_center()
-        .rounded(7)
-        .cursor_pointer()
-        .when(on, (el) => el.bg(t.selected))
-        .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
-        .on_click(() => this.open(c))
-        .child(
-          h_flex()
-            .gap(8)
-            .items_center()
-            .child(div().flex_1().min_w(0).truncate().text_color(t.foreground).child(c.branch ?? "detached"))
-            .when(c.main, (el) => el.child(div().flex_none().text_size(11).text_color(t.dim).child("main checkout")))
-            .when(Boolean(there), (el) => el.child(div().flex_none().text_size(11).text_color(t.accent).child("open")))
-            .when(!there && c.at > 0, (el) => el.child(div().flex_none().text_size(11).text_color(t.dim).child(ago(c.at)))),
-        )
-        .child(div().truncate().text_size(11.5).text_color(t.dim).child(tilde(c.path, this.userHome ?? "")));
+      const tag = c.main ? "main checkout" : there ? "open" : c.at > 0 ? ago(c.at) : null;
+      return listItem(`wt-${i}`, c.branch ?? "detached", { supporting: tilde(c.path, this.userHome ?? ""), selected: on, trailingText: tag, onClick: () => this.open(c) });
     };
     const count = rows.length === all.length ? `${all.length} checkouts` : `${rows.length}/${all.length} checkouts`;
-    return v_flex()
+    const ready = Boolean(r && this.list);
+    return dialogSurface()
       .id("worktree")
       .track_focus(this.handle)
       .on_key_down((e, cx) => this.key(e, cx))
-      .size_full()
-      .p(16)
-      .gap(10)
-      .bg(t.popover)
-      .text_size(13)
-      .child(h_flex().child(div().flex_1().font_semibold().text_color(t.foreground).child(`Open worktree${r ? ` of ${r.name}` : ""}`)).child(div().text_size(11).text_color(t.dim).child(r ? count : "")))
-      .when(r === undefined || (r && this.list === undefined), (el) => el.child(div().text_color(t.muted).child("\u2026")))
-      .when(r === null, (el) => el.child(div().text_color(t.muted).child(`${this.folder ? tilde(this.folder, this.userHome ?? "") : "This folder"} is not in a git repository.`)))
-      .when(Boolean(r && this.list), (el) =>
+      .child(h_flex().w_full().gap(12).items_center()
+        .child(dialogHeadline(`Open worktree${r ? ` of ${r.name}` : ""}`).flex_1().min_w(0).truncate())
+        .when(ready, (el) => el.child(label(count, { style: "labelMedium", role: "onSurfaceVariant" }).flex_none())))
+      .when(r === undefined || (r && this.list === undefined), (el) => el.child(h_flex().flex_1().min_h(0).items_start().child(circularProgress(24))))
+      .when(r === null, (el) => el.child(div().flex_1().min_h(0).child(dialogBody(`${this.folder ? tilde(this.folder, this.userHome ?? "") : "This folder"} is not in a git repository.`))))
+      .when(ready, (el) =>
         el
-          .child(Input.new(this.input).h(32).px(10).items_center().rounded(6).border(1).border_color(this.inputFocused ? t.accent : t.input).bg(t.background).text_color(t.foreground))
+          .child(fieldBox(h_flex().w_full().flex_none().gap(12), { focused: this.inputFocused })
+            .child(svg(icon("search")).size(20).flex_none().text_color(k.onSurfaceVariant))
+            .child(Input.new(this.input).flex_1().min_w(0).text_color(k.onSurface)))
           .child(
-            div()
-              .relative()
+            v_flex()
+              .id("wt-list")
               .flex_1()
               .min_h(0)
-              .child(
-                v_flex()
-                  .id("wt-list")
-                  .size_full()
-                  .overflow_y_scroll()
-                  .children(rows.map(row))
-                  .when(rows.length === 0, (el) => el.child(div().p(10).text_color(t.dim).child("No matching worktrees."))),
-              )
-              .child(Scrollbar.vertical("wt-list").absolute().inset_0()),
+              .mx(-8)
+              .overflow_y_scrollbar()
+              .children(rows.map(row))
+              .when(rows.length === 0, (el) => el.child(div().px(16).py(10).child(dialogBody("No matching worktrees.")))),
           ),
       )
-      .child(h_flex().justify_end().text_size(11).text_color(t.dim).child("\u2191\u2193 choose \u00b7 \u21b5 open \u00b7 esc close"));
+      .child(dialogActions({ note: "↑↓ choose · ↵ open", onCancel: () => this.close(), cancelLabel: "Close" }));
   }
 
-  render(cx) {
-    const t = theme();
-    if (this.opening) return this.renderOpen(t);
+  render() {
+    if (this.opening) return this.renderOpen();
+    const k = roles();
     const remove = props()?.action === "remove";
     const s = this.space();
     const r = this.repo;
@@ -320,40 +304,32 @@ export default class Worktree extends View {
               : `Closes the space and deletes ${tilde(r.top, this.userHome)}. The branch stays.`
             : `A new space on a checkout in ${tilde(ROOT(this.userHome), this.userHome)}/${r.name}/. A branch that exists is checked out; a new one starts from here.`;
     const blocked = !r || (remove && !r.linked);
-    return v_flex()
+    const warn = (text) => type(div(), "bodyMedium").text_color(k.error).child(text);
+    return dialogSurface()
       .id("worktree")
       .track_focus(this.handle)
       .on_key_down((e, cx) => this.key(e, cx))
-      .size_full()
-      .p(16)
-      .gap(10)
-      .bg(t.popover)
-      .text_size(13)
-      .child(div().font_semibold().text_color(t.foreground).child(title))
-      .child(div().text_color(t.muted).child(detail))
-      .when(remove && this.dirty, (el) => el.child(div().text_color(t.blocked).child("It has uncommitted changes: they will be lost.")))
-      .when(remove && this.unpushed.length > 0, (el) => el.child(div().text_color(t.blocked).child(`Submodule ${this.unpushed.join(", ")} has commits that aren't pushed anywhere: they will be lost.`)))
-      .when(!remove && !blocked, (el) =>
-        el.child(
-          Input.new(this.input)
-            .h(32)
-            .px(10)
-            .items_center()
-            .rounded(6)
-            .border(1)
-            .border_color(this.inputFocused ? t.accent : t.input)
-            .bg(t.background)
-            .text_color(t.foreground),
-        ),
-      )
-      .when(Boolean(this.error), (el) => el.child(div().text_color(t.blocked).child(this.error)))
-      .child(div().flex_1())
+      .child(dialogHeadline(title))
       .child(
-        h_flex()
-          .justify_end()
-          .text_size(11)
-          .text_color(t.dim)
-          .child(this.busy ? "working…" : blocked ? "esc close" : remove ? "↵ remove · esc cancel" : "↵ create · esc cancel"),
-      );
+        v_flex()
+          .id("wt-body")
+          .flex_1()
+          .min_h(0)
+          .gap(8)
+          .overflow_y_scrollbar()
+          .child(dialogBody(detail))
+          .when(remove && this.dirty, (el) => el.child(warn("It has uncommitted changes: they will be lost.")))
+          .when(remove && this.unpushed.length > 0, (el) => el.child(warn(`Submodule ${this.unpushed.join(", ")} has commits that aren't pushed anywhere: they will be lost.`)))
+          .when(Boolean(this.error), (el) => el.child(warn(this.error))),
+      )
+      .when(!remove && !blocked, (el) =>
+        el.child(textField(Input.new(this.input).w_full().text_color(k.onSurface), { label: "Branch", focused: this.inputFocused, error: Boolean(this.error) })))
+      .child(dialogActions({
+        onCancel: () => this.close(),
+        cancelLabel: blocked ? "Close" : "Cancel",
+        primary: blocked ? null : remove
+          ? { id: "wt-remove", label: this.busy ? "Removing…" : "Remove worktree", danger: true, disabled: this.busy, onClick: (_e, cx) => this.go(cx) }
+          : { id: "wt-create", label: this.busy ? "Creating…" : "Create", disabled: this.busy, onClick: (_e, cx) => this.go(cx) },
+      }));
   }
 }

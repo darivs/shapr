@@ -1,7 +1,12 @@
-// A text prompt. Enter saves, Esc cancels.
-import { View, div } from "gpui-kit";
-import { v_flex, h_flex, InputState, Input } from "gpui-base";
-import { run, props, closeOverlay, theme } from "herdr";
+// style: md3
+// A text prompt, as an MD3 dialog: props { title, value, hint, command: { name, args } }, the
+// same as Herdr's prompt. Enter saves (runs the command with { ...args, name }), Esc cancels.
+// Open it with frame: "none", width 400 and
+// dialogHeight({ extra: [fieldHeight({ supporting: Boolean(hint) })] }).
+import { View } from "gpui-kit";
+import { InputState, Input } from "gpui-base";
+import { run, props, closeOverlay } from "herdr";
+import { dialogSurface, dialogHeadline, dialogActions, textField, roles } from "./kit/index.js";
 
 export default class Prompt extends View {
   init(_props, cx) {
@@ -29,22 +34,12 @@ export default class Prompt extends View {
   }
 
   render() {
-    const t = theme();
+    const r = roles();
     const p = props() ?? {};
-    const label = (text) => div().pt(16).pb(7).text_size(11.5).text_color(t.dim).child(text);
-    const button = (id, text, primary, action) => h_flex().id(id).h(32).px(14).items_center().rounded(8)
-      .border_1().border_color(primary ? t.solid : t.input).bg(primary ? t.solid : t.raised)
-      .text_color(primary ? t.solid_foreground : t.foreground).text_size(12.5).font_medium().cursor_pointer()
-      .hover(s => s.opacity(0.88)).on_click(action).child(text);
-    return v_flex().id("prompt").track_focus(this.handle).on_key_down((e, cx) => this.key(e, cx))
-      .w_full().min_h(0).p(18).bg(t.popover).text_color(t.foreground)
-      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().child((p.title ?? "").replace(/^./, (c) => c.toUpperCase())))
-        .child(div().text_size(11).text_color(t.dim).child("Esc")))
-      .child(label("Name"))
-      .child(Input.new(this.input).h(36).px(10).rounded(9).border_1().border_color(this.inputFocused ? t.accent : t.input).bg(t.background).text_size(12.8).text_color(t.foreground))
-      .when(Boolean(p.hint), el => el.child(div().pt(6).text_size(11.5).text_color(t.dim).child(p.hint)))
-      .child(h_flex().pt(20).gap(8).justify_end()
-        .child(button("pm-cancel", "Cancel", false, () => closeOverlay(p.overlay)))
-        .child(button("pm-save", "Save", true, () => this.submit())));
+    const title = (p.title ?? "").replace(/^./, (c) => c.toUpperCase());
+    return dialogSurface().id("prompt").track_focus(this.handle).on_key_down((e, cx) => this.key(e, cx))
+      .child(dialogHeadline(title).min_w(0).truncate())
+      .child(textField(Input.new(this.input).w_full().text_color(r.onSurface), { label: "Name", supporting: p.hint || null, focused: this.inputFocused }))
+      .child(dialogActions({ onCancel: () => closeOverlay(p.overlay), primary: { id: "pm-save", label: "Save", onClick: () => this.submit() } }));
   }
 }

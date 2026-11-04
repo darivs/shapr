@@ -1,9 +1,18 @@
+// style: md3
+// The + menu, as an MD3 menu: Terminal, "Start an agent" (installed agents, 1-9 start them, and
+// two that aren't installed), New space, New worktree, Open worktree.
+// Openers size it with newMenuHeight(): menuHeight({ items: 4 + agent rows, dividers: 1,
+// headers: 1 }), agent rows = max(1, min(AGENT_ROWS, choices)) from the last agents this machine
+// reported (shared "new-menu.agents"); more agents scroll.
 import { View, div, svg, image } from "gpui-kit";
-import { h_flex, v_flex } from "gpui-base";
-import { theme, spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, shared, setShared } from "herdr";
+import { v_flex } from "gpui-base";
+import { spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, shared, setShared } from "herdr";
+import { menuSurface, menuItem, menuDivider, menuHeader, menuHeight, dialogHeight, fieldHeight, roles, icon, type, H, ROW, MENU } from "./kit/index.js";
 
 // The last agents each machine reported, shown at once while knownAgents() checks again.
 const KNOWN = "new-menu.agents";
+// Agent rows before the list scrolls.
+export const AGENT_ROWS = 8;
 
 function shortcut(name) {
   const k = keys().find(b => b.section === "global" && b.action === name);
@@ -22,6 +31,22 @@ function shortcut(name) {
   }).join(" ");
 }
 
+// Installed agents, then two that aren't.
+const choicesOf = (agents) => [...agents.filter(a => a.installed), ...agents.filter(a => !a.installed).slice(0, 2)];
+
+/** The menu's exact height, for openers: what it draws with the agents last reported. */
+export function newMenuHeight() {
+  const where = spaces().find(s => s.active)?.machine ?? "";
+  const n = choicesOf(shared(KNOWN)?.[where] ?? []).length;
+  return menuHeight({ items: 4 + Math.max(1, Math.min(AGENT_ROWS, n)), dividers: 1, headers: 1 });
+}
+
+// The worktree dialog, sized to what it draws (see shapr-worktree's header).
+const worktree = (props) => ({
+  mod: "shapr-worktree", kind: "dialog", frame: "none", props,
+  ...(props.action === "open" ? { width: 560, height: dialogHeight({ extra: [H.lg, 5 * ROW.two] }) } : { width: 460, height: dialogHeight({ bodyLines: 3, extra: [fieldHeight()] }) }),
+});
+
 export default class NewMenu extends View {
   init(_props, cx) {
     const machine = spaces().find(s => s.active)?.machine;
@@ -38,19 +63,18 @@ export default class NewMenu extends View {
       cx.notify();
     });
   }
-  row(id, icon, name, action, hint = "", enabled = true) {
-    const t = theme();
-    return h_flex().id(id).h(31).px(9).gap(10).rounded(7).items_center().flex_none()
-      .text_color(enabled ? t.foreground : t.dim).when(enabled, el => el.hover(s => s.bg(t.selected)))
-      .on_click(() => { if (enabled) { closeOverlay(props().overlay); action(); } })
-      .child(icon).child(div().flex_1().child(name)).child(div().text_size(11).text_color(t.dim).child(hint));
+  row(id, glyph, name, action, hint = "", enabled = true) {
+    return menuItem(id, name, { leading: glyph, hint: hint || null, disabled: !enabled, onClick: () => { closeOverlay(props().overlay); action(); } });
   }
   render() {
-    const t = theme();
+    const r = roles();
     const space = spaces().find(s => s.active);
     const installed = this.agents.filter(a => a.installed);
-    const choices = [...installed, ...this.agents.filter(a => !a.installed).slice(0, 2)];
-    return v_flex().min_h(0).w_full().h(Math.min(491, 167 + Math.max(1, choices.length) * 31)).bg(t.popover).p(5).text_size(12.8)
+    const choices = choicesOf(this.agents);
+    const folder = () => panes().find(p => p.focused)?.cwd;
+    const glyph = (path) => svg(path).size(20).text_color(r.onSurfaceVariant);
+    const rows = Math.max(1, Math.min(AGENT_ROWS, choices.length));
+    return menuSurface(v_flex()).w_full().max_h_full()
       .id("new-menu").track_focus(this.handle)
       .on_key_down((e) => {
         if (e.modifiers.control || e.modifiers.platform || e.modifiers.alt) return;
@@ -59,15 +83,16 @@ export default class NewMenu extends View {
         closeOverlay(props().overlay);
         run("tab.new", { name: agent.name, space: space?.id, argv: agent.run });
       })
-      .child(this.row("terminal", svg("icons/shell.svg").size(14), "Terminal", () => run("tab.new", { space: space?.id }), shortcut("tab.new")))
-      .child(div().px(9).pt(8).pb(4).text_size(11).text_color(t.dim).child("Start an agent"))
-      .child(v_flex().flex_1().min_h(0).overflow_y_scrollbar()
-        .children(choices.map((a, i) => this.row(a.key, a.tint ? svg(a.icon).size(14).text_color(t.foreground) : image(a.icon).size(14), a.name,
-          () => run("tab.new", { name: a.name, space: space?.id, argv: a.run }), a.installed ? (i < 9 ? String(i + 1) : "") : "not installed", a.installed)))
-        .when(this.agents.length === 0, el => el.child(div().px(9).py(6).text_color(t.dim).child(this.failed ? "Could not load agents" : "Checking installed agents…"))))
-      .child(div().h(1).mx(4).my(5).bg(t.border))
-      .child(this.row("space", div().w(14).child("+"), "New space", () => run("space.new"), shortcut("space.new")))
-      .child(this.row("worktree", svg("mods/shapr-workspace-chrome/branch.svg").size(14), "New worktree…", () => openOverlay({ mod: "shapr-worktree", kind: "dialog", width: 460, height: 280, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" } }), "", Boolean(space)))
-      .child(this.row("worktree-open", svg("mods/shapr-workspace-chrome/branch.svg").size(14), "Open worktree\u2026", () => openOverlay({ mod: "shapr-worktree", kind: "dialog", width: 560, height: 480, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" } }), "", Boolean(space)));
+      .child(this.row("terminal", glyph("icons/shell.svg"), "Terminal", () => run("tab.new", { space: space?.id }), shortcut("tab.new")))
+      .child(menuHeader("Start an agent"))
+      .child(v_flex().id("new-menu-agents").flex_shrink(1).min_h(0).max_h(rows * ROW.menu + (rows - 1) * MENU.gap).gap(MENU.gap).overflow_y_scrollbar()
+        .children(choices.map((a, i) => this.row(a.key, a.tint ? glyph(a.icon) : image(a.icon).size(20), a.name,
+          () => run("tab.new", { name: a.name, space: space?.id, argv: a.run }), a.installed ? (i < 9 ? String(i + 1) : "") : "Not installed", a.installed)))
+        .when(this.agents.length === 0, el => el.child(type(div(), "bodyMedium").h(ROW.menu).flex_none().flex().items_center().px(12).text_color(r.onSurfaceVariant)
+          .child(this.failed ? "Could not load agents" : "Checking installed agents…"))))
+      .child(menuDivider())
+      .child(this.row("space", glyph(icon("plus")), "New space", () => run("space.new"), shortcut("space.new")))
+      .child(this.row("worktree", glyph("mods/shapr-workspace-chrome/git-branch.svg"), "New worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "new" })), "", Boolean(space)))
+      .child(this.row("worktree-open", glyph("mods/shapr-workspace-chrome/git-branch.svg"), "Open worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "open" })), "", Boolean(space)));
   }
 }

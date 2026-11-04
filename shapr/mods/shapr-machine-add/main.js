@@ -1,14 +1,27 @@
+// style: md3
 // Add a machine: the hosts in ~/.ssh/config to pick from (or type one),
 // each added with one click (`hc machine add`). When the machine needs
 // something first (herdr-core installed there, a password, a new host
 // key), the same command opens in a small terminal window where you answer
 // it; the list sees the machine once it's added. Opened as a dialog
-// (`mod.open machine-add`); the sidebars' Add machine and the welcome
-// open it.
+// (`mod.open shapr-machine-add`: mod.json's overlay, width 560, frame "none", as tall as what it
+// draws); the sidebars' Add machine and the welcome open it. An MD3 dialog: its surface fits
+// its content (fitSurface below) and the host list shrinks and scrolls when the window is short.
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
-import { hc, exec, home, readTextFile, theme, props, closeOverlay, openOverlay } from "herdr";
+import { hc, exec, home, readTextFile, props, closeOverlay, openOverlay } from "herdr";
+import { dialogHeadline, dialogBody, textField, button, iconButton, listItem, heading, card, label, circularProgress, roles, icon, type, RADIUS, DIALOG, H } from "./kit/index.js";
+
+// The terminal window's title bar height.
+const BAR = 40;
+
+// dialogSurface() fills its overlay; this one fits its content (the overlay has no height) and
+// never outgrows the window: the same surface-container-high, rounded 28, 24 inside, 16 apart.
+function fitSurface(el = v_flex()) {
+  const r = roles();
+  return el.w_full().max_h_full().bg(r.surfaceHigh).rounded(RADIUS.dialog).p(DIALOG.pad).gap(DIALOG.gap).shadow_lg().overflow_hidden().text_color(r.onSurface);
+}
 
 const I = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
@@ -121,56 +134,25 @@ export default class MachineAdd extends View {
     if (os === "Darwin") this.macs[target] = { name: m.name, core: core ?? "~/.local/bin/herdr-core" };
   }
 
-  macCard(t, target) {
+  macCard(target) {
+    const r = roles();
     const mac = this.macs[target];
-    return v_flex()
-      .mx(10)
-      .mb(8)
-      .p(12)
-      .gap(8)
-      .rounded(10)
-      .bg(t.blocked + "14")
-      .border_1()
-      .border_color(t.blocked + "40")
-      .child(div().text_size(12.8).font_semibold().text_color(t.foreground).child(`${mac.name} is a Mac: allow its folders once`))
-      .child(
-        div()
-          .text_size(12.5)
-          .line_height("18px")
-          .text_color(t.muted)
-          .child("macOS asks on the Mac's own screen before an agent reads Desktop, Documents or Downloads, and waits until someone answers. Give herdr-core Full Disk Access there and it never asks again: in the list, press + and pick this file:"),
-      )
-      .child(div().px(8).py(4).rounded(6).bg(t.background).border_1().border_color(t.border).text_size(12).text_color(t.foreground).child(mac.core))
+    return card(v_flex().mx(16).mb(8).gap(8), { kind: "outlined" })
+      .child(label(`${mac.name} is a Mac: allow its folders once`, { style: "titleSmall" }))
+      .child(label("macOS asks on the Mac's own screen before an agent reads Desktop, Documents or Downloads, and waits until someone answers. Give herdr-core Full Disk Access there and it never asks again: in the list, press + and pick this file:", { role: "onSurfaceVariant" }))
+      .child(type(div(), "labelLarge").px(12).py(6).rounded(RADIUS.field).bg(r.surfaceHighest).text_color(r.onSurface).child(mac.core))
       .child(
         h_flex()
-          .gap(8)
+          .gap(12)
           .items_center()
-          .child(
-            div()
-              .id(`ma-mac-${target}`)
-              .h(28)
-              .px(12)
-              .flex()
-              .items_center()
-              .rounded(7)
-              .bg(t.solid)
-              .text_color(t.solid_foreground)
-              .text_size(12)
-              .font_medium()
-              .cursor_pointer()
-              .hover((s) => s.opacity(0.88))
-              .on_click((_e, cx) => {
-                exec("open", ["x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"], { on: mac.name }).catch(() => null);
-                this.opened[target] = true;
-                cx.notify();
-              })
-              .child(`Open the setting on ${mac.name}`),
-          )
-          .when(Boolean(this.opened[target]), (el) => el.child(div().text_size(12).text_color(t.dim).child("It's open on the Mac's screen."))),
+          .child(button(`ma-mac-${target}`, `Open the setting on ${mac.name}`, { kind: "tonal", size: "sm", onClick: () => {
+            exec("open", ["x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"], { on: mac.name }).catch(() => null);
+            this.opened[target] = true;
+          } }))
+          .when(Boolean(this.opened[target]), (el) => el.child(label("It's open on the Mac's screen.", { style: "bodySmall", role: "onSurfaceVariant" }))),
       );
   }
 
-  // The same add in a terminal, for what only the person can answer.
   async inTerminal(target) {
     const r = await hc(["run", "--bg", "--json", "--no-parent", "--name", `add-${target.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`.slice(0, 32), "--", "hc", "machine", "add", target]).catch(() => null);
     let address = null;
@@ -189,7 +171,7 @@ export default class MachineAdd extends View {
       layout: {
         type: "column",
         children: [
-          { type: "block", size: { px: 30 }, content: { mod: "shapr-machine-add", props: { part: "bar", target } } },
+          { type: "block", size: { px: BAR }, content: { mod: "shapr-machine-add", props: { part: "bar", target } } },
           { type: "block", content: { terminal: address } },
         ],
       },
@@ -205,155 +187,98 @@ export default class MachineAdd extends View {
   }
 
   // The terminal window's title bar.
-  bar(t) {
+  // The terminal window's title bar: surface-container, title small, a close icon button.
+  bar() {
+    const r = roles();
     return h_flex()
       .size_full()
-      .px(12)
-      .gap(8)
+      .pl(16)
+      .pr(4)
+      .gap(12)
       .items_center()
-      .bg(t.chrome)
+      .bg(r.surfaceContainer)
       .border_b(1)
-      .border_color(t.border)
-      .text_size(12.5)
-      .text_color(t.muted)
-      .child(svg(I("server")).size(14))
-      .child(div().flex_1().child(`Adding ${props().target}: answer it here`))
-      .child(
-        div()
-          .id("ma-bar-close")
-          .w(22)
-          .h(22)
-          .rounded(6)
-          .flex()
-          .items_center()
-          .justify_center()
-          .cursor_pointer()
-          .hover((s) => s.bg(t.hover))
-          .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-          .on_click(() => closeOverlay(props().overlay))
-          .child(svg(I("x")).size(12)),
-      );
+      .border_color(r.outlineVariant)
+      .text_color(r.onSurfaceVariant)
+      .child(svg(I("server")).size(18).flex_none())
+      .child(type(div(), "titleSmall").flex_1().min_w(0).truncate().text_color(r.onSurface).child(`Adding ${props().target}: answer it here`))
+      .child(iconButton("ma-bar-close", icon("x"), { size: "sm", tip: "Close", onClick: () => closeOverlay(props().overlay) }));
   }
 
-  row(t, target, label, sub) {
+  row(target, name, sub) {
+    const r = roles();
     const st = this.state[target];
     const done = this.isAdded(target);
     const right = done
-      ? h_flex().gap(5).items_center().text_size(12).text_color(t.ansi2).child(svg(I("circle-check")).size(13)).child("Added")
+      ? h_flex().gap(6).items_center().text_color(r.primary).child(svg(I("circle-check")).size(18)).child(type(div(), "labelLarge").child("Added"))
       : st === "adding"
-        ? h_flex().gap(6).items_center().text_size(12).text_color(t.muted).child(svg(I("spinner")).size(12).text_color(t.working).spin(900)).child("Connecting")
+        ? h_flex().gap(8).items_center().child(circularProgress(18)).child(label("Connecting", { style: "labelLarge", role: "onSurfaceVariant" }))
         : st === "terminal"
-          ? div().text_size(12).text_color(t.blocked).child("Waiting in its terminal")
-          : div()
-              .id(`ma-add-${target}`)
-              .px(10)
-              .h(26)
-              .flex()
-              .items_center()
-              .rounded(7)
-              .border_1()
-              .border_color(t.input)
-              .bg(t.raised)
-              .text_size(12)
-              .font_medium()
-              .cursor_pointer()
-              .hover((s) => s.bg(t.hover))
-              .on_click((_e, cx) => this.add(target, cx))
-              .child("Add");
+          ? label("Waiting in its terminal", { style: "labelLarge", role: "blocked" })
+          : button(`ma-add-${target}`, "Add", { kind: "outlined", size: "sm", onClick: (_e, cx) => this.add(target, cx) });
     const idle = !done && !st;
     return v_flex()
       .flex_none()
-      .child(
-        h_flex()
-          .id(`ma-row-${target}`)
-          .h(40)
-          .px(10)
-          .gap(10)
-          .items_center()
-          .rounded(8)
-          .hover((s) => s.bg(t.hover))
-          .when(idle, (el) => el.cursor_pointer().on_click((_e, cx) => this.add(target, cx)))
-          .child(svg(I("server")).size(15).text_color(t.muted))
-          .child(div().flex_none().text_size(13).text_color(t.foreground).child(label))
-          .child(div().flex_1().min_w(0).truncate().text_size(12).text_color(t.dim).child(sub ?? ""))
-          .child(right),
-      )
-      .when(typeof st === "string" && !["adding", "terminal"].includes(st), (el) => el.child(div().px(35).pb(6).text_size(12).text_color(t.blocked).child(st)))
-      .when(Boolean(this.macs[target]), (el) => el.child(this.macCard(t, target)));
+      .child(listItem(`ma-row-${target}`, name, {
+        supporting: sub || null,
+        leading: svg(I("server")).size(20),
+        trailing: right,
+        interactive: !idle,
+        onClick: idle ? (_e, cx) => this.add(target, cx) : null,
+      }))
+      .when(typeof st === "string" && !["adding", "terminal"].includes(st), (el) => el.child(label(st, { style: "bodySmall", role: "error" }).pl(52).pr(16).pb(8)))
+      .when(Boolean(this.macs[target]), (el) => el.child(this.macCard(target)));
   }
 
   render() {
-    const t = theme();
-    if (props()?.part === "bar") return this.bar(t);
+    if (props()?.part === "bar") return this.bar();
+    const r = roles();
     const hosts = this.hosts ?? [];
-    return v_flex()
+    const typed = this.typed.trim();
+    return fitSurface()
       .id("machine-add")
       .track_focus(this.handle)
       .on_key_down((e, cx) => this.key(e, cx))
-      .w_full()
-      .min_h(0)
-      .p(18)
-      .bg(t.popover)
-      .text_color(t.foreground)
-      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().child("Add a machine")).child(div().text_size(11).text_color(t.dim).child("Esc")))
-      .child(
-        div()
-          .pt(6)
-          .text_size(12.8)
-          .line_height("19px")
-          .text_color(t.muted)
-          .child("A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps."),
-      )
-      .child(div().pt(16).pb(6).text_size(11.5).font_medium().text_color(t.dim).child(hosts.length ? "From your ssh config" : "Your ssh config lists no hosts"))
+      .child(h_flex().w_full().gap(12).items_center()
+        .child(dialogHeadline("Add a machine").flex_1().min_w(0).truncate())
+        .child(iconButton("ma-close", icon("x"), { size: "md", tip: "Close", onClick: () => this.close() })))
+      .child(dialogBody("A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps."))
       .child(
         v_flex()
-          .id("ma-hosts")
-          .max_h(280)
-          .min_h(0)
           .flex_shrink(1)
-          .overflow_y_scroll()
-          .children(
-            this.hosts === null
-              ? [div().px(10).py(8).text_size(12.5).text_color(t.dim).child("Reading ~/.ssh/config…")]
-              : hosts.map((h) => this.row(t, h.alias, h.alias, [h.user, h.hostname].filter(Boolean).join("@") || (h.aliases.length ? `also ${h.aliases.join(", ")}` : ""))),
+          .min_h(0)
+          .mx(-16)
+          .child(heading(hosts.length ? "From your ssh config" : "Your ssh config lists no hosts"))
+          .child(
+            v_flex()
+              .id("ma-hosts")
+              .max_h(280)
+              .min_h(0)
+              .flex_shrink(1)
+              .overflow_y_scrollbar()
+              .children(
+                this.hosts === null
+                  ? [label("Reading ~/.ssh/config…", { role: "onSurfaceVariant" }).px(16).py(10)]
+                  : hosts.map((h) => this.row(h.alias, h.alias, [h.user, h.hostname].filter(Boolean).join("@") || (h.aliases.length ? `also ${h.aliases.join(", ")}` : ""))),
+              ),
           ),
       )
-      .child(div().pt(14).pb(6).text_size(11.5).font_medium().text_color(t.dim).child("Or type how ssh reaches it"))
       .child(
         h_flex()
+          .flex_none()
           .gap(8)
-          .child(
-            Input.new(this.input)
-              .flex_1()
-              .h(34)
-              .px(10)
-              .gap(6)
-              .items_center()
-              .rounded(8)
-              .border_1()
-              .border_color(this.inputFocused ? t.accent : t.input)
-              .bg(t.background)
-              .text_size(13)
-              .text_color(t.foreground),
-          )
-          .child(
-            div()
-              .id("ma-add-typed")
-              .h(34)
-              .px(14)
-              .flex()
-              .items_center()
-              .rounded(8)
-              .bg(t.solid)
-              .text_color(t.solid_foreground)
-              .text_size(12.5)
-              .font_medium()
-              .when(!this.typed.trim(), (el) => el.opacity(0.4))
-              .cursor_pointer()
-              .on_click((_e, cx) => this.add(this.typed, cx))
-              .child("Add"),
-          ),
+          .items_end()
+          .child(div().flex_1().min_w(0).child(textField(Input.new(this.input).w_full().text_color(r.onSurface), {
+            label: "Or type how ssh reaches it",
+            focused: this.inputFocused,
+            error: Boolean(typed && typeof this.state[typed] === "string" && !["adding", "terminal"].includes(this.state[typed])),
+          })))
+          .child(button("ma-add-typed", "Add", { kind: "filled", size: "lg", disabled: !typed, onClick: (_e, cx) => this.add(this.typed, cx) })),
       )
-      .when(Boolean(this.typed.trim() && this.state[this.typed.trim()]), (el) => el.child(div().pt(6).text_size(12).text_color(t.blocked).child(String(this.state[this.typed.trim()]))));
+      .when(Boolean(typed && this.state[typed]), (el) => {
+        const st = this.state[typed];
+        const text = st === "adding" ? "Connecting…" : st === "terminal" ? "Waiting in its terminal" : String(st);
+        return el.child(label(text, { style: "bodySmall", role: st === "adding" ? "onSurfaceVariant" : st === "terminal" ? "blocked" : "error" }).mt(-8));
+      });
   }
 }

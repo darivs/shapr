@@ -1,14 +1,16 @@
-// Go to a tab. Drops from the Terminals layout's space chip (popup, at: "top"). Spaces with
+// style: md3
+// Go to a tab. Drops from the sidebar's search (popup, at: "top", mod.json's overlay), as an MD3
+// search view: a search bar over the results, on surface-container-high, rounded 28. Spaces with
 // something that needs you come first, quiet spaces (no agent running)
 // fold into "earlier". Type to filter, ↑/↓ and Enter to go, ctrl+d to close
 // a tab, Esc to leave. Last rows: new work (a tab here, a space on this
-// computer or on each connected machine).
+// computer or on each connected machine). The surface fits its rows (at most LIST tall, then
+// they scroll) and never outgrows the overlay (height 0.8 of the window).
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
-import { agents, spaces, terminals, run, hc, theme, settings, props, closeOverlay, openOverlay, shared, setShared } from "herdr";
-
-const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b7cf6", ansi2: "#3fae6a", ansi1: "#d9649a" };
+import { agents, spaces, terminals, run, hc, theme, props, closeOverlay, shared, setShared } from "herdr";
+import { roles, press, icon, type, label, statusMark, divider, onStatus, layoutPx, H, ROW, RADIUS, SHAPE } from "./kit/index.js";
 
 // Space colors, kept by space id in shared "space.colors": a theme
 // color name ("ansi6") or a picked #rrggbb. A space seen without one gets
@@ -28,11 +30,18 @@ function spaceColors() {
   if (changed) setShared("space.colors", kept);
   return kept;
 }
-function spaceColor(t, p) {
-  if (p.name === "~") return t.dim;
+function spaceColor(p) {
+  const t = theme();
+  if (p.name === "~") return roles().onSurfaceVariant;
   const c = spaceColors()[p.id] ?? PROJECT_COLORS[0];
-  return c.startsWith("#") ? c : (MARK[c] ?? t[c]);
+  return c.startsWith("#") ? c : (t[c] ?? roles().primary);
 }
+
+// Row heights in the strip; the list is at most LIST tall.
+const ROWS = () => ({ head: 36, earlier: ROW.one + 9, new: ROW.one, ctx: ROW.one, space: ROW.one });
+const LIST = 400;
+const PAD = 12;
+
 
 export default class Picker extends View {
   init(_props, cx) {
@@ -106,124 +115,85 @@ export default class Picker extends View {
     else if (r.kind === "space") run("space.new", { machine: r.machine ?? "" });
   }
 
-  glyph(t, st) {
-    if (st === "working") return svg("mods/shapr-workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900);
-    return div().w(12).flex_none().text_color(t[st] ?? t.dim).child(st === "idle" ? "○" : st ? "●" : "·");
-  }
-
   render() {
-    const t = theme();
+    const r = roles();
     const rows = this.rows();
-    const pickable = rows.filter((r) => r.kind === "ctx" || r.kind === "new" || r.kind === "space");
+    const pickable = rows.filter((x) => x.kind === "ctx" || x.kind === "new" || x.kind === "space");
     // Opens on where you are.
-    if (this.at === null) this.at = Math.max(0, pickable.findIndex((r) => r.kind === "ctx" && r.w.active && r.ctx.active));
+    if (this.at === null) this.at = Math.max(0, pickable.findIndex((x) => x.kind === "ctx" && x.w.active && x.ctx.active));
     this.at = Math.min(this.at, pickable.length - 1);
     const sel = pickable[this.at];
     // One continuous strip: each row (and the group title before it) at a fixed
     // y. Scrolling moves the strip only as far as it takes to keep the selected
     // row in view, so the arrows can't run the selection off the list.
-    const H = { head: 29, earlier: 35, new: 36, ctx: 32, space: 32 };
+    const HT = ROWS();
     const tops = [];
     let y = 0;
-    rows.forEach((r) => { tops.push(y); y += H[r.kind] ?? 32; });
+    rows.forEach((x) => { tops.push(y); y += HT[x.kind] ?? ROW.one; });
     const total = y;
-    const height = Math.min(320, this.listHeight ?? 320);
+    const height = Math.min(LIST, this.listHeight ?? LIST);
     const fixed = total > height;
     const maxScroll = Math.max(0, total - height);
     this.scroll = Math.max(0, Math.min(this.scroll, maxScroll));
     const si = rows.indexOf(sel);
     if (si >= 0) {
       if (tops[si] < this.scroll) this.scroll = tops[si];
-      if (tops[si] + (H[sel.kind] ?? 32) > this.scroll + height) this.scroll = tops[si] + (H[sel.kind] ?? 32) - height;
+      if (tops[si] + (HT[sel.kind] ?? ROW.one) > this.scroll + height) this.scroll = tops[si] + (HT[sel.kind] ?? ROW.one) - height;
     }
     const place = (el, i) =>
       fixed
-        ? el.absolute().left(0).right(0).top(tops[i] - this.scroll).bottom(height - (tops[i] + (H[rows[i].kind] ?? 32) - this.scroll))
+        ? el.absolute().left(0).right(0).top(tops[i] - this.scroll).h(HT[rows[i].kind] ?? ROW.one)
         : el;
-    const visible = (i) => !fixed || (tops[i] + (H[rows[i].kind] ?? 32) > this.scroll && tops[i] < this.scroll + height);
+    const visible = (i) => !fixed || (tops[i] + (HT[rows[i].kind] ?? ROW.one) > this.scroll && tops[i] < this.scroll + height);
 
-    const row = (r) => {
-      if (r.kind === "head") {
-        return h_flex()
-          .px(10)
-          .pt(10)
-          .pb(3)
-          .gap(8)
-          .items_center()
-          .text_size(11)
-          .font_semibold()
-          .text_color(t.dim)
-          .child(h_flex().size(18).rounded(5).bg(spaceColor(t, r.w)).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child([...r.w.name][0]?.toUpperCase() ?? "?"))
-          .child(r.w.name);
+    // A pickable row: 40 tall, rounded md, hover layer; the keyboard's row on secondary-container.
+    const pick = (id, on, onClick) => press(h_flex().id(id).h(ROW.one).flex_none().px(16).gap(12).items_center().rounded(RADIUS.row)
+      .text_color(on ? r.onSecondaryContainer : r.onSurface).when(on, (el) => el.bg(r.secondaryContainer)), onClick, { layer: on ? "lift" : r.hover });
+
+    const row = (x) => {
+      if (x.kind === "head") {
+        return type(h_flex(), "titleSmall").h(36).flex_none().px(16).gap(12).items_center().text_color(r.onSurfaceVariant)
+          .child(type(h_flex(), "labelMedium", true).size(20).flex_none().rounded(SHAPE.sm).bg(spaceColor(x.w)).items_center().justify_center()
+            .text_color(onStatus()).child([...x.w.name][0]?.toUpperCase() ?? "?"))
+          .child(div().flex_1().min_w(0).truncate().child(x.w.name));
       }
-      if (r.kind === "earlier") {
-        return h_flex()
-          .id("pk-earlier")
-          .mt(6)
-          .px(10)
-          .py(6)
-          .border_t(1)
-          .border_color(t.border)
-          .text_size(12)
-          .text_color(t.dim)
-          .cursor_pointer()
-          .hover((s) => s.text_color(t.foreground))
-          .on_click((_e, cx) => {
-            this.showEarlier = !this.showEarlier;
-            cx.notify();
-          })
-          .child(`earlier: ${r.count} quiet space${r.count > 1 ? "s" : ""} ${this.showEarlier ? "▴" : "▾"}`);
+      if (x.kind === "earlier") {
+        return v_flex().flex_none()
+          .child(divider({ space: 4 }))
+          .child(press(h_flex().id("pk-earlier").h(ROW.one).flex_none().px(16).gap(12).items_center().rounded(RADIUS.row).text_color(r.onSurfaceVariant),
+            () => { this.showEarlier = !this.showEarlier; }, { layer: r.hover })
+            .child(svg(icon(this.showEarlier ? "chevron-down" : "chevron-right")).size(20).flex_none())
+            .child(type(div(), "labelLarge").flex_1().min_w(0).truncate().child(`Earlier: ${x.count} quiet space${x.count > 1 ? "s" : ""}`)));
       }
-      const on = r === sel;
-      if (r.kind === "new" || r.kind === "space") {
-        const label = r.kind === "new" ? "new tab" : r.machine ? `new space on ${r.machine}` : "new space";
-        return h_flex()
-          .id(r.kind === "new" ? "pk-new" : `pk-space-${r.machine ?? "here"}`)
-          .mx(4)
-          .when(r.kind === "new", (el) => el.mt(4))
-          .px(10)
-          .h(32)
-          .items_center()
-          .rounded(7)
-          .gap(8)
-          .text_color(t.muted)
-          .cursor_pointer()
-          .when(on, (el) => el.bg(t.hover))
-          .hover((s) => s.bg(t.hover))
-          .on_click(() => this.go(r))
-          .child(div().w(12).child("+"))
-          .child(label);
+      const on = x === sel;
+      if (x.kind === "new" || x.kind === "space") {
+        const text = x.kind === "new" ? "New tab" : x.machine ? `New space on ${x.machine}` : "New space";
+        return pick(x.kind === "new" ? "pk-new" : `pk-space-${x.machine ?? "here"}`, on, () => this.go(x))
+          .child(svg(icon("plus")).size(20).flex_none().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant))
+          .child(type(div(), "labelLarge").flex_1().min_w(0).truncate().child(text));
       }
-      const who = r.mine.map((a) => a.program?.name ?? "agent").join(" · ");
-      const here = r.w.active && r.ctx.active;
-      return h_flex()
-        .id(`pk-${r.ctx.id}`)
-        .mx(4)
-        .px(10)
-.h(32)
-        .rounded(7)
-        .gap(10)
-        .items_center()
-        .cursor_pointer()
-        .when(on, (el) => el.bg(t.hover))
-        .hover((s) => s.bg(t.hover))
-        .on_click(() => this.go(r))
-        .child(this.glyph(t, r.ctx.status))
-        .child(div().flex_1().truncate().text_color(t.foreground).when(here, (d) => d.font_semibold()).child(r.ctx.name))
-        .when(r.ctx.status === "blocked", (el) => el.child(div().text_size(11).text_color(t.blocked).child("needs you")))
-        .when(r.ctx.status === "done", (el) => el.child(div().text_size(11).text_color(t.done).child("finished")))
-        .child(div().text_size(11).text_color(t.dim).child(who + (r.team ? `  +${r.team}` : "")));
+      const who = x.mine.map((a) => a.program?.name ?? "agent").join(" · ");
+      const here = x.w.active && x.ctx.active;
+      const st = x.ctx.status;
+      return pick(`pk-${x.ctx.id}`, on, () => this.go(x))
+        .child(div().w(20).flex_none().flex().items_center().justify_center().when(Boolean(st), (el) => el.child(statusMark(st))))
+        .child(type(div(), "bodyMedium", here).flex_1().min_w(0).truncate().child(x.ctx.name))
+        .when(st === "blocked", (el) => el.child(type(div(), "labelMedium", true).flex_none().text_color(r.blocked).child("Needs you")))
+        .when(st === "done", (el) => el.child(type(div(), "labelMedium").flex_none().text_color(r.done).child("Finished")))
+        .when(Boolean(who || x.team), (el) => el.child(type(div(), "labelSmall").flex_none().max_w(200).truncate().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant).child(who + (x.team ? `  +${x.team}` : ""))));
     };
 
     return v_flex()
       .id("picker")
       .track_focus(this.handle)
       .w_full()
-      .min_h(0)
-      .p(18)
-      .gap(10)
-      .bg(t.popover)
-      .text_size(13)
+      .max_h_full()
+      .p(PAD)
+      .gap(8)
+      .bg(r.surfaceHigh)
+      .rounded(RADIUS.dialog)
+      .shadow_lg()
+      .text_color(r.onSurface)
       .on_key_down((e, cx) => {
         const k = e.key;
         if (k === "escape") return this.close();
@@ -238,31 +208,33 @@ export default class Picker extends View {
         cx.stop_propagation();
         cx.notify();
       })
-      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().text_color(t.foreground).child("Go to…")).child(div().text_size(11).text_color(t.dim).child("Esc")))
+      // The search bar: a 48 pill on surface-container-highest, search icon leading.
       .child(
-        h_flex().h(36).flex_none().px(10).gap(8).items_center().rounded(9).border_1().border_color(t.accent).bg(t.background)
-          .child(svg("mods/shapr-workspace-chrome/search.svg").size(15).text_color(t.dim))
-          .child(Input.new(this.input).flex_1().h_full().text_size(12.8).text_color(t.foreground)),
+        h_flex().h(H.xl).flex_none().pl(16).pr(8).gap(12).items_center().rounded_full().bg(r.surfaceHighest)
+          .child(svg(icon("search")).size(20).flex_none().text_color(r.onSurfaceVariant))
+          .child(type(Input.new(this.input), "bodyLarge").flex_1().min_w(0).text_color(r.onSurface))
+          .child(label("Esc", { style: "labelMedium", role: "onSurfaceVariant" }).flex_none().pr(8)),
       )
       .child(
         v_flex()
           .id("pk-list")
           .on_size_change((size, cx) => {
-            this.listHeight = size.height / settings().zoom;
+            this.listHeight = layoutPx(size.height);
             cx.notify();
           })
-          .h(Math.min(320, total))
+          .h(Math.min(LIST, total))
           .min_h(0)
-          .mb(6)
+          .flex_shrink(1)
+          .relative()
           .when(fixed, (el) =>
             el.overflow_hidden().on_scroll_wheel((e, cx) => {
               this.scroll = Math.max(0, Math.min(this.scroll - e.delta.y, maxScroll));
               // The selection follows the wheel, so the next frame doesn't scroll back to it.
               while (this.at < pickable.length - 1 && tops[rows.indexOf(pickable[this.at])] < this.scroll) this.at++;
-              while (this.at > 0 && tops[rows.indexOf(pickable[this.at])] + (H[pickable[this.at].kind] ?? 32) > this.scroll + height) this.at--;
+              while (this.at > 0 && tops[rows.indexOf(pickable[this.at])] + (HT[pickable[this.at].kind] ?? ROW.one) > this.scroll + height) this.at--;
               cx.notify();
             }))
-          .children(rows.map((r, i) => (visible(i) ? place(row(r), i) : null)).filter(Boolean)),
+          .children(rows.map((x, i) => (visible(i) ? place(row(x), i) : null)).filter(Boolean)),
       );
   }
 }
