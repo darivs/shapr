@@ -186,3 +186,34 @@ test("the sidebar's lists show their scrollbars only while scrolling, empty, wit
     assert.deepEqual(argsOf(tree, "mode"), [["scrolling"]]);
   }
 });
+
+// The footer's machine row: Herdr's machines() (this computer included) and agents() on all of them.
+const agentsOn = (n) => Array.from({ length: n }, (_, i) => ({ ...AGENTS[i % 4], address: `m${i}` }));
+async function footer(over = {}) {
+  const { default: Chrome } = await import("../shapr/mods/shapr-workspace-chrome/main.js");
+  const h = reset({ props: { footer: true }, ...over });
+  const v = new Chrome(), cx = context();
+  v.init({ footer: true }, cx);
+  return { h, v, cx, tree: v.render(cx) };
+}
+// What a node shows: the text and icons along paths where no node is faded out.
+function shown(n, out = { texts: [], svgs: [] }) {
+  const x = n?.__node;
+  if (!x) { if (typeof n === "string") out.texts.push(n); return out; }
+  if (own(x, "opacity").at(-1) === 0) return out;
+  if (x.kind === "svg") out.svgs.push(x.arg);
+  for (const c of x.children) shown(c, out);
+  return out;
+}
+
+test("the footer's machine row reads this computer and its agents, or the machines and all their agents", async () => {
+  const one = await footer({ agents: agentsOn(11) });
+  const row = byId(one.tree, "machine");
+  assert.deepEqual(shown(node(row)).texts, ["This computer · 11 agents"]);
+  assert.deepEqual(shown(node(row)).svgs, ["mods/shapr-workspace-chrome/computer.svg"]);
+  // The dot and the count are on-surface-variant.
+  const ink = [...walk(node(row))].find((x) => x?.children?.includes("This computer · 11 agents"));
+  assert.deepEqual([...new Set([...own(row, "text_color"), ...(ink ? own(ink, "text_color") : [])])], [one.h.theme.muted]);
+  const two = await footer({ agents: agentsOn(18), machines: [{ name: null, layout: "ready" }, { name: "box", layout: "ready" }] });
+  assert.deepEqual(shown(node(byId(two.tree, "machine"))).texts, ["2 machines · 18 agents"]);
+});
