@@ -31,8 +31,11 @@ export function tabMenuSpec(tab, space) {
  * right-clicks go (a terminal), Send back to its parent (a kept sub-agent), a divider, Close pane.
  */
 export function terminalMenuSpec(pane, terminal) {
-  const t = terminals().find((x) => x.address === terminal);
-  const items = 4 + (t ? 1 : 0) + (t?.parent ? 1 : 0);
+  const all = terminals();
+  const t = all.find((x) => x.address === terminal);
+  // Send back only when the parent still exists, as shapr-menu draws it.
+  const parent = t?.parent && all.find((x) => x.address === t.parent);
+  const items = 4 + (t ? 1 : 0) + (parent ? 1 : 0);
   return { mod: "shapr-menu", kind: "popup", frame: "none", width: OVERLAY_W.menu, height: menuHeight({ items, dividers: 1 }), props: { tab: "pane", target: { pane, terminal } } };
 }
 
