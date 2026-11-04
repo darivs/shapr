@@ -127,3 +127,10 @@ test("--crop and --mask find the sidebar and its lists from the layout when no l
   assert.notDeepEqual(fillColor, pixel(before, 30, 280));
   for (const [x, y] of [[0, 280], [199, 611], [0, 1100], [199, 1127]]) assert.deepEqual(pixel(img, x, y), fillColor, `masked ${x},${y}`);
 });
+
+test("a shot is kept only while the window shows the demo space", async () => {
+  const { onDemo } = await import("../bin/shots");
+  assert.equal(onDemo({ space: "sp1" }, "sp1"), true);
+  assert.equal(onDemo({ space: "sp2" }, "sp1"), false, "another space is on screen");
+  assert.equal(onDemo({ space: "sp1" }, null), false, "no demo space is up");
+});
