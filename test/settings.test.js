@@ -144,7 +144,7 @@ function drawnHeight(x, line = null) {
 test("settingsSize() is what the window draws, at every density; mod.json holds the standard one", () => {
   reset();
   const j = JSON.parse(readFileSync(new URL("mod.json", dir), "utf8"));
-  assert.deepEqual(j.overlay, { kind: "dialog", ...settingsSize(), frame: "none" });
+  assert.deepEqual(j.overlay, { kind: "dialog", width: WIDTH, height: 0.92, frame: "none" });
   assert.equal(settingsSize().width, WIDTH);
   assert.equal(settingsSize().height, settingsHeight());
   const heights = {};
@@ -152,9 +152,9 @@ test("settingsSize() is what the window draws, at every density; mod.json holds 
     reset({ shared: { [K.SETTINGS]: { density } } });
     const v = open();
     heights[density] = settingsSize().height;
-    assert.equal(drawnHeight(v.render()), heights[density], density);
+    assert.equal(drawnHeight(v.surface()), heights[density], density);
     v.error = true; // the error text takes the supporting text's place: the same height
-    assert.equal(drawnHeight(v.render()), heights[density], `${density}, hex in error`);
+    assert.equal(drawnHeight(v.surface()), heights[density], `${density}, hex in error`);
   }
   assert.equal(CHOICES.motion.length, 3);
   // Nine rows follow density: swatches, the field box, contrast, density, corners, three motion rows, the actions.
@@ -162,13 +162,10 @@ test("settingsSize() is what the window draws, at every density; mod.json holds 
   assert.equal(heights.standard - heights.compact, 9 * 4);
 });
 
-test("the footer's opener sizes the settings window as it draws, at every density", async () => {
-  const { reset } = await import("herdr");
-  const K = await import("../kit/index.js");
-  const { settingsSize } = await import("../shapr/mods/shapr-settings/main.js");
-  for (const density of ["compact", "standard", "comfortable"]) {
-    reset().shared[K.SETTINGS] = { density };
-    assert.equal(K.settingsSpec().height, settingsSize().height, density);
-    assert.equal(K.settingsSpec().width, settingsSize().width, density);
-  }
+test("the footer's opener gives the settings window most of the window; it draws its own height inside", async () => {
+  const K2 = await import("../kit/index.js");
+  reset();
+  assert.deepEqual({ w: K2.settingsSpec().width, h: K2.settingsSpec().height, f: K2.settingsSpec().frame }, { w: WIDTH, h: 0.92, f: "none" });
+  const calls = open().render().__node.children[0].__node.calls;
+  assert.ok(calls.some(([m, a]) => m === "h" && a[0] === settingsHeight()));
 });

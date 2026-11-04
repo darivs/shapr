@@ -5,7 +5,6 @@ import { spaces, shared } from "herdr";
 import { menuHeight } from "./menu.js";
 import { dialogHeight } from "./dialog.js";
 import { fieldHeight } from "./text-field.js";
-import { densityOffset } from "./tokens.js";
 
 export const OVERLAY_W = { newMenu: 280, menu: 240, prompt: 400, settings: 520 };
 // Agent rows the + menu shows before it scrolls (shapr-new-menu's AGENT_ROWS).
@@ -50,7 +49,10 @@ export function renameSpec(kind, id) {
   return { mod: "shapr-prompt", kind: "dialog", frame: "none", width: OVERLAY_W.prompt, height: dialogHeight({ extra: [fieldHeight({ supporting: true })] }), props: p };
 }
 
-/** shapr's settings window: 652 tall at standard density (its settingsSize()), 9 controls that follow density. */
+/**
+ * shapr's settings window: most of the window, since its 652 (at standard density) can be taller
+ * than a window at a large zoom; the window draws its surface centred at its own height.
+ */
 export function settingsSpec() {
-  return { mod: "shapr-settings", kind: "dialog", frame: "none", width: OVERLAY_W.settings, height: 652 + 9 * densityOffset() };
+  return { mod: "shapr-settings", kind: "dialog", frame: "none", width: OVERLAY_W.settings, height: 0.92 };
 }

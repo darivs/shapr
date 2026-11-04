@@ -153,7 +153,8 @@ export default class Settings extends View {
       .child(K.textField(Input.new(this.input), { label: "Hex", supporting, focused: this.focused, error: this.error }));
   }
 
-  render() {
+  // What the window draws, at the height it takes (settingsHeight() counts it).
+  surface() {
     const p = K.prefs();
     // Radio rows run 16 past the section's edge, so each radio lines up under the title.
     const motion = this.section("Motion", v_flex().flex_none().mx(-K.SPACE.lg).children(CHOICES.motion.map(([v, name, about]) => K.listItem(`settings-motion-${v}`, name, {
@@ -167,7 +168,10 @@ export default class Settings extends View {
         this.row("contrast", "Contrast")))
       .child(this.section("Size and shape", this.row("density", "Density"), this.row("corners", "Corners")))
       .child(motion);
-    return K.dialogSurface(v_flex().id("shapr-settings"))
+    // The overlay is most of the window (a window shorter than the dialog at a large zoom would
+    // clip it): the surface sits centred at the height it draws, and the body scrolls when the
+    // window is shorter than that.
+    return K.dialogSurface(v_flex().id("shapr-settings"), { fit: true })
       .child(K.dialogHeadline("Theme"))
       .child(body)
       .child(K.dialogActions({
@@ -175,5 +179,9 @@ export default class Settings extends View {
         onCancel: () => this.reset(), cancelLabel: "Reset",
         primary: { id: "settings-done", label: "Done", onClick: () => this.close() },
       }));
+  }
+
+  render() {
+    return v_flex().size_full().justify_center().child(this.surface().h(settingsHeight()));
   }
 }
