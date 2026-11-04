@@ -64,3 +64,13 @@ test("in a narrow pane the header's name truncates and nothing runs past the car
   assert.ok(!name.calls.some(([m]) => m === "flex_none"), "the name never shrinks");
   assert.ok(name.calls.some(([m, a]) => m === "min_w" && a[0] === 0), "the name has no minimum width");
 });
+
+test("a blocked pane's header keeps its name over status text: the mark alone says it", async () => {
+  const { reset } = await import("herdr");
+  const { texts } = await import("./stubs/element.js");
+  const { default: Pane } = await import("../shapr/mods/shapr-pane/main.js");
+  reset({ props: { pane: "p1" }, panes: [{ pane: "p1", title: "Layout file", cwd: "/user-home/demo", status: "blocked" }] });
+  const shown = texts(new Pane().render(cx));
+  assert.ok(shown.includes("Layout file"));
+  assert.ok(!shown.includes("Needs you"), `the header shows ${shown}`);
+});
