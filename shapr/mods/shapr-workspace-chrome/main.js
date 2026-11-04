@@ -1,7 +1,7 @@
 // style: md3
 import { View, div, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces, focused } from "herdr";
+import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces, focused, machines, agents } from "herdr";
 import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
@@ -85,6 +85,13 @@ export default class WorkspaceChrome extends View {
     });
   }
 
+  // Where agents run: this computer, or how many machines (this computer among them), and the
+  // agents on all of them.
+  machines() {
+    const n = machines().length, count = agents().length;
+    return `${n > 1 ? `${n} machines` : "This computer"} · ${count} agents`;
+  }
+
   // The sidebar footer: Theme (shapr's settings), Settings (Herdr's, with a dot when an update is
   // ready) and Add machine, as
   // navigation drawer items; on the rail, icon buttons with their names as tooltips.
@@ -105,7 +112,7 @@ export default class WorkspaceChrome extends View {
       : v_flex().flex_1().min_h(0).px(SPACE.md).justify_center()
         .child(navItem("theme", "Theme", { icon: glyph("palette"), onClick: theme }))
         .child(navItem("settings", "Settings", { icon: glyph("settings"), badge: ready ? dot() : null, onClick: settings }))
-        .child(navItem("machine", "Add machine", { icon: icon("add"), onClick: machine }));
+        .child(navItem("machine", this.machines(), { icon: glyph("computer"), onClick: machine }));
     return v_flex().size_full().bg(r.surface).child(rows);
   }
 
