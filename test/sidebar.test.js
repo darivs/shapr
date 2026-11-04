@@ -158,6 +158,23 @@ test("no line separates the sidebar's sections, and the footer's block is the he
   assert.equal(find(L, "sidebar-footer").size.px, 136);
 });
 
+test("folded to the rail, each space shows its icon, the active one filled, and status stays visible", async () => {
+  const layout = { id: "root", children: [{ id: "sidebar", size: { px: 76 }, children: [] }] };
+  const { h, tree } = await spacesList({ layout });
+  const shapr = byId(tree, "space-s1"), notes = byId(tree, "space-s3"), wt = byId(tree, "space-s2");
+  assert.deepEqual(svgs(shapr), ["mods/shapr-workspace-chrome/folder-fill.svg"]);
+  assert.deepEqual(svgs(notes), ["mods/shapr-workspace-chrome/folder.svg"]);
+  assert.deepEqual(svgs(wt), ["mods/shapr-workspace-chrome/call_split.svg"]);
+  // No number, no name: the icon says it, the tooltip names it.
+  assert.deepEqual(texts(node(shapr)), []);
+  assert.match(argsOf(node(shapr), "tooltip")[0][0], /shapr/);
+  assert.ok(deep(notes, "bg").includes(h.theme.done), "done mark");
+  assert.ok(deep(wt, "bg").includes(h.theme.blocked), "blocked mark");
+  const { tree: agents } = await agentsList("priority", { layout });
+  assert.ok(deep(byId(agents, "ag-t0"), "bg").includes(h.theme.blocked), "agent blocked mark");
+  assert.ok(deep(byId(agents, "ag-t1"), "bg").includes(h.theme.done), "agent done mark");
+});
+
 test("the sidebar's lists show their scrollbars only while scrolling, empty, with one item or overflowing", async () => {
   const many = Array.from({ length: 40 }, (_, n) => ({ ...AGENTS[n % 4], address: `x${n}`, pane: `px${n}`, seq: n }));
   const lists = [
