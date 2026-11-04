@@ -10,7 +10,7 @@
 import { View } from "gpui-kit";
 import { v_flex } from "gpui-base";
 import { run, props, closeOverlay, openOverlay, keys, terminals, spaces, panes, exec } from "herdr";
-import { menuSurface, menuItem, menuDivider, dialogHeight, fieldHeight, roles, icon, H, ROW, TYPE } from "./kit/index.js";
+import { menuSurface, menuItem, menuDivider, dialogHeight, fieldHeight, roles, icon, textLines, H, ROW } from "./kit/index.js";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
 function place(s) {
@@ -101,10 +101,6 @@ function shortcut(name, args) {
   return k ? k.keys : "";
 }
 
-// Lines a text takes at a width, for sizing a dialog before it draws (Roboto Flex runs about
-// 0.55 em a character; the estimate errs long).
-const lines = (text, style, width) => Math.max(1, Math.ceil((String(text ?? "").length * TYPE[style][0] * 0.55) / width));
-
 // The dialogs this menu opens, sized to what they draw (see each mod's header).
 const PROMPT_W = 400, CONFIRM_W = 360, WORKTREE_W = 460, WORKTREE_OPEN_W = 560, INNER = 48;
 export function promptSpec(p) {
@@ -112,14 +108,14 @@ export function promptSpec(p) {
 }
 export function confirmSpec(p) {
   const w = CONFIRM_W - INNER;
-  return { mod: "shapr-confirm", kind: "dialog", frame: "none", width: CONFIRM_W, height: dialogHeight({ headlineLines: lines(p.title, "headlineSmall", w), bodyLines: p.detail ? lines(p.detail, "bodyMedium", w) : 0 }), props: p };
+  return { mod: "shapr-confirm", kind: "dialog", frame: "none", width: CONFIRM_W, height: dialogHeight({ headlineLines: textLines(p.title, "headlineSmall", w), bodyLines: p.detail ? textLines(p.detail, "bodyMedium", w) : 0 }), props: p };
 }
 export function worktreeSpec(p) {
   const w = WORKTREE_W - INNER;
   if (p.action === "open") return { mod: "shapr-worktree", kind: "dialog", frame: "none", width: WORKTREE_OPEN_W, height: dialogHeight({ extra: [H.lg, 5 * ROW.two] }), props: p };
   if (p.action === "remove") {
     const name = spaces().find((s) => s.id === p.space)?.name ?? "";
-    return { mod: "shapr-worktree", kind: "dialog", frame: "none", width: WORKTREE_W, height: dialogHeight({ headlineLines: lines(`Remove worktree ${name}?`, "headlineSmall", w), bodyLines: 3 }), props: p };
+    return { mod: "shapr-worktree", kind: "dialog", frame: "none", width: WORKTREE_W, height: dialogHeight({ headlineLines: textLines(`Remove worktree ${name}?`, "headlineSmall", w), bodyLines: 3 }), props: p };
   }
   return { mod: "shapr-worktree", kind: "dialog", frame: "none", width: WORKTREE_W, height: dialogHeight({ bodyLines: 3, extra: [fieldHeight()] }), props: p };
 }

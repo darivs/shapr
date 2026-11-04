@@ -3,10 +3,10 @@
 // Reads keys.json through keys(); edit keys.json to change any of them.
 // Open it with frame: "none", width 560, height 0.8 (mod.json's overlay); the list scrolls.
 
-import { View, div, svg } from "gpui-kit";
+import { View } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { keys, props, closeOverlay } from "herdr";
-import { dialogSurface, dialogHeadline, fieldBox, heading, iconButton, label, roles, icon, type, ROW, RADIUS, SHAPE } from "./kit/index.js";
+import { dialogSurface, dialogHeadline, searchBar, shortcut, heading, iconButton, label, roles, icon, ROW, RADIUS } from "./kit/index.js";
 
 const GROUPS = [
   ["Spaces", /^space\./],
@@ -23,10 +23,6 @@ function describe(action) {
   const words = name.replace(/[._]/g, " ");
   return arg ? `${words} ${arg}` : words;
 }
-
-// One key stroke as a keycap: label medium on surface-container-highest, rounded sm.
-const keycap = (text) => type(div(), "labelMedium").h(24).px(8).flex_none().flex().items_center().rounded(SHAPE.sm)
-  .bg(roles().surfaceHighest).text_color(roles().onSurface).child(text);
 
 export default class Help extends View {
   init(_props, cx) {
@@ -50,7 +46,7 @@ export default class Help extends View {
     const row = (k, i) => h_flex().id(`help-${i}`).h(ROW.one).flex_none().px(16).gap(12).items_center().rounded(RADIUS.row)
       .child(label(describe(k.action), { style: "bodyMedium", truncate: true, grow: true }))
       .when(k.section !== "global", (el) => el.child(label(k.section, { style: "labelSmall", role: "onSurfaceVariant" }).flex_none()))
-      .child(h_flex().flex_none().gap(4).children(k.keys.trim().split(/\s+/).map(keycap)));
+      .child(shortcut(k.keys.trim().split(/\s+/)));
     let n = 0;
     return dialogSurface()
       .id("help")
@@ -61,9 +57,7 @@ export default class Help extends View {
       .child(h_flex().w_full().gap(12).items_center()
         .child(dialogHeadline("Keybinds").flex_1().min_w(0).truncate())
         .child(iconButton("help-close", icon("x"), { size: "md", tip: "Close", onClick: () => closeOverlay(props().overlay) })))
-      .child(fieldBox(h_flex().w_full().flex_none().gap(12), { focused: true })
-        .child(svg(icon("search")).size(20).flex_none().text_color(r.onSurfaceVariant))
-        .child(Input.new(this.input).flex_1().min_w(0).text_color(r.onSurface)))
+      .child(searchBar(Input.new(this.input).w_full().text_color(r.onSurface), { size: "lg" }))
       .child(
         v_flex()
           .id("help-list")

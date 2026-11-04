@@ -10,7 +10,7 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { agents, spaces, terminals, run, hc, theme, props, closeOverlay, shared, setShared } from "herdr";
-import { roles, press, icon, type, label, statusMark, divider, onStatus, layoutPx, H, ROW, RADIUS, SHAPE } from "./kit/index.js";
+import { roles, press, icon, type, label, statusMark, divider, onStatus, layoutPx, searchBar, dialogSurface, ROW, RADIUS, SHAPE } from "./kit/index.js";
 
 // Space colors, kept by space id in shared "space.colors": a theme
 // color name ("ansi6") or a picked #rrggbb. A space seen without one gets
@@ -30,11 +30,16 @@ function spaceColors() {
   if (changed) setShared("space.colors", kept);
   return kept;
 }
-function spaceColor(p) {
+// A space's avatar, as the spaces sidebar draws it (shapr-spaces row()): 24, rounded sm, its
+// first letter in label medium emphasized on its stored color (a theme ansi name or a #rrggbb;
+// none yet: ansi6).
+function avatar(w) {
   const t = theme();
-  if (p.name === "~") return roles().onSurfaceVariant;
-  const c = spaceColors()[p.id] ?? PROJECT_COLORS[0];
-  return c.startsWith("#") ? c : (t[c] ?? roles().primary);
+  const r = roles();
+  const color = (shared("space.colors") ?? {})[w.id] ?? "ansi6";
+  const fill = color.startsWith("#") ? color : (t[color] ?? r.primary);
+  return type(div(), "labelMedium", true).size(24).flex_none().flex().items_center().justify_center().rounded(SHAPE.sm).bg(fill).text_color(onStatus())
+    .child([...w.name][0]?.toUpperCase() ?? "?");
 }
 
 // Row heights in the strip; the list is at most LIST tall.
@@ -117,6 +122,7 @@ export default class Picker extends View {
 
   render() {
     const r = roles();
+    spaceColors();
     const rows = this.rows();
     const pickable = rows.filter((x) => x.kind === "ctx" || x.kind === "new" || x.kind === "space");
     // Opens on where you are.
@@ -153,8 +159,7 @@ export default class Picker extends View {
     const row = (x) => {
       if (x.kind === "head") {
         return type(h_flex(), "titleSmall").h(36).flex_none().px(16).gap(12).items_center().text_color(r.onSurfaceVariant)
-          .child(type(h_flex(), "labelMedium", true).size(20).flex_none().rounded(SHAPE.sm).bg(spaceColor(x.w)).items_center().justify_center()
-            .text_color(onStatus()).child([...x.w.name][0]?.toUpperCase() ?? "?"))
+          .child(avatar(x.w))
           .child(div().flex_1().min_w(0).truncate().child(x.w.name));
       }
       if (x.kind === "earlier") {
@@ -183,17 +188,11 @@ export default class Picker extends View {
         .when(Boolean(who || x.team), (el) => el.child(type(div(), "labelSmall").flex_none().max_w(200).truncate().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant).child(who + (x.team ? `  +${x.team}` : ""))));
     };
 
-    return v_flex()
+    return dialogSurface(v_flex(), { fit: true })
       .id("picker")
       .track_focus(this.handle)
-      .w_full()
-      .max_h_full()
       .p(PAD)
       .gap(8)
-      .bg(r.surfaceHigh)
-      .rounded(RADIUS.dialog)
-      .shadow_lg()
-      .text_color(r.onSurface)
       .on_key_down((e, cx) => {
         const k = e.key;
         if (k === "escape") return this.close();
@@ -209,12 +208,8 @@ export default class Picker extends View {
         cx.notify();
       })
       // The search bar: a 48 pill on surface-container-highest, search icon leading.
-      .child(
-        h_flex().h(H.xl).flex_none().pl(16).pr(8).gap(12).items_center().rounded_full().bg(r.surfaceHighest)
-          .child(svg(icon("search")).size(20).flex_none().text_color(r.onSurfaceVariant))
-          .child(type(Input.new(this.input), "bodyLarge").flex_1().min_w(0).text_color(r.onSurface))
-          .child(label("Esc", { style: "labelMedium", role: "onSurfaceVariant" }).flex_none().pr(8)),
-      )
+      .child(searchBar(Input.new(this.input).w_full().text_color(r.onSurface),
+        { trailing: label("Esc", { style: "labelMedium", role: "onSurfaceVariant" }).pr(8) }))
       .child(
         v_flex()
           .id("pk-list")

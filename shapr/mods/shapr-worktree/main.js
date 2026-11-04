@@ -3,14 +3,15 @@
 // { folder, machine } for a repo without a space; optional { branch, tab, argv }.
 // An MD3 dialog (open it with frame: "none"); openers size it to what it draws:
 //   new:    width 460, dialogHeight({ bodyLines: 3, extra: [fieldHeight()] })
-//   remove: width 460, dialogHeight({ headlineLines: lines of "Remove worktree <space>?" at 412, bodyLines: 3 })
-//   open:   width 560, dialogHeight({ extra: [H.lg, 5 * ROW.two] }) (five checkouts, more scroll)
+//   remove: width 460, dialogHeight({ headlineLines: textLines of "Remove worktree <space>?" at 412, bodyLines: 3 })
+//   open:   width 560, dialogHeight({ extra: [H.lg, 5 * ROW.two] }) (the 40 search bar, five
+//           checkouts; more scroll)
 // Text past that (warnings, a git error) scrolls inside the dialog's body.
 
-import { View, div, svg } from "gpui-kit";
+import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { run, props, closeOverlay, spaces, panes, exec, home } from "herdr";
-import { dialogSurface, dialogHeadline, dialogBody, dialogActions, textField, fieldBox, listItem, label, circularProgress, roles, icon, type } from "./kit/index.js";
+import { dialogSurface, dialogHeadline, dialogBody, dialogActions, textField, searchBar, listItem, label, circularProgress, roles, type } from "./kit/index.js";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
 function place(s) {
@@ -269,9 +270,7 @@ export default class Worktree extends View {
       .when(r === null, (el) => el.child(div().flex_1().min_h(0).child(dialogBody(`${this.folder ? tilde(this.folder, this.userHome ?? "") : "This folder"} is not in a git repository.`))))
       .when(ready, (el) =>
         el
-          .child(fieldBox(h_flex().w_full().flex_none().gap(12), { focused: this.inputFocused })
-            .child(svg(icon("search")).size(20).flex_none().text_color(k.onSurfaceVariant))
-            .child(Input.new(this.input).flex_1().min_w(0).text_color(k.onSurface)))
+          .child(searchBar(Input.new(this.input).w_full().text_color(k.onSurface), { size: "lg" }))
           .child(
             v_flex()
               .id("wt-list")

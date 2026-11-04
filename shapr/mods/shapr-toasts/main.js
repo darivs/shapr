@@ -11,7 +11,8 @@
 //   decides to post. It goes when the agent is answered or looked at, or with its X.
 // - Any mod's: notify()'s shape in shared QUEUE, newest last:
 //   setShared("shapr.toasts", [...(shared("shapr.toasts") ?? []), { id, at: Date.now(), title,
-//   body, level, action: { name, args, label }, timeout }]).
+//   body, level, icon, action: { name, args, label }, timeout }]). An icon (an svg path in the
+//   home folder) is drawn in the snackbar's text color.
 // A click (or its action) runs the action and closes it; X closes it; each goes after its
 // timeout, never while the pointer is on the float. A blocked agent is the loudest: a blocked
 // strip and outline, and it stays until answered.
@@ -19,7 +20,7 @@
 import { View, div } from "gpui-kit";
 import { v_flex } from "gpui-base";
 import { agents, window, placement, run, shared, setShared } from "herdr";
-import { snackbar, roles } from "./kit/index.js";
+import { snackbar } from "./kit/index.js";
 
 export const QUEUE = "shapr.toasts";
 export const SHOWN = 3;
@@ -100,18 +101,18 @@ export default class Toasts extends View {
   }
 
   item(n) {
-    const r = roles();
     const go = n.action?.name ? () => { run(n.action.name, n.action.args ?? {}); this.dismiss(n); } : null;
-    const el = snackbar(`toast-${n.id}`, {
+    return snackbar(`toast-${n.id}`, {
       title: String(n.title),
       body: n.body ? String(n.body) : null,
       tone: TONE[n.level] ?? null,
+      loud: n.level === "alert",
+      icon: n.icon ? String(n.icon) : null,
       width: WIDTH,
       action: go ? { label: n.action.label ?? "Show", onClick: go } : null,
       onClose: () => this.dismiss(n),
       onClick: go,
     });
-    return n.level === "alert" ? el.border_2().border_color(r.blocked) : el;
   }
 
   render() {

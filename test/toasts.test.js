@@ -1,6 +1,7 @@
 // shapr's toast float: a notification shows once (however often the float redraws, and when it
 // is posted twice), newest at the bottom; Herdr's agent notifications are mirrored once and go
-// when answered; a blocked agent is marked the loudest; a click runs the action and closes it.
+// when answered; a blocked agent is marked the loudest; a click runs the action and closes it;
+// a notification's icon shows.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reset } from "herdr";
@@ -73,4 +74,13 @@ test("a notification goes after its timeout", () => {
   c.timers.forEach((f) => f({ notify() {} }));
   assert.equal(count(v.render(), "Old"), 0);
   assert.deepEqual(h.shared[QUEUE], []);
+});
+
+test("a notification's icon shows in its snackbar", () => {
+  const h = reset();
+  h.shared[QUEUE] = [{ id: "n1", at: Date.now(), title: "Pushed", level: "info", icon: "icons/git.svg" }, { id: "n2", at: Date.now(), title: "Plain", level: "info" }];
+  const tree = mount().v.render();
+  const svgs = [...walk(tree)].filter((n) => n?.kind === "svg").map((n) => n.arg);
+  assert.equal(svgs.filter((a) => a === "icons/git.svg").length, 1);
+  assert.deepEqual([...unknownCalls], []);
 });

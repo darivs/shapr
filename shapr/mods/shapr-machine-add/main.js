@@ -6,22 +6,15 @@
 // it; the list sees the machine once it's added. Opened as a dialog
 // (`mod.open shapr-machine-add`: mod.json's overlay, width 560, frame "none", as tall as what it
 // draws); the sidebars' Add machine and the welcome open it. An MD3 dialog: its surface fits
-// its content (fitSurface below) and the host list shrinks and scrolls when the window is short.
+// its content (dialogSurface with fit) and the host list shrinks and scrolls when the window is short.
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { hc, exec, home, readTextFile, props, closeOverlay, openOverlay } from "herdr";
-import { dialogHeadline, dialogBody, textField, button, iconButton, listItem, heading, card, label, circularProgress, roles, icon, type, RADIUS, DIALOG, H } from "./kit/index.js";
+import { dialogSurface, dialogHeadline, dialogBody, textField, button, iconButton, listItem, heading, card, label, circularProgress, roles, icon, type, RADIUS } from "./kit/index.js";
 
 // The terminal window's title bar height.
 const BAR = 40;
-
-// dialogSurface() fills its overlay; this one fits its content (the overlay has no height) and
-// never outgrows the window: the same surface-container-high, rounded 28, 24 inside, 16 apart.
-function fitSurface(el = v_flex()) {
-  const r = roles();
-  return el.w_full().max_h_full().bg(r.surfaceHigh).rounded(RADIUS.dialog).p(DIALOG.pad).gap(DIALOG.gap).shadow_lg().overflow_hidden().text_color(r.onSurface);
-}
 
 const I = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
@@ -235,7 +228,7 @@ export default class MachineAdd extends View {
     const r = roles();
     const hosts = this.hosts ?? [];
     const typed = this.typed.trim();
-    return fitSurface()
+    return dialogSurface(v_flex(), { fit: true })
       .id("machine-add")
       .track_focus(this.handle)
       .on_key_down((e, cx) => this.key(e, cx))
