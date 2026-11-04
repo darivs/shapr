@@ -1,7 +1,8 @@
-import { View, div, image, svg } from "gpui-kit";
+// style: md3
+import { View, div, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { theme, run, props, window, shared, setShared, updates, layout } from "herdr";
-import { prefs } from "./kit/tokens.js";
+import { run, props, window, shared, setShared, updates, layout } from "herdr";
+import { prefs, SPACE, SHAPE, type, roles, icon, iconButton, navItem, badge, divider } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -25,32 +26,54 @@ function toggleSidebar() {
   run("layout.resize", { id: "sidebar", px: narrow() ? (shared("sidebar.width") ?? 268) : window()?.platform === "macos" ? 76 : 44 });
 }
 
+const glyph = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
+
 export default class WorkspaceChrome extends View {
-  button(id, label, action) {
-    const t = theme();
-    return div().id(id).size(26).flex_none().flex().items_center().justify_center().rounded(6).text_color(t.muted).hover(s => s.bg(t.hover).text_color(t.foreground))
-      .on_mouse_down("left", (_e, cx) => cx.stop_propagation()).on_click(action).child(label);
+  // The sidebar footer: Settings (with a dot when an update is ready) and Add machine, as
+  // navigation drawer items; on the rail, icon buttons with their names as tooltips.
+  footer(collapsed) {
+    const r = roles();
+    const ready = Boolean(updates().app.ready);
+    const dot = () => badge({ role: "primary" });
+    const settings = () => run("app.settings");
+    const machine = () => run("mod.open", { name: "shapr-machine-add" });
+    const rows = collapsed
+      ? v_flex().flex_1().min_h(0).gap(SPACE.xs).items_center().justify_center()
+        .child(div().relative().flex_none()
+          .child(iconButton("settings", glyph("settings"), { size: "sm", tip: "Settings", onClick: settings }))
+          .when(ready, el => el.child(div().absolute().top(SPACE.xs).right(SPACE.xs).child(dot()))))
+        .child(iconButton("machine", glyph("plus"), { size: "sm", tip: "Add machine", onClick: machine }))
+      : v_flex().flex_1().min_h(0).px(SPACE.md).justify_center()
+        .child(navItem("settings", "Settings", { icon: glyph("settings"), badge: ready ? dot() : null, onClick: settings }))
+        .child(navItem("machine", "Add machine", { icon: glyph("plus"), onClick: machine }));
+    return v_flex().size_full().bg(r.surfaceContainer).child(divider()).child(rows);
   }
+
+  // The brand bar: the Herdr mark and name (after the macOS traffic lights), search and the
+  // sidebar toggle as standard icon buttons. On the rail only the toggle stays, centred; on the
+  // macOS rail the traffic lights fill the row and the agents list's » unfolds it.
+  brand(collapsed) {
+    const r = roles();
+    const w = window();
+    const mac = w?.platform === "macos";
+    const toggle = iconButton("sidebar-toggle", glyph("sidebar"), { size: "sm", tip: collapsed ? "Show sidebar" : "Hide sidebar", onClick: toggleSidebar });
+    if (collapsed) {
+      return h_flex().size_full().bg(r.surfaceContainer).items_center().justify_center()
+        .when(!mac, el => el.child(toggle));
+    }
+    const name = type(div(), "titleMedium", true).flex_1().min_w(0).truncate().text_color(r.onSurface).child("Herdr");
+    return h_flex().size_full().min_w(0).bg(r.surfaceContainer).pl(mac && !w?.fullscreen ? 76 : SPACE.lg).pr(SPACE.sm).gap(SPACE.xs).items_center()
+      .child(h_flex().flex_1().min_w(0).gap(SPACE.md).items_center()
+        .child(image("frame/welcome/herdr.png").size(24).flex_none().rounded(SHAPE.sm))
+        .child(name))
+      .child(iconButton("search", icon("search"), { size: "sm", tip: "Search", onClick: () => run("mod.open", { name: "shapr-picker" }) }))
+      .child(toggle);
+  }
+
   render(cx) {
     // The brand bar is always in the layout: it keeps shapr's themes in step with the settings.
     keepThemes(cx, prefs());
-    const t = theme();
     const collapsed = narrow();
-    if (props()?.footer) {
-      const row = (id, icon, label, dim, action) => h_flex().id(id).h(28).px(8).gap(9).items_center().rounded(8)
-        .text_color(dim ? t.dim : t.muted).hover(s => s.bg(t.hover).text_color(t.foreground)).cursor_pointer()
-        .on_click(action).child(svg(`mods/shapr-workspace-chrome/${icon}.svg`).size(14))
-        .when(!collapsed, el => el.child(label));
-      return v_flex().size_full().bg(t.chrome).border_t(1).border_color(t.border).px(8).pt(4).pb(8).text_size(13)
-        .child(row("settings", "settings", "Settings", false, () => run("app.settings"))
-          .when(Boolean(updates().app.ready), el => el.child(div().size(6).rounded_full().bg(t.accent))))
-        .child(row("machine", "plus", "Add machine", true, () => run("mod.open", { name: "shapr-machine-add" })));
-    }
-    return h_flex().size_full().bg(t.chrome).pl(collapsed ? 6 : 14).pr(10).gap(4).items_center().text_size(13.5)
-      .when(window()?.platform === "macos" && !window()?.fullscreen && !collapsed, el => el.pl(76))
-      .when(!collapsed, el => el.child(h_flex().flex_1().gap(8).items_center().child(image("frame/welcome/herdr.png").size(20).rounded(5)).child(div().font_semibold().text_color(t.foreground).child("Herdr"))))
-      .when(!collapsed, el => el.child(this.button("search", svg("mods/shapr-workspace-chrome/search.svg").size(15), () => run("mod.open", { name: "shapr-picker" }))))
-      // On the macOS rail the traffic lights fill the row; the agents list's » unfolds it.
-      .when(!(collapsed && window()?.platform === "macos"), el => el.child(this.button("sidebar-toggle", svg("mods/shapr-workspace-chrome/sidebar.svg").size(15), toggleSidebar)));
+    return props()?.footer ? this.footer(collapsed) : this.brand(collapsed);
   }
 }

@@ -9,7 +9,7 @@
   "titlebar": "none",
   "traffic_lights": [
     12,
-    16
+    17
   ],
   "background": "canvas",
   "terminal_padding": [
@@ -36,7 +36,7 @@
           "id": "brand",
           "type": "block",
           "size": {
-            "px": 46
+            "px": 48
           },
           "window_drag": true,
           "content": {
@@ -75,7 +75,7 @@
           "id": "sidebar-footer",
           "type": "block",
           "size": {
-            "px": 69
+            "px": 97
           },
           "content": {
             "mod": "shapr-workspace-chrome",
@@ -95,7 +95,7 @@
           "id": "tabs",
           "type": "block",
           "size": {
-            "px": 42
+            "px": 48
           },
           "window_drag": true,
           "content": {
@@ -115,7 +115,7 @@
                 "tab": "active",
                 "pane": {
                   "gap": 8,
-                  "radius": 10,
+                  "radius": 12,
                   "background": "background",
                   "lone": true,
                   "border": {
@@ -124,7 +124,7 @@
                   },
                   "focus": {
                     "width": 1,
-                    "color": "accent"
+                    "color": "solid"
                   },
                   "header": {
                     "content": {
@@ -176,7 +176,7 @@
           "id": "status",
           "type": "block",
           "size": {
-            "px": 28
+            "px": 32
           },
           "content": {
             "mod": "shapr-workspace-status"

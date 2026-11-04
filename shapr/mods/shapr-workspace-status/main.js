@@ -1,11 +1,13 @@
+// style: md3
 import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, agents, theme, run, window, keys } from "herdr";
+import { spaces, agents, run, window, keys } from "herdr";
+import { roles, type, label, badge, statusMark, button, SPACE } from "./kit/index.js";
 
 export default class WorkspaceStatus extends View {
   // The palette key as actually bound, not a hardcoded one; without a
   // binding the hint stays useful ("commands") instead of lying.
-  hint(t) {
+  hint() {
     const mac = window()?.platform === "macos";
     const mod = { cmd: mac ? "⌘" : "Ctrl+", ctrl: mac ? "⌃" : "Ctrl+", shift: mac ? "⇧" : "Shift+", alt: mac ? "⌥" : "Alt+", option: mac ? "⌥" : "Alt+" };
     const b = keys().find((k) => k.section === "global" && k.action === "app.palette");
@@ -14,18 +16,30 @@ export default class WorkspaceStatus extends View {
     return key ? `${key}  commands` : "commands";
   }
 
+  // A bottom bar on surface-container: where the space runs, its branch and the agent count in
+  // body small, on-surface-variant; blocked agents in their own color with the pulsing mark;
+  // the palette hint a text button at the end. Long names shrink, the hint never does.
   render() {
-    const t = theme();
+    const r = roles();
     const space = spaces().find(s => s.active);
     const list = agents();
     const needs = list.filter(a => a.status === "blocked").length;
-    const label = (icon, text) => h_flex().gap(6).items_center().child(svg(`mods/shapr-workspace-chrome/${icon}.svg`).size(13)).child(text);
-    return h_flex().size_full().px(14).gap(16).items_center().bg(t.chrome).border_t(1).border_color(t.border).text_size(11.8).text_color(t.muted)
-      .child(label(space?.machine ? "server" : "monitor", space?.machine ?? "This computer"))
-      .when(Boolean(space?.branch), el => el.child(label("branch", space.branch)))
-      .child(h_flex().gap(6).items_center().child(div().size(6).rounded(3).bg(t.dim)).child(`${list.length} agents`)
-        .when(needs > 0, el => el.child(div().text_color(t.blocked).child(`· ${needs} needs you`))))
-      .child(div().flex_1())
-      .child(div().id("palette").text_color(t.dim).on_click(() => run("app.palette")).child(this.hint(t)));
+    const fact = (icon, text) => h_flex().min_w(0).gap(SPACE.sm).items_center()
+      .child(svg(`mods/shapr-workspace-chrome/${icon}.svg`).size(14).flex_none())
+      .child(label(text, { style: "bodySmall", role: "onSurfaceVariant", truncate: true }));
+    const count = h_flex().flex_none().gap(SPACE.sm).items_center()
+      .child(badge({ role: "outline" }))
+      .child(label(`${list.length} agents`, { style: "bodySmall", role: "onSurfaceVariant" }))
+      .when(needs > 0, el => el.child(h_flex().gap(SPACE.xs).items_center()
+        .child(statusMark("blocked"))
+        .child(type(div(), "labelMedium", true).text_color(r.blocked).child(`${needs} needs you`))));
+    const palette = button("palette", this.hint(), { kind: "text", size: "xs", onClick: () => run("app.palette") })
+      .text_color(r.onSurfaceVariant);
+    return h_flex().size_full().min_w(0).pl(SPACE.lg).pr(SPACE.sm).gap(SPACE.lg).items_center().bg(r.surfaceContainer).text_color(r.onSurfaceVariant)
+      .child(h_flex().flex_1().min_w(0).gap(SPACE.lg).items_center()
+        .child(fact(space?.machine ? "server" : "monitor", space?.machine ?? "This computer"))
+        .when(Boolean(space?.branch), el => el.child(fact("branch", space.branch)))
+        .child(count))
+      .child(palette);
   }
 }

@@ -1,8 +1,8 @@
 // style: md3
-import { View, div, svg, image } from "gpui-kit";
+import { View, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, window, shared, layout, settings } from "herdr";
-import { button, iconButton, statusMark, roles, icon, stopPress, divider } from "./kit/index.js";
+import { button, iconButton, statusMark, roles, icon, divider, H, SPACE } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -51,14 +51,13 @@ export default class Tabs extends View {
     const r = roles();
     const space = spaces().find(p => p.active);
     const shown = space?.tabs ?? [];
-    const stop = (_e, cx) => cx.stop_propagation();
     const item = (c, i) => {
       const program = panes().find(p => p.tab === c.id && p.program?.agent)?.program ?? panes().find(p => p.tab === c.id)?.program;
       const name = /^tb\d+$/.test(c.name) ? program?.name ?? "Terminal" : c.name;
       const glyph = program?.icon ? (program.tint ? svg(program.icon).size(16).text_color(c.active ? r.onSecondaryContainer : r.onSurfaceVariant) : image(program.icon).size(16)) : null;
       const status = c.status && c.status !== "idle" ? statusMark(c.status) : null;
       const close = c.active ? iconButton(`close-${c.id}`, icon("x"), { size: "xs", tip: "Close tab", onClick: () => run("tab.close", { id: c.id }) }) : null;
-      const end = status || close ? h_flex().gap(4).items_center().when(Boolean(status), el => el.child(status)).when(Boolean(close), el => el.child(close)) : null;
+      const end = status || close ? h_flex().gap(SPACE.xs).items_center().when(Boolean(status), el => el.child(status)).when(Boolean(close), el => el.child(close)) : null;
       return button(`tab-${c.id}`, c.zoomed ? `${name} Z` : name, { kind: "text", size: "sm", selected: c.active, leading: glyph, end, maxLabel: 170, interactive: true })
         .when(!c.active, el => el.text_color(r.onSurfaceVariant))
         .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); })
@@ -71,9 +70,10 @@ export default class Tabs extends View {
     };
     const root = layout(), sidebar = find(root, "sidebar"), w = window();
     // Old saved rails and a dragged-narrow sidebar can be smaller than the window buttons.
+    // The bar's edge padding is the same 8 as above and below its 32 controls.
     const lightsPadding = w?.platform === "macos" && w.titlebar === "none" && !w.fullscreen && root?.traffic_lights
-      ? Math.max(12, (root.traffic_lights[0] + 64) / settings().zoom - (sidebar?.hidden ? 0 : sidebar?.size?.px ?? 0))
-      : 12;
+      ? Math.max(SPACE.sm, (root.traffic_lights[0] + 64) / settings().zoom - (sidebar?.hidden ? 0 : sidebar?.size?.px ?? 0))
+      : SPACE.sm;
     const panel = find(root, "panel"), body = find(root, "panel-body");
     const enabled = shared("workspace.panels") ?? ["files", "changes"];
     this.syncPanel(space, panel, body, enabled);
@@ -85,12 +85,12 @@ export default class Tabs extends View {
       } }).when(!on, el => el.text_color(r.onSurfaceVariant));
     };
     const windows = w?.platform === "windows";
-    return h_flex().size_full().min_w(0).pr(12).pl(lightsPadding).gap(4).items_center().bg(r.surfaceContainer)
+    return h_flex().size_full().min_w(0).pr(SPACE.sm).pl(lightsPadding).gap(SPACE.xs).items_center().bg(r.surfaceContainer)
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
-      .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(4).overflow_x_scrollbar().children(shown.map(item)))
+      .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(SPACE.xs).overflow_x_scrollbar().children(shown.map(item)))
       .child(iconButton("tab-new", icon("plus"), { size: "sm", tip: "New tab", onClick: () => openOverlay({ mod: "shapr-new-menu", kind: "popup", width: 250, height: 512 }) }))
-      .when(enabled.length > 0, el => el.child(divider({ vertical: true, space: 4 }).h(20)))
+      .when(enabled.length > 0, el => el.child(divider({ vertical: true, space: SPACE.xs }).h(H.xs)))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/shapr-files/file.svg")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/shapr-changes/changes.svg")))
       .when(w?.buttons, el => el
