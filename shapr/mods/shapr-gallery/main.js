@@ -80,7 +80,7 @@ export default class Gallery extends View {
         ["toggle sizes", ["xs", "sm", "md", "lg", "xl"].map((z) => K.iconButton(`izs-${z}`, K.icon("check"), { kind: "filled", size: z, selected: true, onClick: noop }))]))
       .child(this.section("Labels",
         ["type", Object.keys(K.TYPE).map((st) => K.label(styleName(st), { style: st }))],
-        ["emphasized", ["titleMedium", "bodyMedium", "labelLarge"].map((st) => K.label(st, { style: st, emphasized: true }))],
+        ["emphasized", ["headlineSmall", "bodyMedium", "labelLarge"].map((st) => K.label(st, { style: st, emphasized: true }))],
         ["roles", ["onSurface", "onSurfaceVariant", "disabled", "primary", "secondary", "tertiary", "error"].map((role) => K.label(role, { role }))],
         ["truncate, grow", [h_flex().w(240).gap(K.SPACE.sm).items_center()
           .child(K.label("A long name that is cut at the end", { truncate: true, grow: true })).child(K.label("2m", { style: "labelSmall", role: "onSurfaceVariant" }))]],
