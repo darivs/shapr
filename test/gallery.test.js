@@ -122,3 +122,9 @@ test("the gallery's icon section shows each kit icon by name, at 20 and 24", () 
     for (const px of [20, 24]) assert.ok(sizes.includes(px), `${n} isn't drawn at ${px}`);
   }
 });
+
+test("the gallery window takes a share of the window, so it fits at any zoom", () => {
+  const { overlay } = JSON.parse(readFileSync(new URL("../shapr/mods/shapr-gallery/mod.json", import.meta.url), "utf8"));
+  assert.ok(overlay.width > 0 && overlay.width <= 1, `width ${overlay.width}`);
+  assert.ok(overlay.height > 0 && overlay.height <= 1, `height ${overlay.height}`);
+});
