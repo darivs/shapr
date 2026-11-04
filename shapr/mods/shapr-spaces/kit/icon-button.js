@@ -11,7 +11,7 @@ const ICON = { xs: 14, sm: 18, md: 20, lg: 20, xl: 20 };
  * opts: { kind: "standard" | "filled" | "tonal" | "outlined", size, width: "narrow" | "default" | "wide",
  *   selected (true/false for a toggle, null otherwise), danger, disabled, tip, onClick }
  */
-export function iconButton(id, path, { kind = "standard", size = "sm", width = "default", selected = null, danger = false, disabled = false, tip = null, onClick = null } = {}) {
+export function iconButton(id, path, { kind = "standard", size = "sm", width = "default", selected = null, danger = false, disabled = false, tip = null, onClick = null, ink: inkOver = null } = {}) {
   const r = roles();
   const h = H[size] ?? H.sm;
   const w = width === "narrow" ? h - 8 : width === "wide" ? h + 12 : h;
@@ -21,6 +21,7 @@ export function iconButton(id, path, { kind = "standard", size = "sm", width = "
   else if (kind === "tonal") { fill = on ? r.secondary : r.secondaryContainer; ink = on ? r.onPrimary : r.onSecondaryContainer; }
   else if (kind === "outlined") { fill = on ? r.inverseSurface : null; ink = on ? r.inverseOnSurface : r.onSurfaceVariant; }
   else { ink = on ? r.primary : danger ? r.error : r.onSurfaceVariant; }
+  if (inkOver && kind === "standard" && !on) ink = inkOver;
   let el = div().id(id).w(w).h(h).flex_none().flex().items_center().justify_center().text_color(ink);
   el = on && kind !== "standard" ? el.rounded(h >= 40 ? 16 : 12) : el.rounded_full();
   if (fill) el = el.bg(fill);

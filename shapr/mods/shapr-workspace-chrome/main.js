@@ -2,7 +2,7 @@
 import { View, div, image, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces, focused, machines, agents } from "herdr";
-import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, transition, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec, chromeIcon } from "./kit/index.js";
+import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, transition, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec, chromeIcon, press } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -71,6 +71,9 @@ function setPref(c) {
   if (m && PREF_VALUES[m[1]].includes(m[2])) setShared(SETTINGS, { ...cur, [m[1]]: m[2] });
 }
 
+// Shapr's mark, for the sidebar's Shapr Theme row: a picture, so it keeps its own colors.
+const logo = () => image("mods/shapr-workspace-chrome/shapr-logo.png").size(20).flex_none();
+
 export default class WorkspaceChrome extends View {
   init(_props, cx) {
     if (props()?.footer) return;
@@ -123,14 +126,14 @@ export default class WorkspaceChrome extends View {
     const machine = () => run("mod.open", { name: "shapr-machine-add" });
     const rows = collapsed
       ? v_flex().flex_1().min_h(0).gap(SPACE.xs).items_center().justify_center()
-        .child(iconButton("theme", chromeIcon("palette"), { size: "sm", tip: "Theme", onClick: theme }))
+        .child(press(div().id("theme").size(H.sm).flex_none().flex().items_center().justify_center().rounded_full().child(logo()), theme, { layer: r.hover }).tooltip("Shapr Theme"))
         .child(div().relative().flex_none()
           .child(iconButton("settings", chromeIcon("settings"), { size: "sm", tip: "Settings", onClick: settings }))
           .when(ready, el => el.child(div().absolute().top(SPACE.xs).right(SPACE.xs).child(dot()))))
         .child(iconButton("machine", this.hovered ? icon("add") : chromeIcon("computer"), { size: "sm", tip: "Add machine", onClick: machine })
           .on_hover((hovered, cx) => this.hover(hovered, cx)))
       : v_flex().flex_1().min_h(0).px(SPACE.md).justify_center()
-        .child(navItem("theme", "Theme", { icon: chromeIcon("palette"), onClick: theme }))
+        .child(navItem("theme", "Shapr Theme", { leading: logo(), onClick: theme }))
         .child(navItem("settings", "Settings", { icon: chromeIcon("settings"), badge: ready ? dot() : null, onClick: settings }))
         .child(this.machineRow(machine));
     return v_flex().size_full().bg(r.surface).child(rows);

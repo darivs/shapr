@@ -22,11 +22,11 @@ test("the layout draws no line between areas and paints no area chrome", () => {
   assert.equal(L.background, "canvas");
 });
 
-test("each pane is a card: radius 16, no border at rest, a 2 px primary focus ring, lone panes too", () => {
+test("each pane is a card: radius 16, no border at rest, a 1 px tonal (secondary) focus ring, lone panes too", () => {
   const pane = find("main").content.pane;
   assert.equal(pane.radius, 16);
   assert.equal(pane.border, undefined);
-  assert.deepEqual(pane.focus, { width: 2, color: "solid" });
+  assert.deepEqual(pane.focus, { width: 1, color: "secondary" });
   // Herdr's frame has one focus look for every pane and no split-only focus: a lone pane is a
   // card too, so it carries the ring.
   assert.equal(pane.lone, true);
@@ -67,7 +67,7 @@ test("the sidebar, brand, tabs and sidebar footer paint canvas, not chrome", asy
   }
 });
 
-test("Files and Changes are cards of the panes' shape and fill, without a border", async () => {
+test("Files and Changes are light cards of the panes' shape (surface-container), without a border", async () => {
   // Both draw their panel through the kit's panelCard (gpui-base's Editor keeps them out of the stubs).
   const { reset } = await import("herdr");
   const { panelCard } = await import("../kit/index.js");
@@ -77,7 +77,7 @@ test("Files and Changes are cards of the panes' shape and fill, without a border
     const h = reset({ shared: { "shapr.settings": { corners } } });
     const calls = panelCard().__node.calls;
     const of = (m) => calls.filter(([n]) => n === m).map(([, a]) => a[0]);
-    assert.deepEqual(of("bg"), [h.theme.background], "fill");
+    assert.deepEqual(of("bg"), [h.theme.chrome], "fill");
     assert.deepEqual(of("rounded"), [radius], `${corners} radius`);
     assert.deepEqual([...of("border_1"), ...of("border_color")], [], "border");
   }

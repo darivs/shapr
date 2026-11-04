@@ -114,8 +114,8 @@
                   "background": "background",
                   "lone": true,
                   "focus": {
-                    "width": 2,
-                    "color": "solid"
+                    "width": 1,
+                    "color": "secondary"
                   },
                   "header": {
                     "content": {

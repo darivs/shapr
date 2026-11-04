@@ -11,6 +11,8 @@ export function roles() {
     surface: t.canvas, surfaceLowest: or("surface_lowest", "background"), surfaceLow: t.surface,
     surfaceContainer: t.chrome, surfaceHigh: t.raised, surfaceHighest: or("surface_highest", "popover"),
     popover: t.popover, terminal: t.background,
+    // Text on the terminal's ground: shapr keeps terminals dark in light mode too.
+    onTerminal: or("terminal_foreground", "foreground"), onTerminalVariant: or("terminal_muted", "muted"),
     onSurface: t.foreground, onSurfaceVariant: t.muted, disabled: t.dim,
     outline: t.input, outlineVariant: t.border,
     primary: t.solid, onPrimary: t.solid_foreground,

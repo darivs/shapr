@@ -31,21 +31,26 @@ function valid(seed) {
 
 /** One appearance's theme file (the JSON Herdr reads from themes/). */
 export function themeFile({ seed = SEED, contrast = "standard" } = {}, dark = false) {
-  const s = new SchemeTonalSpot(Hct.fromInt(argbFromHex(valid(seed))), dark, CONTRAST[contrast] ?? 0);
+  const scheme = (d) => new SchemeTonalSpot(Hct.fromInt(argbFromHex(valid(seed))), d, CONTRAST[contrast] ?? 0);
+  const s = scheme(dark);
   const c = (role) => hex(M[role].getArgb(s));
+  // Terminals stay dark in light mode too: their ground, text, selection, cursor and ANSI colors
+  // always come from the dark scheme.
+  const ds = dark ? s : scheme(true);
+  const dc = (role) => hex(M[role].getArgb(ds));
   const n = s.neutralPalette;
   const ansiTone = (name, bright) => {
     const [hue, chroma] = HUES[name];
-    return hex(TonalPalette.fromHueAndChroma(hue, chroma).tone(dark ? (bright ? 90 : 80) : bright ? 50 : 40));
+    return hex(TonalPalette.fromHueAndChroma(hue, chroma).tone(bright ? 90 : 80));
   };
   const ansi = [
-    hex(n.tone(dark ? 20 : 30)), ansiTone("red"), ansiTone("green"), ansiTone("yellow"), ansiTone("blue"), ansiTone("magenta"), ansiTone("cyan"), hex(n.tone(dark ? 90 : 80)),
-    hex(n.tone(dark ? 60 : 50)), ansiTone("red", true), ansiTone("green", true), ansiTone("yellow", true), ansiTone("blue", true), ansiTone("magenta", true), ansiTone("cyan", true), hex(n.tone(dark ? 99 : 95)),
+    hex(n.tone(20)), ansiTone("red"), ansiTone("green"), ansiTone("yellow"), ansiTone("blue"), ansiTone("magenta"), ansiTone("cyan"), hex(n.tone(90)),
+    hex(n.tone(60)), ansiTone("red", true), ansiTone("green", true), ansiTone("yellow", true), ansiTone("blue", true), ansiTone("magenta", true), ansiTone("cyan", true), hex(n.tone(99)),
   ];
   const surface = c("surface"), onSurface = c("onSurface"), container = c("surfaceContainer");
-  // Panes are cards on one surface: the terminal's ground is a card, surface-container, which
-  // stands off canvas by two MD3 steps (the lowest step is too faint to tell apart).
-  const terminal = container;
+  // Panes are cards on one surface: the terminal's ground is a card, the dark scheme's
+  // surface-container in both appearances (in dark mode two MD3 steps off canvas).
+  const terminal = dc("surfaceContainer"), onTerminal = dc("onSurface");
   const colors = {
     canvas: surface, chrome: container, background: terminal,
     surface: c("surfaceContainerLow"), raised: c("surfaceContainerHigh"), popover: c("surfaceContainerHigh"),
@@ -60,9 +65,10 @@ export function themeFile({ seed = SEED, contrast = "standard" } = {}, dark = fa
     tertiary_container: c("tertiaryContainer"), on_tertiary_container: c("onTertiaryContainer"),
     error: c("error"), on_error: c("onError"), error_container: c("errorContainer"), on_error_container: c("onErrorContainer"),
     inverse_surface: c("inverseSurface"), inverse_on_surface: c("inverseOnSurface"), inverse_primary: c("inversePrimary"),
+    terminal_foreground: onTerminal, terminal_muted: dc("onSurfaceVariant"),
     ...STATUS[dark ? "dark" : "light"],
   };
-  return { background: terminal, foreground: onSurface, selection: c("secondaryContainer"), cursor: c("primary"), ansi, colors };
+  return { background: terminal, foreground: onTerminal, selection: dc("secondaryContainer"), cursor: dc("primary"), ansi, colors };
 }
 
 /** Both theme files as text, keyed by theme name. */

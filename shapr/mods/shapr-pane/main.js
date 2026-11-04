@@ -30,7 +30,7 @@ export default class Pane extends View {
   }
 
   button(id, path, tip, command, args) {
-    return iconButton(id, path, { size: "xs", tip, onClick: (_e, cx) => { cx?.stop_propagation?.(); run(command, args); } });
+    return iconButton(id, path, { size: "xs", ink: roles().onTerminalVariant, tip, onClick: (_e, cx) => { cx?.stop_propagation?.(); run(command, args); } });
   }
 
   render() {
@@ -38,7 +38,7 @@ export default class Pane extends View {
     const p = this.me();
     if (!p) return div();
     const name = ((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name || "shell";
-    const pic = programIcon(p.program, 14, r.onSurfaceVariant);
+    const pic = programIcon(p.program, 14, r.onTerminalVariant);
     const st = p.status;
     const pane = p.pane;
     return h_flex()
@@ -52,8 +52,8 @@ export default class Pane extends View {
       .on_hover((hovered, cx) => { this.hovered = hovered; cx.notify(); })
       .on_click(() => run("pane.focus", { pane }))
       .when(Boolean(pic), (el) => el.child(pic))
-      .child(label(name, { style: "labelLarge", truncate: true }).flex_shrink(1).max_w(260))
-      .child(label(folder(p.cwd), { style: "bodySmall", role: "onSurfaceVariant", truncate: true, grow: true }))
+      .child(label(name, { style: "labelLarge", role: "onTerminal", truncate: true }).flex_shrink(1).max_w(260))
+      .child(label(folder(p.cwd), { style: "bodySmall", role: "onTerminalVariant", truncate: true, grow: true }))
       .when(["working", "blocked", "done"].includes(st), (el) => el.child(statusMark(st)))
       // On hover the buttons float over the header's right end, on the card's own fill: they take
       // no room at rest (a narrow pane keeps its name) and move nothing when they appear.

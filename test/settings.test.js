@@ -157,9 +157,9 @@ test("settingsSize() is what the window draws, at every density; mod.json holds 
     assert.equal(drawnHeight(v.surface()), heights[density], `${density}, hex in error`);
   }
   assert.equal(CHOICES.motion.length, 3);
-  // Nine rows follow density: swatches, the field box, contrast, density, corners, three motion rows, the actions.
-  assert.equal(heights.comfortable - heights.standard, 9 * 4);
-  assert.equal(heights.standard - heights.compact, 9 * 4);
+  // Ten rows follow density: mode, swatches, the field box, contrast, density, corners, three motion rows, the actions.
+  assert.equal(heights.comfortable - heights.standard, 10 * 4);
+  assert.equal(heights.standard - heights.compact, 10 * 4);
 });
 
 test("the footer's opener gives the settings window most of the window; it draws its own height inside", async () => {

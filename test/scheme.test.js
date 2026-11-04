@@ -59,6 +59,6 @@ test("the pane card (the terminal's ground) stands off canvas for every seed, co
         assert.equal(t.background, t.colors.background, "the terminal and its card differ");
         const step = Math.abs(lstar(t.colors.background) - lstar(t.colors.canvas));
         assert.ok(step >= 3, `${seed} ${contrast} ${dark ? "dark" : "light"}: card ${t.colors.background} on canvas ${t.colors.canvas}, ΔL* ${step.toFixed(1)}`);
-        assert.ok(ratio(t.colors.foreground, t.colors.background) >= (contrast === "high" ? 7 : 4.5), "terminal text");
+        assert.ok(ratio(t.foreground, t.background) >= (contrast === "high" ? 7 : 4.5), "terminal text");
       }
 });

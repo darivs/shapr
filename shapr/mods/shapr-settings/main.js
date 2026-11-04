@@ -1,12 +1,12 @@
 // style: md3
-// shapr's theme settings: seed color and contrast, density and corners, motion. Every choice goes
+// shapr's theme settings: light or dark mode (Herdr's appearance), seed color and contrast, density and corners, motion. Every choice goes
 // to shared "shapr.settings" at once, so every shapr mod restyles together and the choice survives
 // a restart; shapr-workspace-chrome regenerates the theme files from the seed and contrast.
 // Opened as a dialog: mod.open {name: "shapr-settings"} (mod.json holds settingsSize() at standard
 // density); an opener that knows the density calls openOverlay with settingsSize().
 import { View, div } from "gpui-kit";
 import { h_flex, v_flex, InputState, Input } from "gpui-base";
-import { props, closeOverlay, setShared } from "herdr";
+import { props, closeOverlay, setShared, appHome, readTextFile, writeTextFile } from "herdr";
 import * as K from "./kit/index.js";
 
 // MD3 preset seeds. The swatches draw each seed itself, as data; nothing else here is a color.
@@ -17,6 +17,7 @@ export const PRESETS = [
 const BASELINE = PRESETS[0][1];
 
 export const CHOICES = {
+  mode: [["system", "System"], ["light", "Light"], ["dark", "Dark"]],
   contrast: [["standard", "Standard"], ["medium", "Medium"], ["high", "High"]],
   density: [["compact", "Compact"], ["standard", "Standard"], ["comfortable", "Comfortable"]],
   corners: [["standard", "Standard"], ["round", "Round"]],
@@ -38,7 +39,7 @@ export function parseSeed(text) {
 const sameSeed = (a, b) => (a ?? BASELINE).toUpperCase() === (b ?? BASELINE).toUpperCase();
 
 // What the scroll area holds, section by section, as drawn below.
-const colorHeight = () => TITLE + GAP + K.H.lg + GAP + K.fieldHeight({ label: true, supporting: true }) + GAP + K.ROW.one;
+const colorHeight = () => TITLE + GAP + K.ROW.one + GAP + K.H.lg + GAP + K.fieldHeight({ label: true, supporting: true }) + GAP + K.ROW.one;
 const shapeHeight = () => TITLE + GAP + K.ROW.one + GAP + K.ROW.one;
 const motionHeight = () => TITLE + GAP + CHOICES.motion.length * K.ROW.one;
 
@@ -47,13 +48,30 @@ export function settingsHeight() {
   return K.dialogHeight({ headlineLines: 1, extra: [colorHeight() + shapeHeight() + motionHeight() + 2 * SECTION_GAP] });
 }
 
+/** The person's light or dark mode from settings.json's text: `appearance`, or the system's when it has none. */
+export function modeOf(text) {
+  try { const a = JSON.parse(text ?? "{}")?.appearance; return a === "light" || a === "dark" ? a : "system"; } catch { return "system"; }
+}
+const settingsPath = () => `${appHome()}/settings.json`;
+
+/** settings.json with `appearance` set for this mode (removed for System); other keys kept. */
+export function withMode(text, mode) {
+  let s = {};
+  try { s = JSON.parse(text ?? "{}") ?? {}; } catch { s = {}; }
+  if (mode === "system") delete s.appearance;
+  else s.appearance = mode;
+  return JSON.stringify(s, null, 2) + "\n";
+}
+
 /** The overlay size at the person's density, for openOverlay({ mod: "shapr-settings", ...settingsSize() }). */
 export function settingsSize() {
   return { width: WIDTH, height: settingsHeight() };
 }
 
 export default class Settings extends View {
-  init() {
+  init(_props, cx) {
+    this.mode = "system";
+    readTextFile(settingsPath()).then((t) => { this.mode = modeOf(t); cx?.notify?.(); }, () => {});
     const seed = K.prefs().seed;
     this.text = seed ?? "";
     this.error = false; // the typed text was checked and isn't a color
@@ -119,6 +137,18 @@ export default class Settings extends View {
       .child(K.segmented(`settings-${key}`, CHOICES[key].map(([v, text]) => [v, text]), p[key], (v) => this.set({ [key]: v })));
   }
 
+  // Light, dark or the system's: Herdr's own appearance setting (settings.json), changed in place.
+  modeRow() {
+    return h_flex().w_full().h(K.ROW.one).flex_none().gap(K.SPACE.lg).items_center()
+      .child(K.label("Mode", { style: "bodyLarge", truncate: true, grow: true }))
+      .child(K.segmented("settings-mode", CHOICES.mode, this.mode ?? "system", (v) => this.setMode(v)));
+  }
+
+  async setMode(mode) {
+    this.mode = mode;
+    await writeTextFile(settingsPath(), withMode(await readTextFile(settingsPath()).catch(() => null), mode));
+  }
+
   swatches() {
     const r = K.roles();
     const seed = K.prefs().seed;
@@ -163,7 +193,7 @@ export default class Settings extends View {
     }))));
     // The scroll area spans the dialog edge to edge (it clips), its content keeps the dialog's inset.
     const body = v_flex().id("settings-body").flex_1().min_h(0).mx(-K.DIALOG.pad).px(K.DIALOG.pad).overflow_y_scroll().gap(SECTION_GAP)
-      .child(this.section("Color", this.swatches(),
+      .child(this.section("Color", this.modeRow(), this.swatches(),
         h_flex().w_full().flex_none().gap(K.SPACE.lg).items_start().child(this.hexField()).child(this.preview()),
         this.row("contrast", "Contrast")))
       .child(this.section("Size and shape", this.row("density", "Density"), this.row("corners", "Corners")))
@@ -172,7 +202,7 @@ export default class Settings extends View {
     // clip it): the surface sits centred at the height it draws, and the body scrolls when the
     // window is shorter than that.
     return K.dialogSurface(v_flex().id("shapr-settings"), { fit: true })
-      .child(K.dialogHeadline("Theme"))
+      .child(K.dialogHeadline("Shapr Theme"))
       .child(body)
       .child(K.dialogActions({
         note: "Applies to every shapr window",
