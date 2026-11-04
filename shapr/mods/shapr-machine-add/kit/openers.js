@@ -46,7 +46,7 @@ export function renameSpec(kind, id) {
   return { mod: "shapr-prompt", kind: "dialog", frame: "none", width: OVERLAY_W.prompt, height: dialogHeight({ extra: [fieldHeight({ supporting: true })] }), props: p };
 }
 
-/** shapr's settings window: 644 tall at standard density, 9 controls that follow density. */
+/** shapr's settings window: 652 tall at standard density (its settingsSize()), 9 controls that follow density. */
 export function settingsSpec() {
-  return { mod: "shapr-settings", kind: "dialog", frame: "none", width: OVERLAY_W.settings, height: 644 + 9 * densityOffset() };
+  return { mod: "shapr-settings", kind: "dialog", frame: "none", width: OVERLAY_W.settings, height: 652 + 9 * densityOffset() };
 }

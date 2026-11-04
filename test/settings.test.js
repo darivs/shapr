@@ -161,3 +161,14 @@ test("settingsSize() is what the window draws, at every density; mod.json holds 
   assert.equal(heights.comfortable - heights.standard, 9 * 4);
   assert.equal(heights.standard - heights.compact, 9 * 4);
 });
+
+test("the footer's opener sizes the settings window as it draws, at every density", async () => {
+  const { reset } = await import("herdr");
+  const K = await import("../kit/index.js");
+  const { settingsSize } = await import("../shapr/mods/shapr-settings/main.js");
+  for (const density of ["compact", "standard", "comfortable"]) {
+    reset().shared[K.SETTINGS] = { density };
+    assert.equal(K.settingsSpec().height, settingsSize().height, density);
+    assert.equal(K.settingsSpec().width, settingsSize().width, density);
+  }
+});

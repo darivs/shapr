@@ -12,8 +12,8 @@ const kitDir = new URL("../shapr/mods/shapr-gallery/kit/", import.meta.url);
 const kitUrl = new URL("index.js", kitDir).href;
 // Measures a component uses for itself; they draw nothing.
 const MEASURES = new Set(["buttonMetrics"]);
-// tokens, roles and state are the kit's plumbing, not components.
-const PLUMBING = new Set(["index.js", "self.js", "tokens.js", "roles.js", "state.js"]);
+// tokens, roles, state and openers are the kit's plumbing, not components.
+const PLUMBING = new Set(["index.js", "self.js", "tokens.js", "roles.js", "state.js", "openers.js"]);
 
 // The gallery's "./kit/index.js" resolves to a copy of the kit whose functions count their calls.
 const real = await import(kitUrl);
