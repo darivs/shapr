@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { readdirSync } from "node:fs";
 import { reset } from "herdr";
-import { unknownCalls, argsOf } from "./stubs/element.js";
+import { unknownCalls, argsOf, walk } from "./stubs/element.js";
 
 const kitDir = new URL("../shapr/mods/shapr-gallery/kit/", import.meta.url);
 const kitUrl = new URL("index.js", kitDir).href;
@@ -78,6 +78,22 @@ test("rows wrap: no sample is wider than MAX_ITEM, narrow windows stack the row 
   v.width = WIDE;
   const wide = v.render();
   assert.ok(argsOf(wide, "w").some(([n]) => n === 96) && !argsOf(narrow, "w").some(([n]) => n === 96));
+});
+
+test("the type specimen shows each style's thin weight, and emphasized text one step heavier", () => {
+  reset();
+  const tree = open().render();
+  // Each label's text and weight; the type row shows "Display L", the emphasized row a style's name.
+  const labels = [...walk(tree)].filter((n) => n?.calls?.some(([m]) => m === "font_weight"))
+    .map((n) => [n.children.find((c) => typeof c === "string"), n.calls.find(([m]) => m === "font_weight")[1][0]]);
+  const weightOf = (text) => labels.find(([t]) => t === text)?.[1];
+  const plain = { "Display L": 300, "Headline S": 300, "Title L": 400, "Title M": 500, "Title S": 500, "Body M": 400, "Label L": 400, "Label S": 400 };
+  for (const [text, w] of Object.entries(plain)) assert.equal(weightOf(text), w, text);
+  // The emphasized row shows each step that changes the weight: 300 -> 400 and 400 -> 500.
+  const steps = labels.filter(([t]) => t in real.TYPE).map(([st, w]) => [real.TYPE[st][1], w]);
+  assert.deepEqual(steps.map(([from]) => from).filter((v, i, a) => a.indexOf(v) === i).sort(), [300, 400]);
+  for (const [from, to] of steps) assert.equal(to, from + 100, `emphasized ${from}`);
+  for (const [, w] of labels) assert.ok(w <= 500, `font_weight(${w})`);
 });
 
 test("the gallery follows its measured width through layoutPx", () => {
