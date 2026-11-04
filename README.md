@@ -17,8 +17,8 @@ components. The design rules agents load live in the separate `shapr-design` mod
 | `bin/privacy-check` | fails on home paths, email addresses and local hostnames |
 | `test/` | `node --import ./test/loader.js --test test/` |
 
-Licenses: MIT (`LICENSE`); Roboto Flex under the OFL, material-color-utilities under Apache-2.0,
-Lucide icons under ISC (`LICENSES/`).
+Licenses: MIT (`LICENSE`); Roboto Flex under the OFL, material-color-utilities and the Material
+Symbols icons under Apache-2.0 (`LICENSES/`).
 
 ## Keys
 
