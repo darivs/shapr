@@ -48,8 +48,8 @@ test("the terminal menu's Split down has its own icon", async () => {
   const v = new Menu();
   v.init?.({}, cx);
   const svgs = [...walk(v.render(cx))].filter((n) => n?.kind === "svg").map((n) => n.arg);
-  assert.ok(svgs.some((s) => /horizontal_split/.test(s)), `split down: ${svgs}`);
-  assert.ok(svgs.some((s) => /vertical_split/.test(s)), `split right: ${svgs}`);
+  assert.ok(svgs.some((s) => /splitscreen_bottom/.test(s)), `split down: ${svgs}`);
+  assert.ok(svgs.some((s) => /splitscreen_right/.test(s)), `split right: ${svgs}`);
 });
 
 test("in a narrow pane the header's name truncates and nothing runs past the card", async () => {
@@ -73,4 +73,10 @@ test("a blocked pane's header keeps its name over status text: the mark alone sa
   const shown = texts(new Pane().render(cx));
   assert.ok(shown.includes("Layout file"));
   assert.ok(!shown.includes("Needs you"), `the header shows ${shown}`);
+});
+
+test("a pane header splits with the same outlined pair as the terminal menu", async () => {
+  const src = readFileSync(new URL("../shapr/mods/shapr-pane/main.js", import.meta.url), "utf8");
+  assert.match(src, /splitscreen_right/);
+  assert.match(src, /splitscreen_bottom/);
 });
