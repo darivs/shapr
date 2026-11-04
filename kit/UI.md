@@ -64,7 +64,7 @@ Never write hex in a mod. shapr's themes come from `shapr-workspace-chrome/theme
 | `text-field.js` | `textField(input, { kind: outlined · filled, label, supporting, leading, trailing, focused, error, multiline, disabled })`, `fieldBox(el, opts)`, `fieldHeight(...)` |
 | `menu.js` | `menuSurface(el)`, `menuItem(id, text, { icon, leading, hint, trailing, selected, danger, disabled, onClick })`, `menuDivider()`, `menuHeader(text)`, `menuHeight({ items, dividers, headers })` |
 | `list-item.js` | `listItem(id, headline, { overline, supporting, lines, leading, trailing, trailingText, selected, disabled, interactive, propagate, onClick, dense (H.sm rows for trees and long lists), indent })` |
-| `nav-item.js` | `navItem(id, text, { icon, leading, active, badge, trailing, rail, propagate, onClick })` |
+| `nav-item.js` | `navItem(id, text, { icon, activeIcon (filled, when active), leading, active, supporting (a second line), badge, trailing, tip, rail, propagate, onClick })` |
 | `card.js` | `card(el, { kind: elevated · filled · outlined, pad, id, disabled, onClick })` |
 | `dialog.js` | `dialogSurface(el, { fit })` (fit: as tall as its content), `dialogHeadline(text, { icon })`, `dialogBody(text)`, `dialogActions({ onCancel, cancelLabel, primary, note, error })`, `dialogHeight({ headlineLines, icon, bodyLines, extra, actions })` |
 | `badge.js` | `badge({ count, max, role, on })`, `statusMark(status)`, `statusBadge(status, count)` |
