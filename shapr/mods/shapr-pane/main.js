@@ -48,6 +48,7 @@ export default class Pane extends View {
       .px(SPACE.md)
       .gap(SPACE.sm)
       .items_center()
+      .relative()
       .overflow_hidden()
       .on_hover((hovered, cx) => { this.hovered = hovered; cx.notify(); })
       .on_click(() => run("pane.focus", { pane }))
@@ -55,11 +56,12 @@ export default class Pane extends View {
       .child(label(name, { style: "labelLarge", truncate: true }).flex_shrink(1).max_w(260))
       .child(label(folder(p.cwd), { style: "bodySmall", role: "onSurfaceVariant", truncate: true, grow: true }))
       .when(["working", "blocked", "done"].includes(st), (el) => el.child(statusMark(st)))
-      // The buttons keep their space at rest and only show on hover, so nothing moves.
-      .child(h_flex().flex_none().items_center().opacity(this.hovered ? 1 : 0)
+      // On hover the buttons float over the header's right end, on the card's own fill: they take
+      // no room at rest (a narrow pane keeps its name) and move nothing when they appear.
+      .when(this.hovered, (el) => el.child(h_flex().absolute().top(0).right(0).h_full().pl(SPACE.xs).pr(SPACE.sm).items_center().bg(r.terminal)
         .child(this.button(`ph-r-${pane}`, chromeIcon("splitscreen_right"), "Split right", "pane.split", { direction: "right", pane }))
         .child(this.button(`ph-d-${pane}`, chromeIcon("splitscreen_bottom"), "Split down", "pane.split", { direction: "down", pane }))
         .child(this.button(`ph-z-${pane}`, chromeIcon(p.zoomed ? "close_fullscreen" : "open_in_full"), p.zoomed ? "Unzoom" : "Zoom", "pane.zoom", { pane }))
-        .child(this.button(`ph-x-${pane}`, icon("close"), "Close pane", "pane.close", { pane })));
+        .child(this.button(`ph-x-${pane}`, icon("close"), "Close pane", "pane.close", { pane }))));
   }
 }
