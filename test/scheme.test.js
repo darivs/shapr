@@ -47,3 +47,18 @@ test("the seed changes the scheme; a bad seed falls back to the baseline", () =>
   assert.deepEqual(themeFile({ seed: "nope" }), themeFile({}));
   assert.deepEqual(Object.keys(themeTexts({})).sort(), [NAMES.dark, NAMES.light].sort());
 });
+
+// CIE L* (≈ HCT tone): MD3's lowest surface step is 2, too close to tell a card from canvas.
+const lstar = (h) => { const y = lum(h); return y > 216 / 24389 ? 116 * Math.cbrt(y) - 16 : (24389 / 27) * y; };
+
+test("the pane card (the terminal's ground) stands off canvas for every seed, contrast and appearance", () => {
+  for (const seed of ["#6750A4", "#006A6A", "#B3261E", "#FFD600"])
+    for (const contrast of ["standard", "medium", "high"])
+      for (const dark of [false, true]) {
+        const t = themeFile({ seed, contrast }, dark);
+        assert.equal(t.background, t.colors.background, "the terminal and its card differ");
+        const step = Math.abs(lstar(t.colors.background) - lstar(t.colors.canvas));
+        assert.ok(step >= 3, `${seed} ${contrast} ${dark ? "dark" : "light"}: card ${t.colors.background} on canvas ${t.colors.canvas}, ΔL* ${step.toFixed(1)}`);
+        assert.ok(ratio(t.colors.foreground, t.colors.background) >= (contrast === "high" ? 7 : 4.5), "terminal text");
+      }
+});
