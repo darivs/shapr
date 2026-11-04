@@ -1,13 +1,14 @@
 // style: md3
 // Agents in grouped or priority views; parents take their most urgent sub-agent's place.
 // A viewed done agent stays in Done until left.
-// Drawn as MD3 navigation drawer content: list subheaders with count badges, 40 drawer items,
-// the kit's status marks (blocked: a filled "Needs you" pill, the loudest), 32 rail pills.
+// Drawn as MD3 navigation drawer content: quiet list subheaders (title small, a plain count),
+// 40 drawer items, the kit's status marks (blocked: a filled "Needs you" pill, the loudest),
+// 32 rail pills. Color in the list is only the status mark and the active item.
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { agents, terminals, panes, focused, spaces, run, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout } from "herdr";
-import { roles, onStatus, type, label, heading, navItem, iconButton, badge, statusMark, statusBadge, menuSurface, menuHeader, menuItem, menuHeight, icon as kitIcon, press, H, SPACE, SHAPE } from "./kit/index.js";
+import { roles, onStatus, type, label, heading, navItem, iconButton, statusMark, menuSurface, menuHeader, menuItem, menuHeight, icon as kitIcon, press, H, SPACE, SHAPE } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -181,7 +182,7 @@ export default class Agents extends View {
     const k = s.t;
     const st = kidStatus(k, this.listed);
     const on = k.address === shown;
-    const pic = icon(k.program, 16, on ? r.onSecondaryContainer : r.onSurface);
+    const pic = icon(k.program, 16, on ? r.onSecondaryContainer : r.onSurfaceVariant);
     let el = h_flex()
       .id(`sub-${k.address}`)
       .pl(SPACE.xl)
@@ -240,10 +241,8 @@ export default class Agents extends View {
       return [row_, ...subs.map((s) => this.subRow(r, s, shown, byPriority))];
     };
 
-    // The fold chevron; folded, the count too, colored by the most urgent one.
+    // The fold chevron; folded, the count too.
     const fold = (a, subs) => {
-      const sts = subs.map((s) => kidStatus(s.t, this.listed));
-      const top = sts.reduce((m, s) => ((RANK[s] ?? 0) > (RANK[m] ?? 0) ? s : m), null);
       const open = !this.folded.has(a.address);
       let el = h_flex()
         .id(`fold-${a.address}`)
@@ -253,7 +252,7 @@ export default class Agents extends View {
         .flex_none()
         .items_center()
         .rounded_full()
-        .text_color(open ? r.onSurfaceVariant : (r[top] ?? r.onSurfaceVariant));
+        .text_color(r.onSurfaceVariant);
       el = press(type(el, "labelSmall"), (_e, cx) => {
         open ? this.folded.add(a.address) : this.folded.delete(a.address);
         cx.notify();
@@ -300,9 +299,9 @@ export default class Agents extends View {
           .child(div().flex_1().min_w(0).whitespace_nowrap().text_right().child(String(i + 1)))
           .child(this.status(r, a, true));
       }
-      const pic = icon(a.program, 18, a.focused ? r.onSecondaryContainer : r.onSurface);
+      // Glyphs tinted on-surface-variant; pictures keep their own colors.
+      const pic = icon(a.program, 16, a.focused ? r.onSecondaryContainer : r.onSurfaceVariant);
       const when = this.since(a);
-      const idle = a.status === "idle" && !a.focused;
       const isPinned = a.pinned;
       const hovered = this.hovered === a.address;
       const pin = iconButton(`pin-${a.address}`, chrome(isPinned ? "keep_off" : "keep"), {
@@ -319,7 +318,7 @@ export default class Agents extends View {
       const full = byPriority || isPinned;
       const name = full ? a.space_name || label_(a) : more ?? (/^\d+$/.test(label_(a)) ? a.program?.name || label_(a) : label_(a));
       const text = h_flex().w_full().min_w(0).gap(SPACE.xs).items_center()
-        .child(div().min_w(0).max_w(full && more ? 120 : 200).truncate().text_color(a.focused ? r.onSecondaryContainer : idle ? r.onSurfaceVariant : r.onSurface).child(name))
+        .child(div().min_w(0).max_w(full && more ? 120 : 200).truncate().text_color(a.focused ? r.onSecondaryContainer : r.onSurface).child(name))
         .when(full && Boolean(more), el => el.child(type(div(), "bodySmall").flex_1().min_w(0).truncate().text_color(r.onSurfaceVariant).child(`· ${more}`)));
       const leading = pic ? div().id(`agent-fold-${a.address}`).flex().items_center()
         .when(subs.length > 0, el => el.on_click((_e, cx) => {
@@ -332,7 +331,7 @@ export default class Agents extends View {
         .when(Boolean(machine), el => el.child(label(machine, { style: "labelSmall", role: "onSurfaceVariant" }).flex_none()))
         .when(subs.length > 0, el => el.child(fold(a, subs)))
         .when(hovered || Boolean(when), el => el.child(h_flex().w(28).flex_none().justify_end().items_center()
-          .child(hovered ? pin : label(duration(now - when), { style: "labelSmall", role: "onSurfaceVariant" }))))
+          .child(hovered ? pin : label(duration(now - when), { style: "labelMedium", role: "onSurfaceVariant" }))))
         .child(this.status(r, a, byPriority && !isPinned));
       return navItem(`ag-${a.address}`, text, { leading, active: a.focused, trailing, propagate: true, onClick: () => run("pane.focus", { pane: a.pane }) })
         .pr(SPACE.md)
@@ -353,13 +352,13 @@ export default class Agents extends View {
       else groups.push({ id, label: byPriority ? SECTION[rk] : a.space_name || "", status: byPriority ? SECTION_STATUS[rk] : null, members: [a] });
     }
 
-    // A group's list subheader; it folds the group. Its count is a badge (blocked: the red
-    // status badge). Folded, it says how many and the most urgent state.
+    // A group's list subheader, title small in on-surface-variant; it folds the group. Its count
+    // is plain text. Folded, it says how many and shows the most urgent state's mark.
     const header = (g) => {
       const open = !this.folded.has(g.id);
       const top = g.members.reduce((m, a) => ((RANK[a.status] ?? 0) > (RANK[m] ?? 0) ? a.status : m), null);
       const n = g.members.length;
-      const count = g.status === "blocked" ? statusBadge("blocked", n) : badge({ count: n, max: 99, role: "surfaceHighest", on: "onSurfaceVariant" });
+      const count = label(String(n), { style: "labelMedium", role: "onSurfaceVariant" }).flex_none();
       let el = h_flex()
         .id(g.id)
         .mt(SPACE.xs)
@@ -370,12 +369,12 @@ export default class Agents extends View {
         .items_center()
         .rounded_full()
         .text_color(r.onSurfaceVariant);
-      el = press(type(el, "titleSmall", g.status === "blocked"), (_e, cx) => {
+      el = press(type(el, "titleSmall"), (_e, cx) => {
         open ? this.folded.add(g.id) : this.folded.delete(g.id);
         cx.notify();
       }, { layer: r.hover });
       return el
-        .child(div().min_w(0).truncate().text_color(r[g.status] ?? r.onSurfaceVariant).child(g.label))
+        .child(div().min_w(0).truncate().child(g.label))
         .when(byPriority || !open, (el) => el.child(count))
         .child(div().flex_1())
         .when(!open, (el) => el

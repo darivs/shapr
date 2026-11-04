@@ -9,7 +9,7 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
-import { roles, onStatus, type, label, heading, navItem, iconButton, button, statusMark, icon, press, H, ROW, SPACE, SHAPE, spaceMenuSpec } from "./kit/index.js";
+import { roles, type, label, heading, navItem, iconButton, button, statusMark, icon, press, H, ROW, SPACE, spaceMenuSpec } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -273,7 +273,6 @@ export default class Spaces extends View {
 
   // The rows, under a header per machine once one isn't this computer.
   grouped(r, collapsed) {
-    const t = theme();
     const rows = this.ordered();
     const draw = (row) => (collapsed ? this.compact(row, r) : this.row(row, r));
     const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name), ...Object.keys(this.reconnecting)])].sort();
@@ -314,7 +313,7 @@ export default class Spaces extends View {
               onClick: (_e, cx) => this.reconnect(machine, cx),
             }))))
           .when(connected, el => el.child(iconButton(`machine-add-${m ?? "local"}`, icon("add"), { size: "xs", tip: "New space there", onClick: () => run("space.new", { machine: m ?? "" }) }))))
-        .child(div().size(6).flex_none().rounded_full().bg(connected ? (t.ansi2 ?? r.primary) : r.disabled))
+        .child(div().size(6).flex_none().rounded_full().bg(connected ? r.onSurfaceVariant : r.disabled))
         .child(svg(icon(folded ? "chevron_right" : "keyboard_arrow_down")).size(collapsed ? 12 : 18).flex_none());
       const newThere = () => run("space.new", { machine: m ?? "" });
       const empty = collapsed
