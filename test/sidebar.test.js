@@ -139,3 +139,21 @@ test("color in a sidebar row is only secondary-container, primary or a status co
       for (const m of ["bg", "text_color"])
         for (const c of deep(row, m)) assert.ok(allowed.has(c), `${own(row, "id")[0]} ${m}(${c})`);
 });
+
+test("no line separates the sidebar's sections, and the footer's block is the height it draws", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { tree: agentsTree, h } = await agentsList();
+  const { tree: spacesTree } = await spacesList();
+  const { default: Chrome, blockHeights } = await import("../shapr/mods/shapr-workspace-chrome/main.js");
+  reset({ props: { footer: true } });
+  const footer = new Chrome().render(context());
+  for (const [name, tree] of [["agents", agentsTree], ["spaces", spacesTree], ["footer", footer]]) {
+    const lines = [...walk(tree)].flatMap((n) => (n?.calls ?? []).filter(([m, a]) => /^border_[tblr]$/.test(m) || (m === "bg" && a[0] === h.theme.border)));
+    assert.deepEqual(lines, [], `${name} draws a line`);
+  }
+  // Three 40 rows and 8 above and below, no divider.
+  assert.equal(blockHeights()["sidebar-footer"], 136);
+  const L = JSON.parse(readFileSync(new URL("../shapr/layouts/shapr-material.json", import.meta.url), "utf8"));
+  const find = (n, id) => (n?.id === id ? n : (n?.children ?? []).map((c) => find(c, id)).find(Boolean));
+  assert.equal(find(L, "sidebar-footer").size.px, 136);
+});
