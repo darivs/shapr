@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { reset } from "herdr";
 import { unknownCalls, argsOf, walk } from "./stubs/element.js";
+import { div } from "gpui-kit";
 import * as K from "../kit/index.js";
 
 const kitDir = new URL("../kit/", import.meta.url);
@@ -84,6 +85,20 @@ test("textLines estimates wrapping for openers", () => {
   reset();
   assert.equal(K.textLines("", "bodyMedium", 300), 1);
   assert.equal(K.textLines("x".repeat(100), "bodyMedium", 300), Math.ceil(100 * 14 * 0.55 / 300));
+});
+
+test("the type scale is thin: display and headline at 300, title large, body and labels at 400, title medium and small at 500", () => {
+  reset();
+  const weight = (style, emphasized) => argsOf(K.type(div(), style, emphasized), "font_weight")[0][0];
+  const want = {
+    displayLarge: 300, displayMedium: 300, displaySmall: 300, headlineLarge: 300, headlineMedium: 300, headlineSmall: 300,
+    titleLarge: 400, titleMedium: 500, titleSmall: 500, bodyLarge: 400, bodyMedium: 400, bodySmall: 400,
+    labelLarge: 400, labelMedium: 400, labelSmall: 400,
+  };
+  assert.deepEqual(Object.fromEntries(Object.keys(K.TYPE).map((st) => [st, weight(st, false)])), want);
+  // Emphasis is one step up and at most 500: 300 -> 400, 400 -> 500, 500 stays.
+  const up = { 300: 400, 400: 500, 500: 500 };
+  for (const [st, w] of Object.entries(want)) assert.equal(weight(st, true), up[w], st);
 });
 
 test("type sets size, a static weight and the line height", () => {
