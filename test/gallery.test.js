@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { reset } from "herdr";
 import { unknownCalls, argsOf, texts, walk } from "./stubs/element.js";
 
