@@ -1,0 +1,22 @@
+#!/bin/sh
+# Mirrors shapr/ into the Herdr app home (HERDR_APP_HOME, else ~/.config/herdr-app): the layout
+# file and every shapr-* mod folder, replaced whole; nothing else there is touched. Writes the
+# default themes too when they are missing (shapr-workspace-chrome keeps them current at runtime).
+set -eu
+root=$(cd "$(dirname "$0")/.." && pwd)
+home=${HERDR_APP_HOME:-$HOME/.config/herdr-app}
+"$root/bin/sync-kit" --check >/dev/null || { echo "dev-mirror: the kit copies are stale; run bin/sync-kit" >&2; exit 1; }
+mkdir -p "$home/layouts" "$home/mods" "$home/themes"
+for f in "$root"/shapr/layouts/*.json; do cp "$f" "$home/layouts/"; done
+for d in "$root"/shapr/mods/shapr-*/; do
+  name=$(basename "$d")
+  rsync -a --delete --exclude gpui-kit.d.ts --exclude jsconfig.json --exclude '.*' "$d" "$home/mods/$name/"
+done
+node --input-type=module -e '
+  const [root, home] = process.argv.slice(1);
+  const { themeTexts } = await import(root + "/shapr/mods/shapr-workspace-chrome/theme/scheme.js");
+  const fs = await import("node:fs");
+  for (const [name, text] of Object.entries(themeTexts({})))
+    if (!fs.existsSync(`${home}/themes/${name}.json`)) fs.writeFileSync(`${home}/themes/${name}.json`, text);
+' "$root" "$home"
+echo "dev-mirror: shapr mirrored into the app home"

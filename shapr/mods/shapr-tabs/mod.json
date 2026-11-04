@@ -1,0 +1,16 @@
+{
+  "place": "none",
+  "title": "Tabs",
+  "cloned_from": {
+    "name": "tabs",
+    "version": "0.1.12",
+    "files": {
+      "main.js": "12d4ecc89dbf864d5a889f240adaea25590812e0be1835bbdb3e636fe14f51d3",
+      "mod.json": "bd2a09edf56933dd318e75ce134b2c48aed56010b825f3c936f92a995e686c4d",
+      "win-close.svg": "bc46f314ea68818459856618e10f694e53cccd947b3069286f1988927e8a1fac",
+      "win-max.svg": "d8f2df2b1c3b3416ab765be0ad0b6f453f4c89e0c01ac01e4e10bd12e01b109a",
+      "win-min.svg": "c2f8d7d1e117f99b73970816877a926becb3da102cd706fd0f0ce1780259cd52",
+      "win-restore.svg": "69ccde33c78d83ce39972ef129e158dd09fb19d3002bd709047801802fbad51d"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "place": "none",
+  "cloned_from": {
+    "name": "prompt",
+    "version": "0.1.12",
+    "files": {
+      "main.js": "1fd138111b0b22158ddd6650d6acf5364cb41ebc7d4f61f42df0958137cd81f5",
+      "mod.json": "e8e0a91d23a0addf19f9f4dab48f597f252a1d44e5063e4d6ae884a88cbf735d"
+    }
+  }
+}

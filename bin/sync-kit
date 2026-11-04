@@ -1,0 +1,43 @@
+#!/usr/bin/env node
+// Copies the kit (kit/*.js, kit/icons/) into every shapr mod as <mod>/kit/, since a mod imports
+// only from its own folder. Each copy's self.js names its mod. --check changes nothing and exits 1
+// when any copy differs from the source (a stale or edited copy).
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
+
+const root = new URL("..", import.meta.url).pathname;
+const kit = join(root, "kit"), mods = join(root, "shapr", "mods");
+const check = process.argv.includes("--check");
+
+const walk = (dir) => readdirSync(dir).flatMap((f) => {
+  const p = join(dir, f);
+  return statSync(p).isDirectory() ? walk(p) : [p];
+});
+// What a copy holds: every .js and icon, but not the kit's own docs.
+const sources = walk(kit).filter((p) => /\.(js|svg)$/.test(p)).map((p) => relative(kit, p)).sort();
+const expected = (mod, f) => (f === "self.js"
+  ? `// Which mod holds this copy of the kit. bin/sync-kit writes each mod's own copy.\nexport const SELF = "${mod}";\n`
+  : readFileSync(join(kit, f), "utf8"));
+
+let stale = 0;
+for (const mod of readdirSync(mods).filter((m) => m.startsWith("shapr-") && existsSync(join(mods, m, "main.js"))).sort()) {
+  const dst = join(mods, mod, "kit");
+  // Herdr writes its type files into mod folders; they are not part of a copy.
+  const have = existsSync(dst) ? walk(dst).map((p) => relative(dst, p)).filter((f) => !/(^|\/)(gpui-kit\.d\.ts|jsconfig\.json)$/.test(f)).sort() : [];
+  for (const f of have.filter((f) => !sources.includes(f))) {
+    stale++;
+    if (check) console.error(`${mod}/kit/${f}: not in the kit`);
+    else rmSync(join(dst, f));
+  }
+  for (const f of sources) {
+    const want = expected(mod, f), p = join(dst, f);
+    if (existsSync(p) && readFileSync(p, "utf8") === want) continue;
+    stale++;
+    if (check) { console.error(`${mod}/kit/${f}: ${existsSync(p) ? "differs from" : "missing from"} the kit`); continue; }
+    mkdirSync(join(p, ".."), { recursive: true });
+    writeFileSync(p, want);
+  }
+}
+if (check && stale) { console.error(`sync-kit --check: ${stale} stale; run bin/sync-kit`); process.exit(1); }
+if (check) console.log("sync-kit --check: OK");
+else console.log(stale ? `sync-kit: ${stale} files written` : "sync-kit: up to date");

@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+// Clones Herdr's shipped mods into shapr/mods/shapr-<name>/ and records where each came from.
+// Usage: bin/clone-mods [name ...]   (default: every mod shapr restyles). Refuses an existing clone.
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
+import { homedir } from "node:os";
+
+export const CLONED = ["workspace-chrome", "spaces", "agents", "tabs", "files", "changes", "workspace-status",
+  "new-menu", "menu", "prompt", "confirm", "help", "picker", "worktree", "machine-add"];
+// Files Herdr writes into every mod folder; never part of a clone.
+export const SKIP = new Set(["gpui-kit.d.ts", "jsconfig.json"]);
+
+const root = new URL("..", import.meta.url).pathname;
+const appHome = process.env.HERDR_APP_HOME ?? join(homedir(), ".config", "herdr-app");
+
+export function walk(dir, base = dir) {
+  return readdirSync(dir).flatMap((f) => {
+    if (SKIP.has(f) || f.startsWith(".")) return [];
+    const p = join(dir, f);
+    return statSync(p).isDirectory() ? walk(p, base) : [relative(base, p)];
+  }).sort();
+}
+export const sha = (buf) => createHash("sha256").update(buf).digest("hex");
+
+// Asset paths and mod names that point at a cloned original now point at its clone.
+export function rewrite(text) {
+  const names = CLONED.join("|");
+  return text
+    .replace(new RegExp(`mods/(${names})/`, "g"), "mods/shapr-$1/")
+    .replace(new RegExp(`(\\bmod:\\s*)"(${names})"`, "g"), '$1"shapr-$2"')
+    .replace(new RegExp(`("mod\\.open",\\s*\\{\\s*name:\\s*)"(${names})"`, "g"), '$1"shapr-$2"');
+}
+
+function herdrVersion() {
+  return execFileSync("herdr-app", ["--version"], { encoding: "utf8" }).trim().split(/\s+/).pop();
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const version = herdrVersion();
+  for (const name of process.argv.slice(2).length ? process.argv.slice(2) : CLONED) {
+    const src = join(appHome, "mods", name), dst = join(root, "shapr", "mods", `shapr-${name}`);
+    if (existsSync(dst)) { console.error(`shapr-${name} exists; skipped`); continue; }
+    const files = {};
+    for (const f of walk(src)) {
+      const buf = readFileSync(join(src, f));
+      files[f] = sha(buf);
+      mkdirSync(join(dst, f, ".."), { recursive: true });
+      const text = /\.(js|json|md)$/.test(f) ? rewrite(buf.toString("utf8")) : null;
+      if (f === "mod.json") continue;
+      writeFileSync(join(dst, f), text ?? buf);
+    }
+    const mod = JSON.parse(readFileSync(join(src, "mod.json"), "utf8"));
+    mod.cloned_from = { name, version, files };
+    writeFileSync(join(dst, "mod.json"), JSON.stringify(mod, null, 2) + "\n");
+    console.log(`shapr-${name} from ${name} ${version}`);
+  }
+}

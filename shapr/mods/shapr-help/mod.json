@@ -1,0 +1,11 @@
+{
+  "place": "none",
+  "cloned_from": {
+    "name": "help",
+    "version": "0.1.12",
+    "files": {
+      "main.js": "66a347126dbbdb69f7d3136abdb7cbc6ab9a6b1cde5f5e77d543bed2468e2e2c",
+      "mod.json": "e8e0a91d23a0addf19f9f4dab48f597f252a1d44e5063e4d6ae884a88cbf735d"
+    }
+  }
+}

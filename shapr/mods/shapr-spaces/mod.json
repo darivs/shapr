@@ -1,0 +1,12 @@
+{
+  "place": "none",
+  "title": "Spaces",
+  "cloned_from": {
+    "name": "spaces",
+    "version": "0.1.12",
+    "files": {
+      "main.js": "854ece3cfec4e895670d1452aa573e465b39d2f86c6ca242217c266ab1033aee",
+      "mod.json": "8357ce89d375376872b6db414b9555b26936b2e9d61e44275dc2e2bfe2a5783e"
+    }
+  }
+}

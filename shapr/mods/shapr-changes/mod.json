@@ -1,0 +1,12 @@
+{
+  "place": "none",
+  "cloned_from": {
+    "name": "changes",
+    "version": "0.1.12",
+    "files": {
+      "changes.svg": "8370414f7d5bd16e2a21e0b83c4e95c75674bd241ce4d83cf91762d620647fb3",
+      "main.js": "2bd69311fd3dbfc001f8bb9fbfd7bffe203e7455df0bf1a06516405b82bbc0fa",
+      "mod.json": "e8e0a91d23a0addf19f9f4dab48f597f252a1d44e5063e4d6ae884a88cbf735d"
+    }
+  }
+}

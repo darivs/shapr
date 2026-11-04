@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+// Fails when a file names a person's machine or account: a home folder path, an email address
+// or a local hostname. Checks the given files, else every file git tracks or would add;
+// --history also checks every commit's files, messages and authors.
+import { execFileSync } from "node:child_process";
+import { readFileSync, statSync } from "node:fs";
+
+export const RULES = [
+  ["home path", /(?:\/Users|\/home)\/(?!(?:x|someone|runner|user|name|me)\b|<)[A-Za-z0-9._-]+|[A-Za-z]:\\Users\\(?!(?:x|someone|user|name|me)\b)[A-Za-z0-9._-]+/g],
+  ["email address", /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[a-z]{2,}\b/g],
+  ["hostname", /\b[A-Za-z0-9-]+\.(?:local|lan|home|internal|fritz\.box|localdomain)\b|\b(?:MacBook|iMac|Mac-mini|DESKTOP|LAPTOP)-[A-Za-z0-9-]+/g],
+];
+// Placeholder folders (/Users/x) and addresses that name nobody.
+const ALLOWED = [/@users\.noreply\.github\.com$/, /@example\.(com|org|net)$/];
+
+/** Every finding in a text: [rule, match]. */
+export function findings(text) {
+  const out = [];
+  for (const [rule, re] of RULES)
+    for (const m of text.matchAll(re))
+      if (!(rule === "email address" && ALLOWED.some((a) => a.test(m[0])))) out.push([rule, m[0]]);
+  return out;
+}
+
+const git = (...a) => execFileSync("git", a, { encoding: "latin1", maxBuffer: 1 << 28 });
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  const history = args.includes("--history");
+  const files = args.filter((a) => !a.startsWith("--"));
+  const list = files.length ? files : git("ls-files", "--cached", "--others", "--exclude-standard").split("\n").filter(Boolean);
+  let bad = 0;
+  const report = (where, text) => {
+    for (const [rule, m] of findings(text)) { bad++; console.error(`${where}: ${rule}: ${m}`); }
+  };
+  for (const f of list) {
+    try { if (!statSync(f).isFile()) continue; } catch { continue; }
+    report(f, readFileSync(f).toString("latin1"));
+  }
+  if (history)
+    for (const c of git("rev-list", "--all").split("\n").filter(Boolean)) {
+      report(`${c.slice(0, 8)} (commit)`, git("show", "-s", "--format=%an %ae %cn %ce%n%B", c));
+      report(`${c.slice(0, 8)} (diff)`, git("show", "--format=", "--binary", c));
+    }
+  if (bad) { console.error(`privacy-check: ${bad} finding${bad > 1 ? "s" : ""}`); process.exit(1); }
+  console.log("privacy-check: OK");
+}

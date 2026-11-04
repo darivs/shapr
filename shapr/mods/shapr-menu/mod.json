@@ -1,0 +1,11 @@
+{
+  "place": "none",
+  "cloned_from": {
+    "name": "menu",
+    "version": "0.1.12",
+    "files": {
+      "main.js": "9a83d113ab40342aa07beb5d655f1a6d038bb2af4fc3f29ac932f035915a3b7d",
+      "mod.json": "e8e0a91d23a0addf19f9f4dab48f597f252a1d44e5063e4d6ae884a88cbf735d"
+    }
+  }
+}
