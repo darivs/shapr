@@ -9,7 +9,7 @@ export function checkbox(id, value, onToggle = null, { disabled = false, error =
   const on = value === true || value === "mixed";
   const tone = error ? r.error : r.primary;
   let box = div().size(18).flex_none().flex().items_center().justify_center().rounded(2);
-  box = on ? box.bg(tone).text_color(error ? r.onError : r.onPrimary).child(svg(icon(value === "mixed" ? "minus" : "check")).size(14))
+  box = on ? box.bg(tone).text_color(error ? r.onError : r.onPrimary).child(svg(icon(value === "mixed" ? "remove" : "check")).size(14))
     : box.border_2().border_color(error ? r.error : r.onSurfaceVariant);
   const target = press(div().id(id).size(32).flex_none().flex().items_center().justify_center().rounded_full(),
     onToggle && ((e, cx) => onToggle(value !== true, e, cx)), { disabled, layer: r.hover });

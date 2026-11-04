@@ -167,14 +167,14 @@ export default class Picker extends View {
           .child(divider({ space: 4 }))
           .child(press(h_flex().id("pk-earlier").h(ROW.one).flex_none().px(16).gap(12).items_center().rounded(RADIUS.row).text_color(r.onSurfaceVariant),
             () => { this.showEarlier = !this.showEarlier; }, { layer: r.hover })
-            .child(svg(icon(this.showEarlier ? "chevron-down" : "chevron-right")).size(20).flex_none())
+            .child(svg(icon(this.showEarlier ? "keyboard_arrow_down" : "chevron_right")).size(20).flex_none())
             .child(type(div(), "labelLarge").flex_1().min_w(0).truncate().child(`Earlier: ${x.count} quiet space${x.count > 1 ? "s" : ""}`)));
       }
       const on = x === sel;
       if (x.kind === "new" || x.kind === "space") {
         const text = x.kind === "new" ? "New tab" : x.machine ? `New space on ${x.machine}` : "New space";
         return pick(x.kind === "new" ? "pk-new" : `pk-space-${x.machine ?? "here"}`, on, () => this.go(x))
-          .child(svg(icon("plus")).size(20).flex_none().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant))
+          .child(svg(icon("add")).size(20).flex_none().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant))
           .child(type(div(), "labelLarge").flex_1().min_w(0).truncate().child(text));
       }
       const who = x.mine.map((a) => a.program?.name ?? "agent").join(" · ");

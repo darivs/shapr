@@ -193,9 +193,9 @@ export default class MachineAdd extends View {
       .border_b(1)
       .border_color(r.outlineVariant)
       .text_color(r.onSurfaceVariant)
-      .child(svg(I("server")).size(18).flex_none())
+      .child(svg(I("dns")).size(18).flex_none())
       .child(type(div(), "titleSmall").flex_1().min_w(0).truncate().text_color(r.onSurface).child(`Adding ${props().target}: answer it here`))
-      .child(iconButton("ma-bar-close", icon("x"), { size: "sm", tip: "Close", onClick: () => closeOverlay(props().overlay) }));
+      .child(iconButton("ma-bar-close", icon("close"), { size: "sm", tip: "Close", onClick: () => closeOverlay(props().overlay) }));
   }
 
   row(target, name, sub) {
@@ -203,7 +203,7 @@ export default class MachineAdd extends View {
     const st = this.state[target];
     const done = this.isAdded(target);
     const right = done
-      ? h_flex().gap(6).items_center().text_color(r.primary).child(svg(I("circle-check")).size(18)).child(type(div(), "labelLarge").child("Added"))
+      ? h_flex().gap(6).items_center().text_color(r.primary).child(svg(I("check_circle")).size(18)).child(type(div(), "labelLarge").child("Added"))
       : st === "adding"
         ? h_flex().gap(8).items_center().child(circularProgress(18)).child(label("Connecting", { style: "labelLarge", role: "onSurfaceVariant" }))
         : st === "terminal"
@@ -214,7 +214,7 @@ export default class MachineAdd extends View {
       .flex_none()
       .child(listItem(`ma-row-${target}`, name, {
         supporting: sub || null,
-        leading: svg(I("server")).size(20),
+        leading: svg(I("dns")).size(20),
         trailing: right,
         interactive: !idle,
         onClick: idle ? (_e, cx) => this.add(target, cx) : null,
@@ -234,7 +234,7 @@ export default class MachineAdd extends View {
       .on_key_down((e, cx) => this.key(e, cx))
       .child(h_flex().w_full().gap(12).items_center()
         .child(dialogHeadline("Add a machine").flex_1().min_w(0).truncate())
-        .child(iconButton("ma-close", icon("x"), { size: "md", tip: "Close", onClick: () => this.close() })))
+        .child(iconButton("ma-close", icon("close"), { size: "md", tip: "Close", onClick: () => this.close() })))
       .child(dialogBody("A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps."))
       .child(
         v_flex()

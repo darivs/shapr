@@ -79,8 +79,8 @@ export default class NewMenu extends View {
         .when(this.agents.length === 0, el => el.child(type(div(), "bodyMedium").h(ROW.menu).flex_none().flex().items_center().px(12).text_color(r.onSurfaceVariant)
           .child(this.failed ? "Could not load agents" : "Checking installed agents…"))))
       .child(menuDivider())
-      .child(this.row("space", glyph(icon("plus")), "New space", () => run("space.new"), shortcut("space.new")))
-      .child(this.row("worktree", glyph("mods/shapr-workspace-chrome/git-branch.svg"), "New worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "new" })), "", Boolean(space)))
-      .child(this.row("worktree-open", glyph("mods/shapr-workspace-chrome/git-branch.svg"), "Open worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "open" })), "", Boolean(space)));
+      .child(this.row("space", glyph(icon("add")), "New space", () => run("space.new"), shortcut("space.new")))
+      .child(this.row("worktree", glyph("mods/shapr-workspace-chrome/call_split.svg"), "New worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "new" })), "", Boolean(space)))
+      .child(this.row("worktree-open", glyph("mods/shapr-workspace-chrome/call_split.svg"), "Open worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "open" })), "", Boolean(space)));
   }
 }

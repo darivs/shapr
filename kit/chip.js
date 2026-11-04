@@ -30,6 +30,6 @@ export function chip(id, text, { kind = "assist", selected = false, icon = null,
     el = el.child(stopPress(div().id(`${id}-remove`).size(iconPx + 2).flex_none().flex().items_center().justify_center().rounded_full()
       .cursor_pointer().hover((s) => s.bg(r.hover))
       .on_click((e, cx) => { cx.stop_propagation(); onRemove(e, cx); cx.notify(); })
-      .child(svg(kitIcon("x")).size(iconPx - 4))));
+      .child(svg(kitIcon("close")).size(iconPx - 4))));
   return disable(el, disabled);
 }

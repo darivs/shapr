@@ -56,7 +56,7 @@ export default class Tabs extends View {
       const name = /^tb\d+$/.test(c.name) ? program?.name ?? "Terminal" : c.name;
       const glyph = program?.icon ? (program.tint ? svg(program.icon).size(16).text_color(c.active ? r.onSecondaryContainer : r.onSurfaceVariant) : image(program.icon).size(16)) : null;
       const status = c.status && c.status !== "idle" ? statusMark(c.status) : null;
-      const close = c.active ? iconButton(`close-${c.id}`, icon("x"), { size: "xs", tip: "Close tab", onClick: () => run("tab.close", { id: c.id }) }) : null;
+      const close = c.active ? iconButton(`close-${c.id}`, icon("close"), { size: "xs", tip: "Close tab", onClick: () => run("tab.close", { id: c.id }) }) : null;
       const end = status || close ? h_flex().gap(SPACE.xs).items_center().when(Boolean(status), el => el.child(status)).when(Boolean(close), el => el.child(close)) : null;
       return button(`tab-${c.id}`, c.zoomed ? `${name} Z` : name, { kind: "text", size: "sm", selected: c.active, leading: glyph, end, maxLabel: 170, interactive: true })
         .when(!c.active, el => el.text_color(r.onSurfaceVariant))
@@ -89,13 +89,13 @@ export default class Tabs extends View {
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(SPACE.xs).overflow_x_scrollbar().children(shown.map(item)))
-      .child(iconButton("tab-new", icon("plus"), { size: "sm", tip: "New tab", onClick: () => openOverlay(newMenuSpec()) }))
+      .child(iconButton("tab-new", icon("add"), { size: "sm", tip: "New tab", onClick: () => openOverlay(newMenuSpec()) }))
       .when(enabled.length > 0, el => el.child(divider({ vertical: true, space: SPACE.xs }).h(H.xs)))
-      .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/shapr-files/file.svg")))
-      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/shapr-changes/changes.svg")))
+      .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/shapr-files/draft.svg")))
+      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/shapr-changes/difference.svg")))
       .when(w?.buttons, el => el
-        .child(iconButton("minimize", windows ? "mods/shapr-tabs/win-min.svg" : icon("minus"), { size: "sm", tip: "Minimize", onClick: () => run("window.minimize") }))
+        .child(iconButton("minimize", windows ? "mods/shapr-tabs/win-min.svg" : icon("remove"), { size: "sm", tip: "Minimize", onClick: () => run("window.minimize") }))
         .child(iconButton("maximize", windows ? `mods/shapr-tabs/${w.maximized ? "win-restore" : "win-max"}.svg` : "mods/shapr-tabs/win-max.svg", { size: "sm", tip: w.maximized ? "Restore" : "Maximize", onClick: () => run("window.maximize") }))
-        .child(iconButton("close-window", windows ? "mods/shapr-tabs/win-close.svg" : icon("x"), { size: "sm", tip: "Close", onClick: () => run("window.close") })));
+        .child(iconButton("close-window", windows ? "mods/shapr-tabs/win-close.svg" : icon("close"), { size: "sm", tip: "Close", onClick: () => run("window.close") })));
   }
 }

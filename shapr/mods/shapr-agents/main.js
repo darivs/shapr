@@ -53,7 +53,7 @@ const kidStatus = (k, listed) => {
 // An icon shapr-workspace-chrome holds for the chrome's mods.
 const chrome = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 const SORTS = [
-  { id: "priority", label: "Priority", icon: chrome("clock") },
+  { id: "priority", label: "Priority", icon: chrome("schedule") },
   { id: "grouped", label: "Grouped by space", icon: chrome("layers") },
 ];
 // The sort popup's size: exactly its menu, a header and one item per sort (kit menuHeight).
@@ -259,7 +259,7 @@ export default class Agents extends View {
         cx.notify();
       }, { layer: r.hover });
       return el
-        .child(svg(kitIcon(open ? "chevron-down" : "chevron-right")).size(16).flex_none())
+        .child(svg(kitIcon(open ? "keyboard_arrow_down" : "chevron_right")).size(16).flex_none())
         .when(!open, (el) => el.child(String(subs.length)));
     };
 
@@ -305,7 +305,7 @@ export default class Agents extends View {
       const idle = a.status === "idle" && !a.focused;
       const isPinned = a.pinned;
       const hovered = this.hovered === a.address;
-      const pin = iconButton(`pin-${a.address}`, chrome(isPinned ? "pin-off" : "pin"), {
+      const pin = iconButton(`pin-${a.address}`, chrome(isPinned ? "keep_off" : "keep"), {
         size: "xs",
         tip: isPinned ? "Unpin" : "Pin to the top",
         onClick: () => {
@@ -380,7 +380,7 @@ export default class Agents extends View {
         .child(div().flex_1())
         .when(!open, (el) => el
           .when(!byPriority && top && top !== "idle", (el) => el.child(this.status(r, { status: top }, true)))
-          .child(svg(kitIcon("chevron-right")).size(18).flex_none().text_color(r.onSurfaceVariant)));
+          .child(svg(kitIcon("chevron_right")).size(18).flex_none().text_color(r.onSurfaceVariant)));
     };
     const rows = collapsed
       ? list.flatMap(withKids)
@@ -415,7 +415,7 @@ export default class Agents extends View {
             .flex_none()
             .items_center()
             .justify_center()
-            .child(iconButton("collapse", kitIcon("chevron-right"), { size: "sm", tip: "Expand the sidebar", onClick: toggleSidebar })),
+            .child(iconButton("collapse", kitIcon("chevron_right"), { size: "sm", tip: "Expand the sidebar", onClick: toggleSidebar })),
         ),
       );
   }

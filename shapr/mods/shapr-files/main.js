@@ -158,8 +158,8 @@ export default class Files extends View {
       out.push(listItem(`file-${path}`, entry.name, {
         dense: true, indent: depth * SPACE.lg, onClick: (_e, cx) => entry.dir ? this.toggle(path, cx) : this.show(path, cx),
         leading: h_flex().gap(SPACE.sm).items_center()
-          .child(entry.dir ? svg(`mods/shapr-files/chevron-${open ? "down" : "right"}.svg`).size(16).flex_none().text_color(r.onSurfaceVariant) : div().w(16).flex_none())
-          .child(svg(`mods/shapr-files/${entry.dir ? "folder" : "file"}.svg`).size(18).flex_none().text_color(r.onSurfaceVariant)),
+          .child(entry.dir ? svg(icon(open ? "keyboard_arrow_down" : "chevron_right")).size(16).flex_none().text_color(r.onSurfaceVariant) : div().w(16).flex_none())
+          .child(svg(`mods/shapr-files/${entry.dir ? "folder" : "draft"}.svg`).size(18).flex_none().text_color(r.onSurfaceVariant)),
         trailing: mark ? label(mark, { style: "labelMedium", role: MARK[mark] ?? "primary" }) : null,
       }));
       if (entry.dir && open) this.rows(path, depth + 1, out, r);
@@ -172,7 +172,7 @@ export default class Files extends View {
     const r = roles();
     return type(panelCard(v_flex().id("files")), "bodyMedium")
       .child(panelHeader("Files", {
-        leading: this.file ? iconButton("files-back", icon("arrow-left"), { size: "sm", tip: "Back to files", onClick: () => this.show(null) }) : null,
+        leading: this.file ? iconButton("files-back", icon("arrow_back"), { size: "sm", tip: "Back to files", onClick: () => this.show(null) }) : null,
         detail: this.file ?? this.root?.split(/[\\/]/).pop() ?? "",
       }))
       .when(!this.file, el => el.child(v_flex().id("files-tree").flex_1().min_h(0).overflow_y_scrollbar().px(SPACE.sm).pb(SPACE.sm).children(this.rows("", 0, [], r))

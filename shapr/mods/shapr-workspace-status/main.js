@@ -40,8 +40,8 @@ export default class WorkspaceStatus extends View {
       .text_color(r.onSurfaceVariant);
     return h_flex().size_full().min_w(0).pl(SPACE.lg).pr(SPACE.sm).gap(SPACE.lg).items_center().bg(r.surface).text_color(r.onSurfaceVariant)
       .child(h_flex().flex_1().min_w(0).gap(SPACE.lg).items_center()
-        .child(fact(chrome(space?.machine ? "server" : "monitor"), space?.machine ?? "This computer"))
-        .when(Boolean(space?.branch), el => el.child(fact(chrome("branch"), space.branch)))
+        .child(fact(chrome(space?.machine ? "dns" : "monitor"), space?.machine ?? "This computer"))
+        .when(Boolean(space?.branch), el => el.child(fact(chrome("call_split"), space.branch)))
         .child(count))
       .child(palette);
   }

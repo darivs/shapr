@@ -101,12 +101,12 @@ export default class WorkspaceChrome extends View {
         .child(div().relative().flex_none()
           .child(iconButton("settings", glyph("settings"), { size: "sm", tip: "Settings", onClick: settings }))
           .when(ready, el => el.child(div().absolute().top(SPACE.xs).right(SPACE.xs).child(dot()))))
-        .child(iconButton("machine", glyph("plus"), { size: "sm", tip: "Add machine", onClick: machine }))
+        .child(iconButton("machine", icon("add"), { size: "sm", tip: "Add machine", onClick: machine }))
       : v_flex().flex_1().min_h(0).px(SPACE.md).justify_center()
         .child(navItem("theme", "Theme", { icon: glyph("palette"), onClick: theme }))
         .child(navItem("settings", "Settings", { icon: glyph("settings"), badge: ready ? dot() : null, onClick: settings }))
-        .child(navItem("machine", "Add machine", { icon: glyph("plus"), onClick: machine }));
-    return v_flex().size_full().bg(r.surface).child(divider()).child(rows);
+        .child(navItem("machine", "Add machine", { icon: icon("add"), onClick: machine }));
+    return v_flex().size_full().bg(r.surfaceContainer).child(divider()).child(rows);
   }
 
   // The brand bar: the Herdr mark and name (after the macOS traffic lights), search and the
@@ -116,7 +116,7 @@ export default class WorkspaceChrome extends View {
     const r = roles();
     const w = window();
     const mac = w?.platform === "macos";
-    const toggle = iconButton("sidebar-toggle", glyph("sidebar"), { size: "sm", tip: collapsed ? "Show sidebar" : "Hide sidebar", onClick: toggleSidebar });
+    const toggle = iconButton("sidebar-toggle", glyph("dock_to_left"), { size: "sm", tip: collapsed ? "Show sidebar" : "Hide sidebar", onClick: toggleSidebar });
     if (collapsed) {
       return h_flex().size_full().bg(r.surface).items_center().justify_center()
         .when(!mac, el => el.child(toggle));

@@ -59,24 +59,24 @@ export default class Gallery extends View {
     const body = v_flex().w_full().min_w(MIN_W).gap(K.SPACE.lg).p(PAD)
       .child(h_flex().w_full().items_center().gap(K.SPACE.md)
         .child(K.label("shapr components", { style: "headlineSmall", truncate: true, grow: true }))
-        .when(Boolean(overlay), (el) => el.child(K.iconButton("close", K.icon("x"), { tip: "Close", onClick: () => closeOverlay(overlay) }))))
+        .when(Boolean(overlay), (el) => el.child(K.iconButton("close", K.icon("close"), { tip: "Close", onClick: () => closeOverlay(overlay) }))))
       .child(this.section("Buttons",
-        ...kinds.map((k) => [k, [K.button(`b-${k}`, "Label", { kind: k, onClick: noop }), K.button(`bi-${k}`, "Add", { kind: k, icon: K.icon("plus"), onClick: noop }),
+        ...kinds.map((k) => [k, [K.button(`b-${k}`, "Label", { kind: k, onClick: noop }), K.button(`bi-${k}`, "Add", { kind: k, icon: K.icon("add"), onClick: noop }),
           K.button(`bq-${k}`, "Square", { kind: k, shape: "square", onClick: noop }), K.button(`bd-${k}`, "Disabled", { kind: k, disabled: true }), K.button(`be-${k}`, "Delete", { kind: k, danger: true, onClick: noop })]]),
         ["toggle", [K.button("bt-on", "Selected", { kind: "outlined", selected: true, onClick: noop }), K.button("bt-off", "Not selected", { kind: "outlined", selected: false, onClick: noop })]],
         ["sizes", ["xs", "sm", "md", "lg", "xl"].map((z) => K.button(`bz-${z}`, z.toUpperCase(), { size: z, onClick: noop }))],
         ["square sizes", ["xs", "sm", "md", "lg", "xl"].map((z) => K.button(`bqz-${z}`, z.toUpperCase(), { size: z, shape: "square", kind: "tonal", onClick: noop }))],
-        ["parts", [K.button("bp-trail", "Open with", { kind: "outlined", trailing: K.icon("chevron-down"), onClick: noop }),
+        ["parts", [K.button("bp-trail", "Open with", { kind: "outlined", trailing: K.icon("keyboard_arrow_down"), onClick: noop }),
           K.button("bp-lead", "Agent", { kind: "tonal", leading: K.statusMark("blocked"), onClick: noop }),
           K.button("bp-end", "Inbox", { kind: "text", end: K.badge({ count: 3 }), onClick: noop }),
           K.button("bp-max", "A label far too long for its button", { kind: "outlined", maxLabel: 120, tip: "A label far too long for its button", onClick: noop }),
           K.button("bp-int", "Hover only", { kind: "elevated", interactive: true })]]))
       .child(this.section("Icon buttons",
-        ...["standard", "filled", "tonal", "outlined"].map((k) => [k, [K.iconButton(`i-${k}`, K.icon("plus"), { kind: k, onClick: noop, tip: "Add" }),
+        ...["standard", "filled", "tonal", "outlined"].map((k) => [k, [K.iconButton(`i-${k}`, K.icon("add"), { kind: k, onClick: noop, tip: "Add" }),
           K.iconButton(`ion-${k}`, K.icon("check"), { kind: k, selected: true, onClick: noop }), K.iconButton(`ioff-${k}`, K.icon("check"), { kind: k, selected: false, onClick: noop }),
-          K.iconButton(`id-${k}`, K.icon("x"), { kind: k, disabled: true }), K.iconButton(`ie-${k}`, K.icon("x"), { kind: k, danger: true, tip: "Close", onClick: noop }),
-          K.iconButton(`in-${k}`, K.icon("chevron-left"), { kind: k, width: "narrow", onClick: noop }), K.iconButton(`iw-${k}`, K.icon("search"), { kind: k, width: "wide", onClick: noop })]]),
-        ["sizes", ["xs", "sm", "md", "lg", "xl"].map((z) => K.iconButton(`iz-${z}`, K.icon("plus"), { kind: "tonal", size: z, onClick: noop }))],
+          K.iconButton(`id-${k}`, K.icon("close"), { kind: k, disabled: true }), K.iconButton(`ie-${k}`, K.icon("close"), { kind: k, danger: true, tip: "Close", onClick: noop }),
+          K.iconButton(`in-${k}`, K.icon("chevron_left"), { kind: k, width: "narrow", onClick: noop }), K.iconButton(`iw-${k}`, K.icon("search"), { kind: k, width: "wide", onClick: noop })]]),
+        ["sizes", ["xs", "sm", "md", "lg", "xl"].map((z) => K.iconButton(`iz-${z}`, K.icon("add"), { kind: "tonal", size: z, onClick: noop }))],
         ["toggle sizes", ["xs", "sm", "md", "lg", "xl"].map((z) => K.iconButton(`izs-${z}`, K.icon("check"), { kind: "filled", size: z, selected: true, onClick: noop }))]))
       .child(this.section("Labels",
         ["type", Object.keys(K.TYPE).map((st) => K.label(styleName(st), { style: st }))],
@@ -89,13 +89,13 @@ export default class Gallery extends View {
         ["keycap", [K.keycap("Esc"), K.keycap("⌘"), K.keycap("Tab")]],
         ["shortcut", [K.shortcut(["⌘", "K"]), K.shortcut(["⌘", "⇧", "P"]), K.shortcut(["Ctrl", "Alt", "Del"]), K.label(K.keyLabel("cmd-shift-t"), { style: "labelMedium", role: "onSurfaceVariant" })]],
         ["search bar", [div().w(MAX_ITEM).child(K.searchBar(Input.new(this.search), { trailing: K.shortcut(["⌘", "K"]) })),
-          div().w(280).child(K.searchBar(Input.new(this.searchLg), { size: "lg", trailing: K.iconButton("search-clear", K.icon("x"), { tip: "Clear", onClick: noop }) })),
+          div().w(280).child(K.searchBar(Input.new(this.searchLg), { size: "lg", trailing: K.iconButton("search-clear", K.icon("close"), { tip: "Clear", onClick: noop }) })),
           div().w(220).child(K.searchBar(K.label("No trailing", { role: "onSurfaceVariant", style: "bodyLarge" }), { size: "lg" }))]]))
       .child(this.section("Chips",
-        ...["assist", "filter", "input", "suggestion"].map((k) => [k, [K.chip(`c-${k}`, "Chip", { kind: k, icon: k === "assist" ? K.icon("plus") : null, onClick: noop }),
+        ...["assist", "filter", "input", "suggestion"].map((k) => [k, [K.chip(`c-${k}`, "Chip", { kind: k, icon: k === "assist" ? K.icon("add") : null, onClick: noop }),
           K.chip(`cs-${k}`, "Selected", { kind: k, selected: s.chip, onClick: toggle("chip") }), K.chip(`ce-${k}`, "Elevated", { kind: k, elevated: true, onClick: noop }),
           K.chip(`cr-${k}`, "Removable", { kind: k, onRemove: noop }), K.chip(`cd-${k}`, "Disabled", { kind: k, disabled: true }), K.chip(`cx-${k}`, "Dense", { kind: k, size: "xs", count: 3, onClick: noop }),
-          K.chip(`ct-${k}`, "Menu", { kind: k, trailing: svg(K.icon("chevron-down")).size(18).flex_none(), onClick: noop })]]),
+          K.chip(`ct-${k}`, "Menu", { kind: k, trailing: svg(K.icon("keyboard_arrow_down")).size(18).flex_none(), onClick: noop })]]),
         ["status", ["working", "blocked", "done", "idle"].map((st) => K.chip(`cst-${st}`, st, { icon: K.icon("search"), iconColor: st, count: 2, onClick: noop }))],
         ["dense", ["working", "blocked"].map((st) => K.chip(`cxs-${st}`, st, { size: "xs", icon: K.icon("search"), iconColor: st, onRemove: noop }))]))
       .child(this.section("Selection",
@@ -103,7 +103,7 @@ export default class Gallery extends View {
         ["checkbox", [K.checkbox("cb", s.cb, (v) => { s.cb = v; }), K.checkbox("cb-0", false, noop), K.checkbox("cb-m", "mixed", noop), K.checkbox("cb-e", true, noop, { error: true }), K.checkbox("cb-e0", false, noop, { error: true }), K.checkbox("cb-d", true, noop, { disabled: true }), K.checkbox("cb-d0", false, noop, { disabled: true })]],
         ["radio", [K.radio("ra", s.radio === "a", set("radio", "a")), K.radio("rb", s.radio === "b", set("radio", "b")), K.radio("re", true, noop, { error: true }), K.radio("re0", false, noop, { error: true }), K.radio("rd", true, noop, { disabled: true }), K.radio("rd0", false, noop, { disabled: true })]],
         ["segmented", [K.segmented("seg", [["day", "Day"], ["week", "Week", { tip: "Seven days" }], ["month", "Month"], ["year", "Year", { disabled: true }]], s.seg, (v) => { s.seg = v; }),
-          K.segmented("seg-lg", [["a", "Large"], ["b", "Segments"]], "a", noop, { size: "lg" }), K.segmented("seg-i", [["a", "Grid"], ["b", "Add", { icon: K.icon("plus") }]], "a", noop),
+          K.segmented("seg-lg", [["a", "Large"], ["b", "Segments"]], "a", noop, { size: "lg" }), K.segmented("seg-i", [["a", "Grid"], ["b", "Add", { icon: K.icon("add") }]], "a", noop),
           K.segmented("seg-d", [["a", "Disabled"], ["b", "Group"]], "a", noop, { disabled: true })]],
         ["fill", [div().w(320).child(K.segmented("seg-f", [["a", "Compact"], ["b", "Standard"], ["c", "Comfortable"]], "b", noop, { fill: true }))]]))
       .child(this.section("Text fields",
@@ -118,10 +118,10 @@ export default class Gallery extends View {
         ["box only", [K.fieldBox(div().w(160), {}).child(K.label("Outlined")), K.fieldBox(div().w(160), { kind: "filled", focused: true }).child(K.label("Filled")),
           K.fieldBox(div().w(160), { error: true, radius: K.SHAPE.lg }).child(K.label("Round, error")), K.fieldBox(div().w(160), { disabled: true }).child(K.label("Disabled"))]]))
       .child(this.section("Menu, list, navigation",
-        ["menu", [K.menuSurface(v_flex().w(240).h(K.menuHeight({ items: menuItems, dividers: menuDividers, headers: menuHeaders }))).child(K.menuHeader("Group")).child(K.menuItem("m1", "New tab", { icon: K.icon("plus"), hint: "⌘T", onClick: noop, selected: false }))
+        ["menu", [K.menuSurface(v_flex().w(240).h(K.menuHeight({ items: menuItems, dividers: menuDividers, headers: menuHeaders }))).child(K.menuHeader("Group")).child(K.menuItem("m1", "New tab", { icon: K.icon("add"), hint: "⌘T", onClick: noop, selected: false }))
           .child(K.menuItem("m2", "Chosen item", { icon: K.icon("search"), selected: true, onClick: noop })).child(K.menuItem("m3", "Disabled", { disabled: true, onClick: noop, selected: false }))
-          .child(K.menuDivider()).child(K.menuItem("m4", "Close space", { icon: K.icon("x"), danger: true, onClick: noop })),
-          K.menuSurface(v_flex().w(240).h(K.menuHeight({ items: 3 }))).child(K.menuItem("m5", "Agent", { leading: K.statusMark("blocked"), trailing: svg(K.icon("chevron-right")).size(18), onClick: noop }))
+          .child(K.menuDivider()).child(K.menuItem("m4", "Close space", { icon: K.icon("close"), danger: true, onClick: noop })),
+          K.menuSurface(v_flex().w(240).h(K.menuHeight({ items: 3 }))).child(K.menuItem("m5", "Agent", { leading: K.statusMark("blocked"), trailing: svg(K.icon("chevron_right")).size(18), onClick: noop }))
             .child(K.menuItem("m6", "No check slot", { hint: "⌘N", onClick: noop })).child(K.menuItem("m7", "A label much too long for the menu", { trailing: K.shortcut(["⌘", "W"]), onClick: noop }))]],
         ["list", [v_flex().w(300).gap(2)
           .child(K.listItem("l1", "One line", { leading: K.statusMark("working"), onClick: noop, trailingText: "2m" }))
@@ -131,14 +131,14 @@ export default class Gallery extends View {
           .child(K.listItem("l5", "Hover only", { interactive: true, trailing: K.badge() }))
           .child(K.listItem("l6", "Disabled", { disabled: true, onClick: noop })),
           v_flex().w(260).gap(2).children([["main", "src", 0], ["kit", "kit", 16], ["tree", "list-item.js", 32], ["off", "Disabled", 32]].map(([k, name, indent]) =>
-            K.listItem(`lt-${k}`, name, { dense: true, indent, leading: svg(K.icon(indent < 32 ? "chevron-down" : "minus")).size(16), selected: s.tree === k, disabled: k === "off", trailingText: indent ? null : "3", onClick: set("tree", k) })))]],
+            K.listItem(`lt-${k}`, name, { dense: true, indent, leading: svg(K.icon(indent < 32 ? "keyboard_arrow_down" : "remove")).size(16), selected: s.tree === k, disabled: k === "off", trailingText: indent ? null : "3", onClick: set("tree", k) })))]],
         ["navigation", [v_flex().w(240).gap(2).children(["spaces", "agents", "files"].map((n) => K.navItem(`n-${n}`, n[0].toUpperCase() + n.slice(1), { icon: K.icon("search"), active: s.nav === n, badge: n === "agents" ? K.badge({ count: 12 }) : null, onClick: set("nav", n) })))
             .child(K.navItem("n-lead", "Leading", { leading: K.statusMark("blocked"), trailing: K.keycap("3"), onClick: noop })),
           h_flex().gap(0).children(["spaces", "agents", "files"].map((n) => K.navItem(`nr-${n}`, n, { icon: K.icon("search"), rail: true, active: s.nav === n, badge: n === "agents" ? K.badge() : null, onClick: set("nav", n) })))]]))
       .child(this.section("Panels",
         ["panel", [div().w(MAX_ITEM).h(220).child(K.panelCard()
-          .child(K.panelHeader("Files", { leading: K.iconButton("panel-back", K.icon("arrow-left"), { tip: "Back", onClick: noop }), detail: "~/dev/shapr/shapr/mods/shapr-gallery",
-            actions: [K.iconButton("panel-add", K.icon("plus"), { tip: "New file", onClick: noop }), K.iconButton("panel-close", K.icon("x"), { tip: "Close", onClick: noop })] }))
+          .child(K.panelHeader("Files", { leading: K.iconButton("panel-back", K.icon("arrow_back"), { tip: "Back", onClick: noop }), detail: "~/dev/shapr/shapr/mods/shapr-gallery",
+            actions: [K.iconButton("panel-add", K.icon("add"), { tip: "New file", onClick: noop }), K.iconButton("panel-close", K.icon("close"), { tip: "Close", onClick: noop })] }))
           .child(K.panelWell(v_flex().px(K.SPACE.md)).children(CODE.map((line) => K.label(line, { style: "bodySmall", truncate: true }))))),
           div().w(220).h(160).child(K.panelCard().child(K.panelHeader("Changes")).child(K.panelWell()))]]))
       .child(this.section("Cards, dialog",

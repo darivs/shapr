@@ -87,13 +87,13 @@ export function menuSize(p, git) {
 }
 
 function menuIcon(command) {
-  if (command.endsWith(".close")) return icon("x");
-  if (command.endsWith(".new")) return icon("plus");
-  if (command.endsWith(".rename")) return chrome("square-pen");
-  if (command === "worktree") return chrome("git-branch");
+  if (command.endsWith(".close")) return icon("close");
+  if (command.endsWith(".new")) return icon("add");
+  if (command.endsWith(".rename")) return chrome("edit_square");
+  if (command === "worktree") return chrome("call_split");
   if (command === "app.theme") return chrome("settings");
-  if (command === "pane.split") return chrome("panel-right");
-  if (command === "pane.zoom") return chrome("square");
+  if (command === "pane.split") return chrome("vertical_split");
+  if (command === "pane.zoom") return chrome("crop_square");
   return chrome("terminal");
 }
 // An icon shapr-workspace-chrome holds for the chrome's mods.

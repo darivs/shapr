@@ -25,6 +25,6 @@ export function linearProgress(width, value = null) {
 
 /** A circular indicator, size px (default 24): spins while indeterminate. */
 export function circularProgress(size = 24) {
-  const el = svg(icon("spinner")).size(size).flex_none().text_color(roles().primary);
+  const el = svg(icon("progress_activity")).size(size).flex_none().text_color(roles().primary);
   return reducedMotion() ? el : el.spin(1000);
 }

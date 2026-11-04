@@ -26,6 +26,6 @@ export function snackbar(id, { title, body = null, action = null, onClose = null
       .text_color(r.inversePrimary), action.onClick, { layer: "lift" }).child(action.label));
   if (onClose)
     el = el.child(press(div().id(`${id}-close`).size(32).flex_none().flex().items_center().justify_center().rounded_full(),
-      onClose, { layer: "lift" }).child(svg(icon("x")).size(18)));
+      onClose, { layer: "lift" }).child(svg(icon("close")).size(18)));
   return el;
 }

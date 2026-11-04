@@ -302,7 +302,7 @@ export default class Spaces extends View {
         cx.notify();
       }, { layer: r.hover });
       head = head
-        .child(svg(`mods/shapr-workspace-chrome/${m ? "server" : "monitor"}.svg`).size(collapsed ? 14 : 18).flex_none())
+        .child(svg(`mods/shapr-workspace-chrome/${m ? "dns" : "monitor"}.svg`).size(collapsed ? 14 : 18).flex_none())
         .when(!collapsed, el => el.child(div().flex_1().min_w(0).truncate().child(m ?? "This computer"))
           .when(!connected && !rebuilt, el => el.child(label((machine?.state ?? "asleep").replace(/_/g, " "), { style: "labelSmall", role: "onSurfaceVariant" }).flex_none()))
           .when(rebuilt, el => el.child(h_flex().flex_none().gap(SPACE.xs).items_center()
@@ -312,14 +312,14 @@ export default class Spaces extends View {
               tip: repair?.error || "This machine was rebuilt or replaced. Click to connect to the new one.",
               onClick: (_e, cx) => this.reconnect(machine, cx),
             }))))
-          .when(connected, el => el.child(iconButton(`machine-add-${m ?? "local"}`, icon("plus"), { size: "xs", tip: "New space there", onClick: () => run("space.new", { machine: m ?? "" }) }))))
+          .when(connected, el => el.child(iconButton(`machine-add-${m ?? "local"}`, icon("add"), { size: "xs", tip: "New space there", onClick: () => run("space.new", { machine: m ?? "" }) }))))
         .child(div().size(6).flex_none().rounded_full().bg(connected ? (t.ansi2 ?? r.primary) : r.disabled))
-        .child(svg(icon(folded ? "chevron-right" : "chevron-down")).size(collapsed ? 12 : 18).flex_none());
+        .child(svg(icon(folded ? "chevron_right" : "keyboard_arrow_down")).size(collapsed ? 12 : 18).flex_none());
       const newThere = () => run("space.new", { machine: m ?? "" });
       const empty = collapsed
         ? press(h_flex().id(`machine-new-${m ?? "local"}`).h(H.sm).w_full().flex_none().items_center().justify_center().rounded_full().text_color(r.onSurfaceVariant)
-          .child(svg(icon("plus")).size(18)), newThere, { layer: r.hover })
-        : navItem(`machine-new-${m ?? "local"}`, "New space there", { icon: icon("plus"), onClick: newThere });
+          .child(svg(icon("add")).size(18)), newThere, { layer: r.hover })
+        : navItem(`machine-new-${m ?? "local"}`, "New space there", { icon: icon("add"), onClick: newThere });
       if (!collapsed && rebuilt) return [head];
       return [head, ...(folded ? [] : mine.length ? mine.map(draw) : [loading(m) ? loadingRow(m) : empty])];
     });
@@ -355,7 +355,7 @@ export default class Spaces extends View {
     const color = colors[w.id] ?? "ansi6";
     const fill = color.startsWith("#") ? color : (t[color] ?? r.primary);
     const avatar = tree
-      ? div().w(24).flex_none().flex().justify_center().child(svg("mods/shapr-workspace-chrome/branch.svg").size(16).text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant))
+      ? div().w(24).flex_none().flex().justify_center().child(svg("mods/shapr-workspace-chrome/call_split.svg").size(16).text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant))
       : type(div(), "labelMedium", true).size(24).flex_none().flex().items_center().justify_center().rounded(SHAPE.sm).bg(fill).text_color(onStatus())
         .child([...w.name][0]?.toUpperCase() ?? "?");
     const text = h_flex().w_full().min_w(0).gap(SPACE.sm).items_center()
@@ -423,7 +423,7 @@ export default class Spaces extends View {
       changed = true;
     }
     if (changed) setShared("space.colors", kept);
-    const add = iconButton("space-new", icon("plus"), { size: "sm", tip: "New space", onClick: () => run("space.new") });
+    const add = iconButton("space-new", icon("add"), { size: "sm", tip: "New space", onClick: () => run("space.new") });
     return type(v_flex(), "bodyMedium").size_full().min_h(0).bg(r.surface).text_color(r.onSurface)
       .child(collapsed
         ? h_flex().h(36).flex_none().items_center().justify_center().child(add)

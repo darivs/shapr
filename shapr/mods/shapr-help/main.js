@@ -56,7 +56,7 @@ export default class Help extends View {
       })
       .child(h_flex().w_full().gap(12).items_center()
         .child(dialogHeadline("Keybinds").flex_1().min_w(0).truncate())
-        .child(iconButton("help-close", icon("x"), { size: "md", tip: "Close", onClick: () => closeOverlay(props().overlay) })))
+        .child(iconButton("help-close", icon("close"), { size: "md", tip: "Close", onClick: () => closeOverlay(props().overlay) })))
       .child(searchBar(Input.new(this.input).w_full().text_color(r.onSurface), { size: "lg" }))
       .child(
         v_flex()

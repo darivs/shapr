@@ -21,7 +21,7 @@ export function badge({ count = null, max = 999, role = "error", on = "onError" 
 export function statusMark(status, { size = 8 } = {}) {
   const r = roles();
   if (status === "working") {
-    const s = svg(icon("spinner")).size(size + 4).flex_none().text_color(r.working);
+    const s = svg(icon("progress_activity")).size(size + 4).flex_none().text_color(r.working);
     return reducedMotion() ? s : s.spin(900);
   }
   if (status === "blocked") return loop(div().size(size + 2).flex_none().rounded_full().bg(r.blocked), "opacity", { from: 0.55, to: 1, period: 1200 });
