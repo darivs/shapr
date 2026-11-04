@@ -101,6 +101,31 @@ test("the type scale is thin: display and headline at 300, title large, body and
   for (const [st, w] of Object.entries(want)) assert.equal(weight(st, true), up[w], st);
 });
 
+// A TrueType font's OS/2 usWeightClass: the weight its cut is.
+const weightClass = (buf) => {
+  for (let i = 0, n = buf.readUInt16BE(4); i < n; i++) {
+    const rec = 12 + 16 * i;
+    if (buf.toString("latin1", rec, rec + 4) === "OS/2") return buf.readUInt16BE(buf.readUInt32BE(rec + 8) + 4);
+  }
+  return null;
+};
+
+test("Roboto Flex ships a static cut for each weight the type scale uses, and no other", () => {
+  reset();
+  const used = new Set();
+  for (const st of Object.keys(K.TYPE))
+    for (const emphasized of [false, true]) used.add(argsOf(K.type(div(), st, emphasized), "font_weight")[0][0]);
+  const dir = new URL("../shapr/mods/shapr-workspace-chrome/fonts/", import.meta.url);
+  const cuts = readdirSync(dir).filter((f) => f.endsWith(".ttf")).map((f) => weightClass(readFileSync(new URL(f, dir))));
+  assert.deepEqual([...cuts].sort(), [...used].sort());
+  assert.deepEqual([...used].sort(), [300, 400, 500]);
+  // Weights come only from type(): no mod sets one itself.
+  const mods = new URL("../shapr/mods/", import.meta.url);
+  for (const m of readdirSync(mods).filter((m) => m.startsWith("shapr-")))
+    for (const f of readdirSync(new URL(`${m}/`, mods)).filter((f) => f.endsWith(".js")))
+      assert.doesNotMatch(readFileSync(new URL(`${m}/${f}`, mods), "utf8"), /font_weight\(/, `${m}/${f}`);
+});
+
 test("type sets size, a static weight and the line height", () => {
   reset();
   const t = K.type(K.label("x").__node ? K.label("x") : null, "labelLarge", true);
