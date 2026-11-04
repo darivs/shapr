@@ -92,7 +92,7 @@ function menuIcon(command, args) {
   if (command.endsWith(".rename")) return chrome("edit_square");
   if (command === "worktree") return chrome("call_split");
   if (command === "app.theme") return chrome("settings");
-  if (command === "pane.split") return chrome(args?.direction === "down" ? "horizontal_split" : "vertical_split");
+  if (command === "pane.split") return chrome(args?.direction === "down" ? "splitscreen_bottom" : "splitscreen_right");
   if (command === "pane.zoom") return chrome("crop_square");
   return chrome("terminal");
 }

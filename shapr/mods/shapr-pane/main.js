@@ -58,8 +58,8 @@ export default class Pane extends View {
       .child(label(folder(p.cwd), { style: "bodySmall", role: "onSurfaceVariant", truncate: true, grow: true }))
       .when(["working", "blocked", "done"].includes(st), (el) => el.child(statusMark(st)))
       .when(this.hovered, (el) => el
-        .child(this.button(`ph-r-${pane}`, chrome("vertical_split"), "Split right", "pane.split", { direction: "right", pane }))
-        .child(this.button(`ph-d-${pane}`, chrome("horizontal_split"), "Split down", "pane.split", { direction: "down", pane }))
+        .child(this.button(`ph-r-${pane}`, chrome("splitscreen_right"), "Split right", "pane.split", { direction: "right", pane }))
+        .child(this.button(`ph-d-${pane}`, chrome("splitscreen_bottom"), "Split down", "pane.split", { direction: "down", pane }))
         .child(this.button(`ph-z-${pane}`, chrome(p.zoomed ? "close_fullscreen" : "open_in_full"), p.zoomed ? "Unzoom" : "Zoom", "pane.zoom", { pane }))
         .child(this.button(`ph-x-${pane}`, icon("close"), "Close pane", "pane.close", { pane })));
   }
