@@ -80,10 +80,11 @@ test("every icon path the code names resolves to a file", () => {
   assert.deepEqual(missing, []);
 });
 
-// What @material-symbols/svg-300 (outlined/<name>.svg, outlined/<name>-fill.svg) ships: one path
-// on Material Symbols' 960 grid, no stroke. Lucide's are strokes on a 24 grid.
+// What Google's material-design-icons ships for Material Symbols Outlined at weight 300 and optical
+// size 20 (symbols/web/<name>/materialsymbolsoutlined/<name>[_fill1]_wght300_20px.svg): one path on
+// the 960 grid, no stroke, sized 20. The UI draws icons at 20 px or less. Lucide's are strokes on a 24 grid.
 const SYMBOL_NAME = /^[a-z0-9_]+(-fill)?\.svg$/;
-const SYMBOL = /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="48" height="48" viewBox="0 -960 960 960"><path d="[^"]+"\/><\/svg>\n?$/;
+const SYMBOL = /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" height="20" viewBox="0 -960 960 960" width="20"><path d="[^"]+"\/><\/svg>\n?$/;
 const shipped = () => [...walk(KIT_ICONS), ...walk(MODS, (p) => isCopy(p) || /\/fonts$|\/theme$/.test(p))]
   .filter((p) => p.endsWith(".svg") && !/\/shapr-tabs\/win-[a-z]+\.svg$/.test(p));
 
