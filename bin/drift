@@ -1,0 +1,103 @@
+#!/usr/bin/env node
+// Lists every clone whose shipped Herdr original changed since its record (cloned_from), with
+// the changed, added and removed files, so the change can be ported by hand. Exits 1 on drift.
+// Usage: bin/drift [--herdr-version <v>]      report (HERDR_VERSION also sets Herdr's version)
+//        bin/drift --accept <clone> [...]     after porting: record the current original
+// A clone is a mod folder (shapr-tabs) or the layout (layouts/shapr).
+import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
+import { homedir } from "node:os";
+import { pathToFileURL } from "node:url";
+import { walk, sha } from "./clone-mods";
+
+const root = new URL("..", import.meta.url).pathname;
+const appHome = process.env.HERDR_APP_HOME ?? join(homedir(), ".config", "herdr-app");
+
+/** Every clone with a record: { clone, file (the record's JSON), name, version, files, original }. */
+export function clones() {
+  const out = [];
+  const mods = join(root, "shapr", "mods");
+  for (const m of existsSync(mods) ? readdirSync(mods).sort() : []) {
+    const file = join(mods, m, "mod.json");
+    if (!existsSync(file)) continue;
+    const c = JSON.parse(readFileSync(file, "utf8")).cloned_from;
+    if (c) out.push({ clone: m, file, name: c.name, version: c.version, files: c.files, original: join(appHome, "mods", c.name) });
+  }
+  const layouts = join(root, "shapr", "layouts");
+  for (const l of existsSync(layouts) ? readdirSync(layouts).filter((f) => f.endsWith(".json")).sort() : []) {
+    const file = join(layouts, l);
+    const c = JSON.parse(readFileSync(file, "utf8")).cloned_from;
+    if (c) out.push({ clone: `layouts/${basename(l, ".json")}`, file, name: c.name, version: c.version,
+      files: { [`${c.name}.json`]: c.sha256 }, original: join(appHome, "layouts", `${c.name}.json`) });
+  }
+  return out;
+}
+
+/** The original's files as { relpath: sha256 }, or null when it is missing. */
+function current(c) {
+  if (!existsSync(c.original)) return null;
+  if (c.clone.startsWith("layouts/")) return { [`${c.name}.json`]: sha(readFileSync(c.original)) };
+  return Object.fromEntries(walk(c.original).map((f) => [f, sha(readFileSync(join(c.original, f)))]));
+}
+
+/** What changed in a clone's original: null when nothing did. */
+export function drift(c) {
+  const now = current(c);
+  if (!now) return { missing: true, changed: [], added: [], removed: [] };
+  const was = c.files ?? {};
+  const changed = Object.keys(now).filter((f) => f in was && was[f] !== now[f]).sort();
+  const added = Object.keys(now).filter((f) => !(f in was)).sort();
+  const removed = Object.keys(was).filter((f) => !(f in now)).sort();
+  return changed.length || added.length || removed.length ? { missing: false, changed, added, removed } : null;
+}
+
+/** Rewrites a clone's record to the current original's version and hashes. */
+export function accept(c, version) {
+  const now = current(c);
+  if (!now) throw new Error(`${c.clone}: original ${c.name} is missing`);
+  const j = JSON.parse(readFileSync(c.file, "utf8"));
+  j.cloned_from = c.clone.startsWith("layouts/")
+    ? { name: c.name, version, sha256: now[`${c.name}.json`] }
+    : { name: c.name, version, files: now };
+  writeFileSync(c.file, JSON.stringify(j, null, 2) + "\n");
+}
+
+function herdrVersion(flag) {
+  if (flag) return flag;
+  if (process.env.HERDR_VERSION) return process.env.HERDR_VERSION;
+  try {
+    return execFileSync("herdr-app", ["--version"], { encoding: "utf8" }).trim().split(/\s+/).pop();
+  } catch { return "unknown"; }
+}
+
+// Run as a command (argv[1] may be a symlinked path, e.g. a temp folder on macOS).
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+  const args = process.argv.slice(2);
+  const i = args.indexOf("--herdr-version");
+  const flag = i >= 0 ? args.splice(i, 2)[1] : undefined;
+  const version = herdrVersion(flag);
+  const all = clones();
+  if (args[0] === "--accept") {
+    const names = args.slice(1);
+    if (!names.length) { console.error("usage: bin/drift --accept <clone> [...]"); process.exit(2); }
+    let bad = 0;
+    for (const n of names) {
+      const c = all.find((c) => c.clone === n);
+      if (!c) { console.error(`${n}: no such clone`); bad++; continue; }
+      try { accept(c, version); console.log(`${n}: recorded ${c.name} ${version}`); }
+      catch (e) { console.error(e.message); bad++; }
+    }
+    process.exit(bad ? 2 : 0);
+  }
+  let n = 0;
+  for (const c of all) {
+    const d = drift(c);
+    if (!d) continue;
+    n++;
+    console.log(`${c.clone}: ${c.name} ${c.version} -> ${d.missing ? "missing" : version}`);
+    if (d.missing) console.log(`  missing  ${c.original.startsWith(appHome) ? c.original.slice(appHome.length + 1) : c.original}`);
+    for (const k of ["changed", "added", "removed"]) for (const f of d[k]) console.log(`  ${k.padEnd(8)} ${f}`);
+  }
+  process.exit(n ? 1 : 0);
+}
