@@ -1,5 +1,5 @@
 {
   "place": "none",
   "title": "shapr components",
-  "overlay": { "kind": "window", "width": 1040, "height": 0.9, "frame": "none" }
+  "overlay": { "kind": "window", "width": 0.9, "height": 0.9, "frame": "none" }
 }

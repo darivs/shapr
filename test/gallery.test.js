@@ -71,7 +71,7 @@ test("rows wrap: no sample is wider than MAX_ITEM, narrow windows stack the row 
         if (typeof n === "number") assert.ok(n <= MAX_ITEM || (m === "min_w" && n === MIN_W), `${m}(${n}) at width ${width}`);
     assert.equal(argsOf(tree, "flex_wrap").length > 20, true);
   }
-  // At 1.5 zoom a 1040 px window keeps names beside their samples; a narrow one stacks them.
+  // At 1.5 zoom a 1040 px wide window (0.9 of a laptop's) keeps names beside their samples; a narrow one stacks them.
   assert.ok(WIDE <= 1040 / 1.5, `WIDE ${WIDE}`);
   v.width = WIDE - 1;
   const narrow = v.render();
