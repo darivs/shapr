@@ -28,3 +28,9 @@ test("each pane is a card: radius 16, no border at rest, a 2 px primary focus ri
   assert.equal(pane.background, "background");
   assert.equal(pane.header.content.mod, "pane");
 });
+
+test("cards sit 12 px apart and 12 px inside the work area", () => {
+  assert.equal(find("work-body").padding, 12);
+  assert.equal(find("work-body").gap, 12);
+  assert.equal(find("main").content.pane.gap, 12);
+});
