@@ -31,7 +31,7 @@ test("each pane is a card: radius 16, no border at rest, a 2 px primary focus ri
   // card too, so it carries the ring.
   assert.equal(pane.lone, true);
   assert.equal(pane.background, "background");
-  assert.equal(pane.header.content.mod, "pane");
+  assert.equal(pane.header.content.mod, "shapr-pane");
 });
 
 test("no status bar runs under the panes: the work area's cards reach the window's bottom margin", async () => {

@@ -86,13 +86,13 @@ export function menuSize(p, git) {
   return { items: list.length, dividers: list.filter((_, i) => dividerBefore(list, i)).length };
 }
 
-function menuIcon(command) {
+function menuIcon(command, args) {
   if (command.endsWith(".close")) return icon("close");
   if (command.endsWith(".new")) return icon("add");
   if (command.endsWith(".rename")) return chrome("edit_square");
   if (command === "worktree") return chrome("call_split");
   if (command === "app.theme") return chrome("settings");
-  if (command === "pane.split") return chrome("vertical_split");
+  if (command === "pane.split") return chrome(args?.direction === "down" ? "horizontal_split" : "vertical_split");
   if (command === "pane.zoom") return chrome("crop_square");
   return chrome("terminal");
 }
@@ -192,7 +192,7 @@ export default class Menu extends View {
       })
       .children(list.flatMap((it, i) => [
         dividerBefore(list, i) ? menuDivider() : null,
-        menuItem(`mi-${i}`, it[0], { icon: menuIcon(it[1]), hint: shortcut(it[1], it[2]) || null, danger: it[1].endsWith(".close"), onClick: () => this.choose(i) })
+        menuItem(`mi-${i}`, it[0], { icon: menuIcon(it[1], it[2]), hint: shortcut(it[1], it[2]) || null, danger: it[1].endsWith(".close"), onClick: () => this.choose(i) })
           .when(i === this.at, (el) => el.bg(r.hover)),
       ]).filter(Boolean));
   }

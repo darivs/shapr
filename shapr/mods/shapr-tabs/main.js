@@ -1,8 +1,8 @@
 // style: md3
-import { View, svg, image } from "gpui-kit";
+import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, window, shared, layout, settings } from "herdr";
-import { button, iconButton, statusMark, roles, icon, divider, H, SPACE, newMenuSpec, tabMenuSpec, renameSpec } from "./kit/index.js";
+import { button, iconButton, statusMark, roles, icon, H, SPACE, newMenuSpec, tabMenuSpec, renameSpec } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -90,7 +90,7 @@ export default class Tabs extends View {
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(SPACE.xs).overflow_x_scrollbar().children(shown.map(item)))
       .child(iconButton("tab-new", icon("add"), { size: "sm", tip: "New tab", onClick: () => openOverlay(newMenuSpec()) }))
-      .when(enabled.length > 0, el => el.child(divider({ vertical: true, space: SPACE.xs }).h(H.xs)))
+      .when(enabled.length > 0, el => el.child(div().w(SPACE.sm).flex_none()))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/shapr-files/draft.svg")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/shapr-changes/difference.svg")))
       .when(w?.buttons, el => el

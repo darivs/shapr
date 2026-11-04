@@ -1,0 +1,17 @@
+{
+  "place": "none",
+  "title": "Pane header",
+  "cloned_from": {
+    "name": "pane",
+    "version": "0.1.12",
+    "files": {
+      "close.svg": "532eb25ce41976594b69b3735e1e2f892f18f39288da7e420832b9ee66dc4ff6",
+      "main.js": "30df4c9b774414ca184b16f76c97c84f3cebd2ee411bea45c5c25b9d0ac65899",
+      "mod.json": "a10f79e972a197d0d51b37009180ac0e5518add50d601844b73cfb06539e2989",
+      "split-down.svg": "a9cbd394b0fe8bbb1881480dfb84072c2493f85e335b0b4c7de94b53d4a10d69",
+      "split-right.svg": "55b7bb600aad8463103f8848219ca8bcdc4cc620cdcb52325dde007f8275a637",
+      "unzoom.svg": "a061af514f83278f3b5f0bea6388b116ce66969897b202cd5709f4970b8750c6",
+      "zoom.svg": "e2d29d06235819c0b617029291adc8a9f4d31dc59264a50e97e55470e9ad2823"
+    }
+  }
+}

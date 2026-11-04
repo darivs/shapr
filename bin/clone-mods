@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 
 export const CLONED = ["workspace-chrome", "spaces", "agents", "tabs", "files", "changes",
-  "new-menu", "menu", "prompt", "confirm", "help", "picker", "worktree", "machine-add"];
+  "new-menu", "menu", "prompt", "confirm", "help", "picker", "worktree", "machine-add", "pane"];
 // Files Herdr writes into every mod folder; never part of a clone.
 export const SKIP = new Set(["gpui-kit.d.ts", "jsconfig.json"]);
 

@@ -119,7 +119,7 @@
                   },
                   "header": {
                     "content": {
-                      "mod": "pane"
+                      "mod": "shapr-pane"
                     },
                     "height": 30,
                     "position": "top",
