@@ -56,6 +56,22 @@ test("the sidebar, brand, tabs, sidebar footer and status bar paint canvas, not 
   }
 });
 
+test("Files and Changes are cards of the panes' shape and fill, without a border", async () => {
+  // Both draw their panel through the kit's panelCard (gpui-base's Editor keeps them out of the stubs).
+  const { reset } = await import("herdr");
+  const { panelCard } = await import("../kit/index.js");
+  for (const mod of ["shapr-files", "shapr-changes"])
+    assert.match(readFileSync(new URL(`../shapr/mods/${mod}/main.js`, import.meta.url), "utf8"), /return type\(panelCard\(/, mod);
+  for (const [corners, radius] of [["standard", 16], ["round", 20]]) {
+    const h = reset({ shared: { "shapr.settings": { corners } } });
+    const calls = panelCard().__node.calls;
+    const of = (m) => calls.filter(([n]) => n === m).map(([, a]) => a[0]);
+    assert.deepEqual(of("bg"), [h.theme.background], "fill");
+    assert.deepEqual(of("rounded"), [radius], `${corners} radius`);
+    assert.deepEqual([...of("border_1"), ...of("border_color")], [], "border");
+  }
+});
+
 test("text on a status fill keeps its contrast now that the terminal's ground is a card", async () => {
   const { reset } = await import("herdr");
   const { onStatus } = await import("../kit/index.js");
