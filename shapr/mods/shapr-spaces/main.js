@@ -1,11 +1,15 @@
+// style: md3
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
 // grouped by machine when more than one is known. After a space's name, the repo
-// its first terminal is in now, only where unusual: branch, ahead/behind. Agent state lives in the agents list, not here. Click to
-// switch, right-click for its menu, drag to reorder.
+// its first terminal is in now, only where unusual: branch, ahead/behind. Agent state lives in the agents list, not here
+// (only a blocked space speaks up). Click to switch, right-click for its menu, drag to reorder.
+// Drawn as an MD3 navigation drawer: a subheader, 40 drawer items, a subheader per machine;
+// the rail (under 160 px) shows 32 pills with the space's number.
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
+import { roles, onStatus, type, label, heading, navItem, iconButton, button, statusMark, icon, press, H, ROW, SPACE, SHAPE } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -25,16 +29,11 @@ function place(s, ps) {
   const tabs = new Set((s.tabs ?? []).map((c) => c.id));
   return ps.find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder;
 }
-const rowHeight = ({ tree }) => (tree ? 28 : 30);
 const where = (s, ps) => JSON.stringify([s.machine ?? null, place(s, ps)]);
 const base = (path) => path.replace(/\/+$/, "").split("/").pop();
 // Changes made outside Herdr (an editor's save, a commit in another app): looked
 // for this often, in repos the list shows, while the window is in front.
 const FALLBACK = 60000;
-
-// What a stored color name looks like on an avatar (the same in every mod
-// that draws space avatars): one strong color per hue, light and dark alike.
-const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b7cf6", ansi2: "#3fae6a", ansi1: "#d9649a" };
 
 // A space speaks up only when something in it needs you.
 export function glyph(status) {
@@ -272,16 +271,19 @@ export default class Spaces extends View {
   }
 
   // The rows, under a header per machine once one isn't this computer.
-  grouped(t, collapsed) {
+  grouped(r, collapsed) {
+    const t = theme();
     const rows = this.ordered();
-    const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t));
+    const draw = (row) => (collapsed ? this.compact(row, r) : this.row(row, r));
     const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name), ...Object.keys(this.reconnecting)])].sort();
     const loading = m => {
       const layout = machines().find(k => k.name === m)?.layout;
       return layout === "loading" || (!layout && this.machines.some(k => k.name === m && k.state === "connected"))
         || spaces().some(s => (s.machine ?? null) === m && !this.shown.has(s.id));
     };
-    const loadingRow = m => div().id(`machine-loading-${m ?? "local"}`).h(28).flex_none().px(8).text_size(12).text_color(t.dim).child(collapsed ? "…" : "Loading…");
+    const loadingRow = m => type(div(), "bodyMedium").id(`machine-loading-${m ?? "local"}`).h(collapsed ? H.sm : ROW.one).flex_none().flex().items_center()
+      .when(collapsed, el => el.justify_center()).when(!collapsed, el => el.px(SPACE.lg))
+      .text_color(r.onSurfaceVariant).child(collapsed ? "…" : "Loading…");
     if (!remote.length) return loading(null) && !rows.length ? [loadingRow(null)] : rows.map(draw);
     const machineNames = [null, ...remote];
     return machineNames.flatMap((m) => {
@@ -291,76 +293,82 @@ export default class Spaces extends View {
       const connected = !m || machine?.state === "connected";
       const rebuilt = this.rebuilt(machine) || !!repair;
       const folded = this.folded.has(m);
-      const head = h_flex().id(`machine-${m ?? "local"}`).h(26).flex_none().px(collapsed ? 2 : 8).gap(7).items_center().text_size(11).text_color(t.dim)
-        .cursor_pointer().hover(s => s.bg(t.hover))
-        .on_click((_e, cx) => {
-          folded ? this.folded.delete(m) : this.folded.add(m);
-          localStorage.setItem("machines.folded", JSON.stringify([...this.folded]));
-          cx.notify();
-        })
-        .child(svg(`mods/shapr-workspace-chrome/${m ? "server" : "monitor"}.svg`).size(13).flex_none())
-        .when(!collapsed, el => el.child(div().flex_1().truncate().child(m ?? "This computer"))
-          .when(!connected && !rebuilt, el => el.child(div().flex_none().child((machine?.state ?? "asleep").replace(/_/g, " "))))
-          .when(rebuilt, el => el.child(h_flex().flex_none().gap(3).items_center()
-            .child(div().max_w(140).truncate().child(repair?.error || "rebuilt ·"))
-            .child(div().id(`machine-connect-${m}`).text_color(repair?.error ? t.blocked : t.muted)
-              .hover(s => s.text_color(t.foreground))
-              .tooltip(repair?.error || "This machine was rebuilt or replaced. Click to connect to the new one.")
-              .on_click((_e, cx) => { cx.stop_propagation(); this.reconnect(machine, cx); })
-              .child(repair?.busy ? "Connecting…" : "Connect"))))
-          .when(connected, el => el.child(div().id(`machine-add-${m ?? "local"}`).flex_none().px(4).rounded(4).hover(s => s.bg(t.hover).text_color(t.foreground))
-            .on_click((_e, cx) => { cx.stop_propagation(); run("space.new", { machine: m ?? "" }); }).child("+")))
-          .child(div().size(6).rounded(3).flex_none().bg(connected ? t.ansi2 : t.dim))
-          .child(svg(`mods/shapr-workspace-chrome/chevron-${folded ? "right" : "down"}.svg`).size(11).flex_none()));
-      const empty = h_flex().id(`machine-new-${m ?? "local"}`).h(28).flex_none().px(8).gap(7).items_center().rounded(7)
-        .text_size(12).text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground))
-        .on_click(() => run("space.new", { machine: m ?? "" }))
-        .child(svg("mods/shapr-workspace-chrome/plus.svg").size(12)).when(!collapsed, el => el.child("New space there"));
+      // A list subheader per machine: it folds that machine's spaces.
+      let head = h_flex().id(`machine-${m ?? "local"}`).h(36).flex_none().mt(SPACE.xs).px(collapsed ? 0 : SPACE.lg).pr(collapsed ? 0 : SPACE.sm)
+        .gap(collapsed ? SPACE.xxs : SPACE.sm).items_center().when(collapsed, el => el.justify_center()).rounded_full().text_color(r.onSurfaceVariant);
+      head = press(type(head, "titleSmall"), (_e, cx) => {
+        folded ? this.folded.delete(m) : this.folded.add(m);
+        localStorage.setItem("machines.folded", JSON.stringify([...this.folded]));
+        cx.notify();
+      }, { layer: r.hover });
+      head = head
+        .child(svg(`mods/shapr-workspace-chrome/${m ? "server" : "monitor"}.svg`).size(collapsed ? 14 : 18).flex_none())
+        .when(!collapsed, el => el.child(div().flex_1().min_w(0).truncate().child(m ?? "This computer"))
+          .when(!connected && !rebuilt, el => el.child(label((machine?.state ?? "asleep").replace(/_/g, " "), { style: "labelSmall", role: "onSurfaceVariant" }).flex_none()))
+          .when(rebuilt, el => el.child(h_flex().flex_none().gap(SPACE.xs).items_center()
+            .child(label(repair?.error || "rebuilt ·", { style: "labelSmall", role: repair?.error ? "error" : "onSurfaceVariant", truncate: true }).max_w(140))
+            .child(button(`machine-connect-${m}`, repair?.busy ? "Connecting…" : "Connect", {
+              kind: "text", size: "xs", danger: Boolean(repair?.error),
+              tip: repair?.error || "This machine was rebuilt or replaced. Click to connect to the new one.",
+              onClick: (_e, cx) => this.reconnect(machine, cx),
+            }))))
+          .when(connected, el => el.child(iconButton(`machine-add-${m ?? "local"}`, icon("plus"), { size: "xs", tip: "New space there", onClick: () => run("space.new", { machine: m ?? "" }) }))))
+        .child(div().size(6).flex_none().rounded_full().bg(connected ? (t.ansi2 ?? r.primary) : r.disabled))
+        .child(svg(icon(folded ? "chevron-right" : "chevron-down")).size(collapsed ? 12 : 18).flex_none());
+      const newThere = () => run("space.new", { machine: m ?? "" });
+      const empty = collapsed
+        ? press(h_flex().id(`machine-new-${m ?? "local"}`).h(H.sm).w_full().flex_none().items_center().justify_center().rounded_full().text_color(r.onSurfaceVariant)
+          .child(svg(icon("plus")).size(18)), newThere, { layer: r.hover })
+        : navItem(`machine-new-${m ?? "local"}`, "New space there", { icon: icon("plus"), onClick: newThere });
       if (!collapsed && rebuilt) return [head];
       return [head, ...(folded ? [] : mine.length ? mine.map(draw) : [loading(m) ? loadingRow(m) : empty])];
     });
   }
 
-  // Only what's unusual, after the name: "herdr \u00b7 spike \u21912 \u21931". The repo or
+  // Only what's unusual, after the name: "herdr · spike ↑2 ↓1". The repo or
   // branch goes when the name already says it (a worktree is named after its branch),
   // and master/main go: nearly every space is on one.
-  gitTail(g, tree, name, t) {
+  gitTail(g, tree, name, r) {
     const raw = g.branch ?? "detached";
     const same = (a) => a.toLowerCase() === name.toLowerCase();
     const branch = same(raw) || raw === "master" || raw === "main" ? "" : raw;
     const repo = tree || same(g.name) ? "" : g.name;
-    const where = [repo, branch].filter(Boolean).join(" \u00b7 ");
+    const where = [repo, branch].filter(Boolean).join(" · ");
+    // Ahead and behind in primary and tertiary: red stays for blocked.
     return h_flex()
       .flex_1()
       .min_w(0)
-      .gap(5)
+      .gap(SPACE.xs)
       .justify_end()
       .items_center()
-      .text_size(11.5)
-      .text_color(t.dim)
-      .when(Boolean(where), (el) => el.child(div().min_w(0).truncate().child(where)))
-      .when(g.ahead > 0, (el) => el.child(div().flex_none().text_color(t.ansi2).child(`\u2191${g.ahead}`)))
-      .when(g.behind > 0, (el) => el.child(div().flex_none().text_color(t.ansi1).child(`\u2193${g.behind}`)));
+      .when(Boolean(where), (el) => el.child(label(where, { style: "bodySmall", role: "onSurfaceVariant", truncate: true })))
+      .when(g.ahead > 0, (el) => el.child(label(`↑${g.ahead}`, { style: "labelSmall", role: "primary" }).flex_none()))
+      .when(g.behind > 0, (el) => el.child(label(`↓${g.behind}`, { style: "labelSmall", role: "tertiary" }).flex_none()));
   }
 
-  row({ w, i, g, tree }, t) {
+  // A drawer item: the space's avatar (a worktree: the branch glyph, one step in), its
+  // name, the git tail; the active space on secondary-container. A blocked space pulses.
+  row({ w, i, g, tree }, r) {
+    const t = theme();
     const on = w.active;
     const colors = shared("space.colors") ?? {};
     const color = colors[w.id] ?? "ansi6";
-    const fill = color.startsWith("#") ? color : (MARK[color] ?? t[color]);
-    return v_flex()
+    const fill = color.startsWith("#") ? color : (t[color] ?? r.primary);
+    const avatar = tree
+      ? div().w(24).flex_none().flex().justify_center().child(svg("mods/shapr-workspace-chrome/branch.svg").size(16).text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant))
+      : type(div(), "labelMedium", true).size(24).flex_none().flex().items_center().justify_center().rounded(SHAPE.sm).bg(fill).text_color(onStatus())
+        .child([...w.name][0]?.toUpperCase() ?? "?");
+    const text = h_flex().w_full().min_w(0).gap(SPACE.sm).items_center()
+      .child(div().min_w(0).max_w(132).truncate().child(w.name))
+      .child(g ? this.gitTail(g, tree, w.name, r) : div().flex_1());
+    return navItem(`space-${w.id}`, text, { leading: avatar, active: on, badge: w.status === "blocked" ? statusMark("blocked") : null })
       .relative()
-      .id(`space-${w.id}`)
-      .px(8)
-      .h(rowHeight({ tree }))
-      .flex_none()
-      .justify_center()
-      .rounded(8)
-      .when(on, (el) => el.bg(t.selected))
-      .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
+      .when(Boolean(tree), (el) => el.pl(SPACE.xxl))
+      .cursor_pointer()
+      .hover((s) => (on ? s.opacity(0.92) : s.bg(r.hover)))
       .when(this.pressed === i && this.over !== i, (el) => el.opacity(0.5))
       .when(this.pressed !== null && this.over === i && this.pressed !== i, (el) => el.child(
-        div().absolute().left(0).right(0).h(2).bg(t.accent)
+        div().absolute().left(SPACE.lg).right(SPACE.lg).h(2).rounded_full().bg(r.primary)
           .when(this.pressed < i, line => line.bottom(0))
           .when(this.pressed > i, line => line.top(0)),
       ))
@@ -385,34 +393,23 @@ export default class Spaces extends View {
         else if (from === i) run("space.select", { id: w.id });
         cx.notify();
       })
-      .on_mouse_down("right", () => this.menu(w))
-      .child(
-        h_flex()
-          .gap(9)
-          .items_center()
-          .when(Boolean(tree), el => el.pl(22).child(svg("mods/shapr-workspace-chrome/branch.svg").size(13).text_color(t.dim)))
-          .when(!tree, el => el.child(h_flex().size(18).flex_none().rounded(5).bg(fill).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child([...w.name][0]?.toUpperCase() ?? "?")))
-          .child(div().flex_shrink(0).max_w(150).truncate().text_color(t.foreground).child(w.name))
-          .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1()),
-      );
+      .on_mouse_down("right", () => this.menu(w));
   }
 
-  compact({ w, i }, t) {
-    return h_flex()
-      .id(`space-${w.id}`)
-      .h(26)
-      .flex_none()
-      .justify_center()
-      .gap(4)
-      .when(w.active, (el) => el.bg(t.raised))
-      .hover((s) => s.bg(t.hover))
-      .on_click(() => run("space.select", { id: w.id }))
-      .child(div().text_color(w.active ? t.foreground : t.muted).child(String(i + 1)))
-      .child(div().text_color(tone(t, w.status)).child(glyph(w.status)));
+  // The rail: a 32 pill per space, its number and, when something in it needs you, its mark.
+  compact({ w, i }, r) {
+    const mark = w.status === "blocked" || w.status === "done"
+      ? statusMark(w.status)
+      : div().size(4).flex_none().rounded_full().bg(tone(theme(), w.status));
+    let el = h_flex().id(`space-${w.id}`).h(H.sm).w_full().flex_none().justify_center().items_center().gap(SPACE.xs).rounded_full()
+      .when(w.active, (el) => el.bg(r.secondaryContainer));
+    el = type(el, "labelLarge", w.active).text_color(w.active ? r.onSecondaryContainer : r.onSurfaceVariant);
+    el = press(el, () => run("space.select", { id: w.id }), { layer: w.active ? "lift" : r.hover });
+    return el.child(String(i + 1)).child(mark);
   }
 
   render() {
-    const t = theme();
+    const r = roles();
     const collapsed = narrow();
     const palette = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
     const sp = spaces();
@@ -426,13 +423,13 @@ export default class Spaces extends View {
       changed = true;
     }
     if (changed) setShared("space.colors", kept);
-    return v_flex().size_full().min_h(0).bg(t.chrome).text_size(13)
-      .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
-        .when(!collapsed, el => el.child("Spaces"))
-        .child(div().id("space-new").size(26).flex_none().flex().items_center().justify_center().rounded(6).hover(s => s.bg(t.hover).text_color(t.foreground))
-          .on_click(() => run("space.new")).child(svg("mods/shapr-workspace-chrome/plus.svg").size(14))))
-      .child(v_flex().flex_1().min_h(0).px(8).pb(14).overflow_y_scrollbar().mode("always")
+    const add = iconButton("space-new", icon("plus"), { size: "sm", tip: "New space", onClick: () => run("space.new") });
+    return type(v_flex(), "bodyMedium").size_full().min_h(0).bg(r.surfaceContainer).text_color(r.onSurface)
+      .child(collapsed
+        ? h_flex().h(36).flex_none().items_center().justify_center().child(add)
+        : heading("Spaces", { trailing: add }).pr(SPACE.sm))
+      .child(v_flex().flex_1().min_h(0).px(collapsed ? SPACE.xs : SPACE.md).pb(SPACE.md).gap(collapsed ? SPACE.xxs : 0).overflow_y_scrollbar().mode("always")
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
-        .children(this.grouped(t, collapsed)));
+        .children(this.grouped(r, collapsed)));
   }
 }
