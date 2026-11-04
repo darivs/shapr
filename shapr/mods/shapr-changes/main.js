@@ -171,12 +171,15 @@ export default class Changes extends View {
     cx.notify();
   }
 
+  // Added and removed lines read by a 3 px bar in primary or error and their ink, on a quiet
+  // surface-container-high row: a full red row would out-shout a blocked agent.
   diffRow({ kind, number, text }, r) {
     if (kind === "@") return div().w_full().px(SPACE.md).h(20).flex_none().flex().items_center().bg(r.surfaceHigh).text_color(r.onSurfaceVariant).child(div().min_w(0).truncate().child(text));
-    const ink = kind === "+" ? r.onPrimaryContainer : kind === "-" ? r.onErrorContainer : r.onSurface;
-    return h_flex().w_full().h(20).flex_none().gap(SPACE.sm).pr(SPACE.md).items_center().text_color(ink)
-      .when(kind === "+", (e) => e.bg(r.primaryContainer)).when(kind === "-", (e) => e.bg(r.errorContainer))
-      .child(div().w(36).flex_none().text_right().text_color(kind === "+" || kind === "-" ? ink : r.onSurfaceVariant).child(number === undefined ? "" : String(number)))
+    const mark = kind === "+" ? r.primary : kind === "-" ? r.error : null;
+    return h_flex().w_full().h(20).flex_none().gap(SPACE.sm).pr(SPACE.md).items_center().text_color(mark ?? r.onSurface)
+      .when(Boolean(mark), (e) => e.bg(r.surfaceHigh))
+      .child(div().w(3).h_full().flex_none().when(Boolean(mark), (e) => e.bg(mark)))
+      .child(div().w(33).flex_none().text_right().text_color(mark ?? r.onSurfaceVariant).child(number === undefined ? "" : String(number)))
       .child(div().flex_1().min_w(0).truncate().child(text));
   }
 
