@@ -14,9 +14,9 @@ const key = () => JSON.stringify(location());
 // Reads write nothing under .git (no index refresh or lock, no fsmonitor cookie):
 // the folder watch would see it, and every refresh would start the next one.
 const READ = ["--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "diff.autoRefreshIndex=false"];
-// A git status in a color role (status colors stay for agents): added tertiary, deleted and
-// conflicted error, modified primary.
-const STATUS = { A: "tertiary", D: "error", U: "error", M: "primary" };
+// A git status in a color role (status colors stay for agents): added primary, modified on-surface-variant, deleted and
+// conflicted error.
+const STATUS = { A: "primary", D: "error", U: "error", M: "onSurfaceVariant" };
 const ROW_GAP = SPACE.xxs;
 const countLines = (text) => text ? text.split("\n").length - Number(text.endsWith("\n")) : 0;
 
@@ -173,9 +173,9 @@ export default class Changes extends View {
 
   diffRow({ kind, number, text }, r) {
     if (kind === "@") return div().w_full().px(SPACE.md).h(20).flex_none().flex().items_center().bg(r.surfaceHigh).text_color(r.onSurfaceVariant).child(div().min_w(0).truncate().child(text));
-    const ink = kind === "+" ? r.onTertiaryContainer : kind === "-" ? r.onErrorContainer : r.onSurface;
+    const ink = kind === "+" ? r.onPrimaryContainer : kind === "-" ? r.onErrorContainer : r.onSurface;
     return h_flex().w_full().h(20).flex_none().gap(SPACE.sm).pr(SPACE.md).items_center().text_color(ink)
-      .when(kind === "+", (e) => e.bg(r.tertiaryContainer)).when(kind === "-", (e) => e.bg(r.errorContainer))
+      .when(kind === "+", (e) => e.bg(r.primaryContainer)).when(kind === "-", (e) => e.bg(r.errorContainer))
       .child(div().w(36).flex_none().text_right().text_color(kind === "+" || kind === "-" ? ink : r.onSurfaceVariant).child(number === undefined ? "" : String(number)))
       .child(div().flex_1().min_w(0).truncate().child(text));
   }
@@ -194,14 +194,14 @@ export default class Changes extends View {
       .on_key_down((e, cx) => {
         if (e.key === "escape" && this.typing) { this.typing = false; this.handle.focus(); cx.stop_propagation(); cx.notify(); }
       })
-      .child(panelHeader("Changes", { detail: h_flex().child(pill), actions: [count(`+${add}`, "tertiary"), count(`−${del}`, "error")] }))
+      .child(panelHeader("Changes", { detail: h_flex().child(pill), actions: [count(`+${add}`, "primary"), count(`−${del}`, "error")] }))
       .child(v_flex().id("changes-list").flex_none().h(listH).overflow_y_scrollbar().px(SPACE.sm).pb(SPACE.sm).gap(ROW_GAP).children(this.files.map((f) => {
         const parts = f.path.split("/"), name = parts.pop(), on = this.open === f.path;
         const headline = h_flex().w_full().min_w(0)
           .child(div().min_w(0).truncate().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant).child(parts.length ? parts.join("/") + "/" : ""))
           .child(div().max_w(260).min_w(0).truncate().child(name));
         const counts = f.add > 0 || f.del > 0 ? h_flex().gap(SPACE.sm).items_center()
-          .when(f.add > 0, (e) => e.child(count(`+${f.add}`, "tertiary"))).when(f.del > 0, (e) => e.child(count(`−${f.del}`, "error"))) : null;
+          .when(f.add > 0, (e) => e.child(count(`+${f.add}`, "primary"))).when(f.del > 0, (e) => e.child(count(`−${f.del}`, "error"))) : null;
         return listItem(`change-${f.path}`, headline, {
           dense: true, selected: on, onClick: (_e, cx) => this.pick(f.path, cx),
           leading: label(f.status, { style: "labelMedium", role: STATUS[f.status] ?? "primary" }).w(14), trailing: counts,

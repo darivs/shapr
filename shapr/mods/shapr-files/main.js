@@ -15,9 +15,9 @@ const key = () => JSON.stringify(location());
 const LANG = { ts: "js", tsx: "js", mts: "js", cts: "js", jsx: "js", mjs: "js", toml: "yaml", jsonc: "json", svelte: "html", vue: "html" };
 const PER_FOLDER = 500, TOTAL = 5000;
 
-// A git mark in a color role (status colors stay for agents): added tertiary, deleted and
-// conflicted error, modified primary.
-const MARK = { A: "tertiary", D: "error", U: "error", M: "primary" };
+// A git mark in a color role (status colors stay for agents): added primary, modified on-surface-variant, deleted and
+// conflicted error.
+const MARK = { A: "primary", D: "error", U: "error", M: "onSurfaceVariant" };
 
 // A note inside a panel body: empty, loading, error and limit messages.
 const note = (text, style = "bodyMedium") => label(text, { style, role: "onSurfaceVariant" }).px(SPACE.sm).py(SPACE.sm);

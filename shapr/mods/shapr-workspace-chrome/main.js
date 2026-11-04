@@ -1,8 +1,8 @@
 // style: md3
 import { View, div, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { run, props, window, shared, setShared, updates, layout, openOverlay } from "herdr";
-import { prefs, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, divider, settingsSpec } from "./kit/index.js";
+import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces } from "herdr";
+import { prefs, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, divider, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, renameSpec } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -39,7 +39,28 @@ function keepHeights() {
     if (find(layout(), id)?.size?.px !== undefined && find(layout(), id).size.px !== px) run("layout.resize", { id, px });
 }
 
+// Commands for keys.json (`shapr-workspace-chrome.<name>`): shapr's overlays for the shown space
+// and tab, opened as their own buttons open them.
+const COMMANDS = {
+  "new-menu": () => openOverlay(newMenuSpec()),
+  "tab-menu": (s) => s && openOverlay(tabMenuSpec(s.tabs.find((t) => t.active)?.id, s.id)),
+  "space-menu": (s) => s && openOverlay(spaceMenuSpec(s.id, undefined)),
+  "rename-tab": (s) => s && openOverlay(renameSpec("tab", s.tabs.find((t) => t.active)?.id)),
+  "rename-space": (s) => s && openOverlay(renameSpec("space", s.id)),
+  theme: () => openOverlay(settingsSpec()),
+};
+
 export default class WorkspaceChrome extends View {
+  init(_props, cx) {
+    if (props()?.footer) return;
+    cx.spawn(async () => {
+      for (;;) {
+        const c = await nextCommand();
+        COMMANDS[c]?.(spaces().find((s) => s.active));
+      }
+    });
+  }
+
   // The sidebar footer: Theme (shapr's settings), Settings (Herdr's, with a dot when an update is
   // ready) and Add machine, as
   // navigation drawer items; on the rail, icon buttons with their names as tooltips.

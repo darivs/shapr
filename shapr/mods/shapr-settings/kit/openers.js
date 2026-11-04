@@ -27,9 +27,13 @@ export function tabMenuSpec(tab, space) {
   return { mod: "shapr-menu", kind: "popup", frame: "none", width: OVERLAY_W.menu, height: menuHeight({ items: 3, dividers: 1 }), props: { tab: "tab", target: { id: tab, space } } };
 }
 
-/** A space's menu: Rename, (New and Open worktree in a repo, Remove in a worktree), a divider, Close. git: null, or { linked }. */
+/**
+ * A space's menu: Rename, (New and Open worktree in a repo, Remove in a worktree), a divider, Close.
+ * git: null (not a repo), { linked }, or undefined when the opener doesn't know: then the most it
+ * can draw (the menu's own surface fits its items; the rest of the overlay stays clear).
+ */
 export function spaceMenuSpec(space, git) {
-  const items = 2 + (git ? 2 : 0) + (git?.linked ? 1 : 0);
+  const items = git === undefined ? 5 : 2 + (git ? 2 : 0) + (git?.linked ? 1 : 0);
   return { mod: "shapr-menu", kind: "popup", frame: "none", width: OVERLAY_W.menu, height: menuHeight({ items, dividers: 1 }), props: { tab: "space", target: { id: space } } };
 }
 

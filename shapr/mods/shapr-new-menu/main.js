@@ -7,7 +7,7 @@
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex } from "gpui-base";
 import { spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, shared, setShared } from "herdr";
-import { menuSurface, menuItem, menuDivider, menuHeader, menuHeight, dialogHeight, fieldHeight, roles, icon, type, H, ROW, MENU } from "./kit/index.js";
+import { menuSurface, menuItem, menuDivider, menuHeader, menuHeight, dialogHeight, fieldHeight, roles, icon, type, H, ROW, MENU, keyLabel } from "./kit/index.js";
 
 // The last agents each machine reported, shown at once while knownAgents() checks again.
 const KNOWN = "new-menu.agents";
@@ -15,20 +15,7 @@ const KNOWN = "new-menu.agents";
 export const AGENT_ROWS = 8;
 
 function shortcut(name) {
-  const k = keys().find(b => b.section === "global" && b.action === name);
-  if (!k?.keys.trim()) return "";
-  const mac = window()?.platform === "macos";
-  const names = mac ? { ctrl: "⌃", alt: "⌥", shift: "⇧", cmd: "⌘", fn: "fn" } : { ctrl: "Ctrl", alt: "Alt", shift: "Shift", cmd: "Super", fn: "Fn" };
-  const alias = { secondary: mac ? "cmd" : "ctrl", super: "cmd", win: "cmd" };
-  return k.keys.trim().split(/\s+/).map(stroke => {
-    const parts = stroke.split("-");
-    let key = parts.pop();
-    if (key === "") { key = "-"; parts.pop(); }
-    const held = new Set(parts.map(m => alias[m.toLowerCase()] ?? m.toLowerCase()));
-    if (/^[A-Z]$/.test(key)) held.add("shift");
-    const label = key.length === 1 ? key.toUpperCase() : key[0].toUpperCase() + key.slice(1).toLowerCase();
-    return [...Object.keys(names).filter(m => held.has(m)).map(m => names[m]), label].join(mac ? "" : "+");
-  }).join(" ");
+  return keyLabel(keys().find(b => b.section === "global" && b.action === name)?.keys);
 }
 
 // Installed agents, then two that aren't.
@@ -85,7 +72,8 @@ export default class NewMenu extends View {
       })
       .child(this.row("terminal", glyph("icons/shell.svg"), "Terminal", () => run("tab.new", { space: space?.id }), shortcut("tab.new")))
       .child(menuHeader("Start an agent"))
-      .child(v_flex().id("new-menu-agents").flex_shrink(1).min_h(0).max_h(rows * ROW.menu + (rows - 1) * MENU.gap).gap(MENU.gap).overflow_y_scrollbar()
+      // A scrolling list has no height of its own: it gets exactly the rows the opener counted.
+      .child(v_flex().id("new-menu-agents").flex_none().h(rows * ROW.menu + (rows - 1) * MENU.gap).gap(MENU.gap).overflow_y_scrollbar()
         .children(choices.map((a, i) => this.row(a.key, a.tint ? glyph(a.icon) : image(a.icon).size(20), a.name,
           () => run("tab.new", { name: a.name, space: space?.id, argv: a.run }), a.installed ? (i < 9 ? String(i + 1) : "") : "Not installed", a.installed)))
         .when(this.agents.length === 0, el => el.child(type(div(), "bodyMedium").h(ROW.menu).flex_none().flex().items_center().px(12).text_color(r.onSurfaceVariant)

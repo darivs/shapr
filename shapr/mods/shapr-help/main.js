@@ -6,7 +6,7 @@
 import { View } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { keys, props, closeOverlay } from "herdr";
-import { dialogSurface, dialogHeadline, searchBar, shortcut, heading, iconButton, label, roles, icon, ROW, RADIUS } from "./kit/index.js";
+import { dialogSurface, dialogHeadline, searchBar, shortcut, heading, iconButton, label, roles, icon, ROW, RADIUS, keyLabel } from "./kit/index.js";
 
 const GROUPS = [
   ["Spaces", /^space\./],
@@ -46,7 +46,7 @@ export default class Help extends View {
     const row = (k, i) => h_flex().id(`help-${i}`).h(ROW.one).flex_none().px(16).gap(12).items_center().rounded(RADIUS.row)
       .child(label(describe(k.action), { style: "bodyMedium", truncate: true, grow: true }))
       .when(k.section !== "global", (el) => el.child(label(k.section, { style: "labelSmall", role: "onSurfaceVariant" }).flex_none()))
-      .child(shortcut(k.keys.trim().split(/\s+/)));
+      .child(shortcut(k.keys.trim().split(/\s+/).map(keyLabel)));
     let n = 0;
     return dialogSurface()
       .id("help")

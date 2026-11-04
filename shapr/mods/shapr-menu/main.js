@@ -10,7 +10,7 @@
 import { View } from "gpui-kit";
 import { v_flex } from "gpui-base";
 import { run, props, closeOverlay, openOverlay, keys, terminals, spaces, panes, exec } from "herdr";
-import { menuSurface, menuItem, menuDivider, dialogHeight, fieldHeight, roles, icon, textLines, H, ROW } from "./kit/index.js";
+import { menuSurface, menuItem, menuDivider, dialogHeight, fieldHeight, roles, icon, textLines, H, ROW, keyLabel } from "./kit/index.js";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
 function place(s) {
@@ -98,7 +98,7 @@ function shortcut(name, args) {
   // `pane.split:right` binds pane.split with { direction: "right" }.
   const value = args && Object.values(args)[0];
   const k = keys().find((b) => b.section === "global" && (b.action === name || b.action === `${name}:${value}`));
-  return k ? k.keys : "";
+  return k ? keyLabel(k.keys) : "";
 }
 
 // The dialogs this menu opens, sized to what they draw (see each mod's header).

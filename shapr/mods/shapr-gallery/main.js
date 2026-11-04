@@ -87,7 +87,7 @@ export default class Gallery extends View {
         ["heading", [div().w(280).child(K.heading("Section heading", { trailing: K.badge({ count: 4 }) })), div().w(200).child(K.heading("A heading too long for its column"))]]))
       .child(this.section("Keys, search",
         ["keycap", [K.keycap("Esc"), K.keycap("⌘"), K.keycap("Tab")]],
-        ["shortcut", [K.shortcut(["⌘", "K"]), K.shortcut(["⌘", "⇧", "P"]), K.shortcut(["Ctrl", "Alt", "Del"])]],
+        ["shortcut", [K.shortcut(["⌘", "K"]), K.shortcut(["⌘", "⇧", "P"]), K.shortcut(["Ctrl", "Alt", "Del"]), K.label(K.keyLabel("cmd-shift-t"), { style: "labelMedium", role: "onSurfaceVariant" })]],
         ["search bar", [div().w(MAX_ITEM).child(K.searchBar(Input.new(this.search), { trailing: K.shortcut(["⌘", "K"]) })),
           div().w(280).child(K.searchBar(Input.new(this.searchLg), { size: "lg", trailing: K.iconButton("search-clear", K.icon("x"), { tip: "Clear", onClick: noop }) })),
           div().w(220).child(K.searchBar(K.label("No trailing", { role: "onSurfaceVariant", style: "bodyLarge" }), { size: "lg" }))]]))

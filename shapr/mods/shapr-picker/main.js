@@ -188,7 +188,8 @@ export default class Picker extends View {
         .when(Boolean(who || x.team), (el) => el.child(type(div(), "labelSmall").flex_none().max_w(200).truncate().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant).child(who + (x.team ? `  +${x.team}` : ""))));
     };
 
-    return dialogSurface(v_flex(), { fit: true })
+    // A popup over an undimmed window: a hairline edge carries the lift, as menus do.
+    return dialogSurface(v_flex(), { fit: true }).border_1().border_color(roles().outlineVariant)
       .id("picker")
       .track_focus(this.handle)
       .p(PAD)

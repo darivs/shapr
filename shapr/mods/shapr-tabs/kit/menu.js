@@ -12,7 +12,9 @@ export const MENU = { pad: 4, gap: 2, dividerH: 9, headerH: 32 };
 /** The menu's own surface, for a mod that draws its frame (frame: "none"). */
 export function menuSurface(el = v_flex()) {
   const r = roles();
-  return el.bg(r.surfaceContainer).rounded(RADIUS.menu).p(MENU.pad).gap(MENU.gap).shadow_md().text_color(r.onSurface);
+  // An overlay sized to its menu clips the shadow, so a hairline outline-variant edge carries the
+  // lift; it sits inside the padding, so menuHeight still counts what is drawn.
+  return el.bg(r.surfaceContainer).rounded(RADIUS.menu).p(MENU.pad - 1).border_1().border_color(r.outlineVariant).gap(MENU.gap).shadow_md().text_color(r.onSurface);
 }
 
 /**
@@ -38,7 +40,7 @@ export function menuItem(id, text, { icon = null, leading = null, hint = null, t
 
 /** A line between groups: 1 tall with 4 above and below (9 in all). */
 export function menuDivider() {
-  return div().h(1).my(4).mx(-MENU.pad).flex_none().bg(roles().outlineVariant);
+  return div().h(1).my(4).mx(1 - MENU.pad).flex_none().bg(roles().outlineVariant);
 }
 
 /** A group's label inside a menu: label medium, on-surface-variant, 32 tall. */
