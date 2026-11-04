@@ -51,7 +51,7 @@ test("every clone records its Herdr origin, and the layout uses only shapr mods 
     assert.match(j.cloned_from.version, /^\d+\.\d+\.\d+/, m);
     assert.ok(Object.keys(j.cloned_from.files).includes("main.js"), m);
   }
-  const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr.json"), "utf8"));
+  const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr-material.json"), "utf8"));
   const used = [];
   (function w(n) { if (n?.content?.mod) used.push(n.content.mod); if (n?.pane?.header?.content?.mod) used.push(n.pane.header.content.mod); (n?.children ?? []).forEach(w); (n?.floating ?? []).forEach(w); if (n?.content?.pane) w(n.content); })(L);
   for (const m of used) assert.ok(m.startsWith("shapr-") || m === "pane", m);

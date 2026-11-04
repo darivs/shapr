@@ -18,7 +18,7 @@ bin/sync-kit --check || fail=1
 log=$(mktemp)
 node --import ./test/loader.js --test test/ >"$log" 2>&1 && echo "tests: OK" || { cat "$log"; fail=1; }
 rm -f /tmp/shapr-tests.$$
-for f in $(git ls-files --cached --others --exclude-standard '*.js') bin/clone-mods bin/sync-kit bin/privacy-check; do
+for f in $(git ls-files --cached --others --exclude-standard '*.js') bin/clone-mods bin/sync-kit bin/privacy-check bin/drift; do
   node --input-type=module --check < "$f" || { echo "syntax: $f"; fail=1; }
 done
 [ $fail -eq 0 ] && echo "node --check: OK"

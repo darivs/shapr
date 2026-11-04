@@ -22,7 +22,7 @@ export const panes = () => S().panes;
 export const terminals = () => S().terminals;
 export const focused = () => S().focused;
 export const layout = () => S().layout;
-export const layouts = () => ["main", "shapr"];
+export const layouts = () => ["main", "shapr-material"];
 export const window = () => S().window;
 export const keys = () => S().keys;
 export const machines = () => S().machines;

@@ -26,7 +26,7 @@ function fixture() {
   const files = Object.fromEntries(Object.entries(orig).map(([f, s]) => [f, sha(s)]));
   put(join(repo, "shapr/mods/shapr-tabs/mod.json"), JSON.stringify({ title: "Tabs", cloned_from: { name: "tabs", version: "0.1.12", files } }, null, 2) + "\n");
   put(join(repo, "shapr/mods/shapr-gallery/mod.json"), '{"title":"Gallery"}\n');
-  put(join(repo, "shapr/layouts/shapr.json"), JSON.stringify({ id: "root", cloned_from: { name: "main", version: "0.1.12", sha256: sha('{"id":"root"}\n') } }, null, 2) + "\n");
+  put(join(repo, "shapr/layouts/shapr-material.json"), JSON.stringify({ id: "root", cloned_from: { name: "main", version: "0.1.12", sha256: sha('{"id":"root"}\n') } }, null, 2) + "\n");
   const run = (args = [], version = "0.1.12") => spawnSync(join(repo, "bin/drift"), args,
     { encoding: "utf8", env: { ...process.env, HERDR_APP_HOME: home, HERDR_VERSION: version } });
   return { dir, repo, appHome: home, run, done: () => rmSync(dir, { recursive: true }) };
@@ -78,13 +78,13 @@ test("a changed layout and a missing original are reported; --accept records the
     let r = f.run(["--herdr-version", "0.2.0"]);
     assert.equal(r.status, 1);
     assert.match(r.stdout, /^shapr-tabs: tabs 0\.1\.12 -> missing\n {2}missing {2}mods\/tabs\n/m);
-    assert.match(r.stdout, /^layouts\/shapr: main 0\.1\.12 -> 0\.2\.0\n {2}changed  main\.json\n/m);
+    assert.match(r.stdout, /^layouts\/shapr-material: main 0\.1\.12 -> 0\.2\.0\n {2}changed  main\.json\n/m);
 
     assert.equal(f.run(["--accept", "shapr-tabs"]).status, 2);
     assert.equal(f.run(["--accept", "shapr-nope"]).status, 2);
-    r = f.run(["--accept", "layouts/shapr", "--herdr-version", "0.2.0"]);
+    r = f.run(["--accept", "layouts/shapr-material", "--herdr-version", "0.2.0"]);
     assert.equal(r.status, 0, r.stderr);
-    const L = JSON.parse(readFileSync(join(f.repo, "shapr/layouts/shapr.json"), "utf8"));
+    const L = JSON.parse(readFileSync(join(f.repo, "shapr/layouts/shapr-material.json"), "utf8"));
     assert.deepEqual(L.cloned_from, { name: "main", version: "0.2.0", sha256: sha('{"id":"root","new":1}\n') });
     r = f.run();
     assert.doesNotMatch(r.stdout, /layouts\/shapr/);

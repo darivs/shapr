@@ -3,7 +3,7 @@
 // the changed, added and removed files, so the change can be ported by hand. Exits 1 on drift.
 // Usage: bin/drift [--herdr-version <v>]      report (HERDR_VERSION also sets Herdr's version)
 //        bin/drift --accept <clone> [...]     after porting: record the current original
-// A clone is a mod folder (shapr-tabs) or the layout (layouts/shapr).
+// A clone is a mod folder (shapr-tabs) or the layout (layouts/shapr-material).
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
