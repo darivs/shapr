@@ -54,10 +54,12 @@ export function modeOf(text) {
 }
 const settingsPath = () => `${appHome()}/settings.json`;
 
-/** settings.json with `appearance` set for this mode (removed for System); other keys kept. */
+/** settings.json with `appearance` set for this mode (removed for System); other keys kept.
+ *  null when the text is not a JSON object: then nothing may be written over it. */
 export function withMode(text, mode) {
-  let s = {};
-  try { s = JSON.parse(text ?? "{}") ?? {}; } catch { s = {}; }
+  let s;
+  try { s = JSON.parse(text ?? "{}"); } catch { return null; }
+  if (!s || typeof s !== "object" || Array.isArray(s)) return null;
   if (mode === "system") delete s.appearance;
   else s.appearance = mode;
   return JSON.stringify(s, null, 2) + "\n";
@@ -70,6 +72,7 @@ export function settingsSize() {
 
 export default class Settings extends View {
   init(_props, cx) {
+    this.cx = cx;
     this.mode = "system";
     readTextFile(settingsPath()).then((t) => { this.mode = modeOf(t); cx?.notify?.(); }, () => {});
     const seed = K.prefs().seed;
@@ -144,9 +147,18 @@ export default class Settings extends View {
       .child(K.segmented("settings-mode", CHOICES.mode, this.mode ?? "system", (v) => this.setMode(v)));
   }
 
+  // Only a settings.json that reads and parses is rewritten; the choice shows once it is written.
   async setMode(mode) {
-    this.mode = mode;
-    await writeTextFile(settingsPath(), withMode(await readTextFile(settingsPath()).catch(() => null), mode));
+    try {
+      const text = withMode(await readTextFile(settingsPath()), mode);
+      if (text === null) return;
+      await writeTextFile(settingsPath(), text);
+      this.mode = mode;
+    } catch {
+      return;
+    } finally {
+      this.cx?.notify?.();
+    }
   }
 
   swatches() {
