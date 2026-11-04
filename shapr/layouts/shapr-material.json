@@ -16,10 +16,6 @@
     14,
     12
   ],
-  "divider": {
-    "width": 1,
-    "color": "border"
-  },
   "children": [
     {
       "id": "sidebar",
@@ -29,7 +25,6 @@
       },
       "min": 44,
       "max": 480,
-      "background": "chrome",
       "resizable": false,
       "children": [
         {
