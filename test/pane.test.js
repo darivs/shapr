@@ -51,3 +51,16 @@ test("the terminal menu's Split down has its own icon", async () => {
   assert.ok(svgs.some((s) => /horizontal_split/.test(s)), `split down: ${svgs}`);
   assert.ok(svgs.some((s) => /vertical_split/.test(s)), `split right: ${svgs}`);
 });
+
+test("in a narrow pane the header's name truncates and nothing runs past the card", async () => {
+  const { reset } = await import("herdr");
+  const { default: Pane } = await import("../shapr/mods/shapr-pane/main.js");
+  reset({ props: { pane: "p1" }, panes: [{ pane: "p1", title: "Layout file", cwd: "/user-home/demo", status: "blocked", program: { name: "sh", shell: true } }] });
+  const v = new Pane();
+  const root = v.render(cx).__node;
+  assert.ok(root.calls.some(([m]) => m === "overflow_hidden"), "the header clips");
+  const name = root.children.map((c) => c.__node).find((n) => n?.children?.includes("Layout file"));
+  assert.ok(name, "the name element");
+  assert.ok(!name.calls.some(([m]) => m === "flex_none"), "the name never shrinks");
+  assert.ok(name.calls.some(([m, a]) => m === "min_w" && a[0] === 0), "the name has no minimum width");
+});
