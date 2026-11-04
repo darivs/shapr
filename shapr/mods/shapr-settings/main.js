@@ -2,7 +2,8 @@
 // shapr's theme settings: seed color and contrast, density and corners, motion. Every choice goes
 // to shared "shapr.settings" at once, so every shapr mod restyles together and the choice survives
 // a restart; shapr-workspace-chrome regenerates the theme files from the seed and contrast.
-// Opened as a dialog: mod.open {name: "shapr-settings"} (mod.json sizes it to settingsHeight()).
+// Opened as a dialog: mod.open {name: "shapr-settings"} (mod.json holds settingsSize() at standard
+// density); an opener that knows the density calls openOverlay with settingsSize().
 import { View, div } from "gpui-kit";
 import { h_flex, v_flex, InputState, Input } from "gpui-base";
 import { props, closeOverlay, setShared } from "herdr";
@@ -23,6 +24,7 @@ export const CHOICES = {
 };
 
 export const WIDTH = 520;
+const HEX_W = 168; // the hex field: six digits, a # and the supporting text
 const GAP = K.SPACE.sm; // inside a section
 const SECTION_GAP = K.SPACE.lg; // between sections
 const TITLE = K.lineOf("titleSmall");
@@ -37,12 +39,17 @@ const sameSeed = (a, b) => (a ?? BASELINE).toUpperCase() === (b ?? BASELINE).toU
 
 // What the scroll area holds, section by section, as drawn below.
 const colorHeight = () => TITLE + GAP + K.H.lg + GAP + K.fieldHeight({ label: true, supporting: true }) + GAP + K.ROW.one;
-const shapeHeight = () => TITLE + GAP + 2 * K.ROW.one;
+const shapeHeight = () => TITLE + GAP + K.ROW.one + GAP + K.ROW.one;
 const motionHeight = () => TITLE + GAP + CHOICES.motion.length * K.ROW.one;
 
 /** The dialog's exact height at the person's density: what the opener (mod.json) sizes it to. */
 export function settingsHeight() {
   return K.dialogHeight({ headlineLines: 1, extra: [colorHeight() + shapeHeight() + motionHeight() + 2 * SECTION_GAP] });
+}
+
+/** The overlay size at the person's density, for openOverlay({ mod: "shapr-settings", ...settingsSize() }). */
+export function settingsSize() {
+  return { width: WIDTH, height: settingsHeight() };
 }
 
 export default class Settings extends View {
@@ -123,16 +130,15 @@ export default class Settings extends View {
           .tooltip(name);
         if (on) target = target.border_2().border_color(r.onSurface);
         target = K.press(target, on ? null : () => this.pickSeed(hex), { layer: r.hover });
-        return target.child(div().size(size - 12).rounded_full().bg(hex));
+        return target.child(div().size(size - K.SPACE.md).rounded_full().bg(hex));
       }));
   }
 
-  // The theme as it stands, from theme() roles: a primary button, a switch, the loud blocked mark.
+  // The theme as it stands, on a filled card: a primary button, a switch, the loud blocked mark.
   preview() {
-    const r = K.roles();
     return v_flex().flex_1().min_w(0).gap(K.SPACE.xs)
       .child(K.label("Preview", { style: "labelMedium", role: "onSurfaceVariant" }))
-      .child(h_flex().h(K.H.lg).w_full().px(K.SPACE.xs).gap(K.SPACE.md).items_center().rounded(K.RADIUS.field).bg(r.surfaceContainer)
+      .child(K.card(h_flex().h(K.H.lg).w_full().gap(K.SPACE.md).items_center(), { kind: "filled", pad: 0 }).px(K.SPACE.xs)
         .child(K.button("settings-preview-primary", "Primary", { kind: "filled", size: "sm" }))
         .child(K.button("settings-preview-tonal", "Tonal", { kind: "tonal", size: "sm" }))
         .child(K.toggleSwitch("settings-preview-switch", true, null))
@@ -143,7 +149,7 @@ export default class Settings extends View {
 
   hexField() {
     const supporting = this.error ? `Use six hex digits, like ${BASELINE}` : "Or type a color";
-    return div().w(168).flex_none()
+    return div().w(HEX_W).flex_none()
       .child(K.textField(Input.new(this.input), { label: "Hex", supporting, focused: this.focused, error: this.error }));
   }
 

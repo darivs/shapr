@@ -1,5 +1,5 @@
 {
   "place": "none",
   "title": "Theme settings",
-  "overlay": { "kind": "dialog", "width": 520, "height": 644, "frame": "none" }
+  "overlay": { "kind": "dialog", "width": 520, "height": 652, "frame": "none" }
 }

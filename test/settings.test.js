@@ -1,11 +1,12 @@
 // The settings window: a change reaches shared "shapr.settings", defaults apply, an invalid hex is
-// refused, reduced motion stops the kit animating, and mod.json sizes the dialog to what it draws.
+// refused, reduced motion stops the kit animating, and settingsSize() (mod.json at standard
+// density) is exactly what the window draws at every density.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { reset, shared } from "herdr";
 import { unknownCalls, argsOf, texts, walk } from "./stubs/element.js";
-import Settings, { PRESETS, CHOICES, WIDTH, parseSeed, settingsHeight } from "../shapr/mods/shapr-settings/main.js";
+import Settings, { PRESETS, CHOICES, WIDTH, parseSeed, settingsHeight, settingsSize } from "../shapr/mods/shapr-settings/main.js";
 import * as K from "../shapr/mods/shapr-settings/kit/index.js";
 
 const dir = new URL("../shapr/mods/shapr-settings/", import.meta.url);
@@ -107,13 +108,56 @@ test("the working spinner stops under reduced motion", () => {
   assert.deepEqual(argsOf(K.statusMark("working"), "spin"), []);
 });
 
-test("mod.json opens a frameless dialog sized to what the window draws", () => {
+// The height a stub tree lays out to on its own (no parent stretching it): fixed h/size, else its
+// children stacked (column, block) or side by side (row) with gaps, padding and vertical margins,
+// min_h on top; text is one line of the inherited line height; absolute children take no room.
+function drawnHeight(x, line = null) {
+  if (typeof x === "string" || typeof x === "number") { assert.ok(line, `text "${x}" without a line height`); return line; }
+  const n = x?.__node;
+  if (!n) return 0;
+  let fixed = null, minH = 0, gap = 0, pt = 0, pb = 0, row = n.kind === "h_flex", flex = n.kind !== "div";
+  for (const [m, [v]] of n.calls) {
+    if (m === "line_height") line = parseFloat(v);
+    else if ((m === "h" || m === "size") && typeof v === "number") fixed = v;
+    else if (m === "min_h" && typeof v === "number") minH = v;
+    else if (m === "gap") gap = v;
+    else if (m === "p" || m === "py") pt = pb = v;
+    else if (m === "pt") pt = v;
+    else if (m === "pb") pb = v;
+    else if (m === "flex") flex = true;
+    else if (m === "flex_col") row = false;
+    else if (m === "flex_row") row = true;
+  }
+  if (n.kind === "div" && !n.calls.some(([m]) => m === "flex")) row = false;
+  if (fixed !== null) return fixed;
+  if (n.kind === "Input") return line;
+  const kids = n.children.filter((c) => !c?.__node?.calls.some(([m]) => m === "absolute")).map((c) => {
+    let mt = 0, mb = 0;
+    for (const [m, [v]] of c?.__node?.calls ?? []) { if (m === "my" || m === "m") mt = mb = v; else if (m === "mt") mt = v; else if (m === "mb") mb = v; }
+    return drawnHeight(c, line) + mt + mb;
+  });
+  const g = flex ? gap : 0;
+  const content = row ? Math.max(0, ...kids) : kids.reduce((a, b) => a + b, 0) + Math.max(0, kids.length - 1) * g;
+  return Math.max(minH, content + pt + pb);
+}
+
+test("settingsSize() is what the window draws, at every density; mod.json holds the standard one", () => {
   reset();
   const j = JSON.parse(readFileSync(new URL("mod.json", dir), "utf8"));
-  assert.deepEqual(j.overlay, { kind: "dialog", width: WIDTH, height: settingsHeight(), frame: "none" });
+  assert.deepEqual(j.overlay, { kind: "dialog", ...settingsSize(), frame: "none" });
+  assert.equal(settingsSize().width, WIDTH);
+  assert.equal(settingsSize().height, settingsHeight());
+  const heights = {};
+  for (const density of ["compact", "standard", "comfortable"]) {
+    reset({ shared: { [K.SETTINGS]: { density } } });
+    const v = open();
+    heights[density] = settingsSize().height;
+    assert.equal(drawnHeight(v.render()), heights[density], density);
+    v.error = true; // the error text takes the supporting text's place: the same height
+    assert.equal(drawnHeight(v.render()), heights[density], `${density}, hex in error`);
+  }
   assert.equal(CHOICES.motion.length, 3);
-  // Every control the window draws follows density, so its height moves with it.
-  const standard = settingsHeight();
-  reset({ shared: { [K.SETTINGS]: { density: "comfortable" } } });
-  assert.equal(settingsHeight(), standard + 9 * 4);
+  // Nine rows follow density: swatches, the field box, contrast, density, corners, three motion rows, the actions.
+  assert.equal(heights.comfortable - heights.standard, 9 * 4);
+  assert.equal(heights.standard - heights.compact, 9 * 4);
 });
