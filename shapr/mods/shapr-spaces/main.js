@@ -381,16 +381,18 @@ export default class Spaces extends View {
       .on_mouse_down("right", () => this.menu(w));
   }
 
-  // The rail: a 32 pill per space, its number and, when something in it needs you, its mark.
-  compact({ w, i }, r) {
+  // The rail: a 32 pill per space, its icon (filled when active; a worktree's call_split) and
+  // its status mark; the tooltip names it.
+  compact({ w, tree }, r) {
     const mark = w.status === "blocked" || w.status === "done"
       ? statusMark(w.status)
       : div().size(4).flex_none().rounded_full().bg(tone(theme(), w.status));
     let el = h_flex().id(`space-${w.id}`).h(H.sm).w_full().flex_none().justify_center().items_center().gap(SPACE.xs).rounded_full()
       .when(w.active, (el) => el.bg(r.secondaryContainer));
-    el = type(el, "labelLarge", w.active).text_color(w.active ? r.onSecondaryContainer : r.onSurfaceVariant);
+    el = el.text_color(w.active ? r.onSecondaryContainer : r.onSurfaceVariant).tooltip(w.name);
     el = press(el, () => run("space.select", { id: w.id }), { layer: w.active ? "lift" : r.hover });
-    return el.child(String(i + 1)).child(mark);
+    const path = tree ? symbol("call_split") : symbol(w.active ? "folder-fill" : "folder");
+    return el.child(svg(path).size(20).flex_none()).child(mark);
   }
 
   render() {
