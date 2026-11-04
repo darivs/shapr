@@ -172,16 +172,6 @@
               "align": "end"
             }
           ]
-        },
-        {
-          "id": "status",
-          "type": "block",
-          "size": {
-            "px": 32
-          },
-          "content": {
-            "mod": "shapr-workspace-status"
-          }
         }
       ]
     }

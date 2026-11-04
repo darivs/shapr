@@ -51,9 +51,9 @@ test("cards sit 12 px apart and 12 px inside the work area", () => {
   assert.equal(find("main").content.pane.gap, 12);
 });
 
-test("the sidebar, brand, tabs, sidebar footer and status bar paint canvas, not chrome", async () => {
+test("the sidebar, brand, tabs and sidebar footer paint canvas, not chrome", async () => {
   const { reset } = await import("herdr");
-  const mods = ["shapr-workspace-chrome", "shapr-tabs", "shapr-workspace-status", "shapr-spaces", "shapr-agents"];
+  const mods = ["shapr-workspace-chrome", "shapr-tabs", "shapr-spaces", "shapr-agents"];
   const cx = { notify() {}, spawn() {}, focus_handle: () => ({ focus() {} }), timer: { every() {}, after() {} } };
   globalThis.localStorage ??= { getItem: () => null, setItem() {}, removeItem() {} };
   for (const [mod, props] of [...mods.map((m) => [m, {}]), ["shapr-workspace-chrome", { footer: true }]]) {
