@@ -1,8 +1,8 @@
 // style: md3
 import { View, div, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { run, props, window, shared, setShared, updates, layout } from "herdr";
-import { prefs, SPACE, SHAPE, type, roles, icon, iconButton, navItem, badge, divider } from "./kit/index.js";
+import { run, props, window, shared, setShared, updates, layout, openOverlay } from "herdr";
+import { prefs, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, divider, settingsSpec } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -28,22 +28,37 @@ function toggleSidebar() {
 
 const glyph = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
+// The layout's fixed blocks hold one row of kit controls, so their heights follow the person's
+// density: the brand and tab bars a control (H.sm) with 8 above and below, the footer a
+// divider and its three rows with 8 above and below. The status bar's xs controls don't change.
+export function blockHeights() {
+  return { brand: H.sm + 16, tabs: H.sm + 16, "sidebar-footer": 1 + 16 + 3 * ROW.one };
+}
+function keepHeights() {
+  for (const [id, px] of Object.entries(blockHeights()))
+    if (find(layout(), id)?.size?.px !== undefined && find(layout(), id).size.px !== px) run("layout.resize", { id, px });
+}
+
 export default class WorkspaceChrome extends View {
-  // The sidebar footer: Settings (with a dot when an update is ready) and Add machine, as
+  // The sidebar footer: Theme (shapr's settings), Settings (Herdr's, with a dot when an update is
+  // ready) and Add machine, as
   // navigation drawer items; on the rail, icon buttons with their names as tooltips.
   footer(collapsed) {
     const r = roles();
     const ready = Boolean(updates().app.ready);
     const dot = () => badge({ role: "primary" });
     const settings = () => run("app.settings");
+    const theme = () => openOverlay(settingsSpec());
     const machine = () => run("mod.open", { name: "shapr-machine-add" });
     const rows = collapsed
       ? v_flex().flex_1().min_h(0).gap(SPACE.xs).items_center().justify_center()
+        .child(iconButton("theme", glyph("palette"), { size: "sm", tip: "Theme", onClick: theme }))
         .child(div().relative().flex_none()
           .child(iconButton("settings", glyph("settings"), { size: "sm", tip: "Settings", onClick: settings }))
           .when(ready, el => el.child(div().absolute().top(SPACE.xs).right(SPACE.xs).child(dot()))))
         .child(iconButton("machine", glyph("plus"), { size: "sm", tip: "Add machine", onClick: machine }))
       : v_flex().flex_1().min_h(0).px(SPACE.md).justify_center()
+        .child(navItem("theme", "Theme", { icon: glyph("palette"), onClick: theme }))
         .child(navItem("settings", "Settings", { icon: glyph("settings"), badge: ready ? dot() : null, onClick: settings }))
         .child(navItem("machine", "Add machine", { icon: glyph("plus"), onClick: machine }));
     return v_flex().size_full().bg(r.surfaceContainer).child(divider()).child(rows);
@@ -73,6 +88,7 @@ export default class WorkspaceChrome extends View {
   render(cx) {
     // The brand bar is always in the layout: it keeps shapr's themes in step with the settings.
     keepThemes(cx, prefs());
+    if (!props()?.footer) keepHeights();
     const collapsed = narrow();
     return props()?.footer ? this.footer(collapsed) : this.brand(collapsed);
   }

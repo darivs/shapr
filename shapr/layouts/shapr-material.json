@@ -75,7 +75,7 @@
           "id": "sidebar-footer",
           "type": "block",
           "size": {
-            "px": 97
+            "px": 137
           },
           "content": {
             "mod": "shapr-workspace-chrome",
@@ -169,6 +169,16 @@
                   ]
                 }
               ]
+            }
+          ],
+          "floating": [
+            {
+              "id": "toasts",
+              "content": {
+                "mod": "shapr-toasts"
+              },
+              "edge": "bottom",
+              "align": "end"
             }
           ]
         },

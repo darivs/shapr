@@ -58,3 +58,22 @@ test("every clone records its Herdr origin, and the layout uses only shapr mods 
   assert.deepEqual(L.theme, { light: "shapr-light", dark: "shapr-dark" });
   assert.equal(L.ui_font, "Roboto Flex");
 });
+
+test("openers size their overlays to what the overlays draw", async () => {
+  const { reset } = await import("herdr");
+  const K = await import("../kit/index.js");
+  const h = reset({ spaces: [{ id: "s1", active: true, machine: null, tabs: [{ id: "t1", named: true, name: "fix" }] }] });
+  h.shared["new-menu.agents"] = { "": [{ installed: true }, { installed: true }, { installed: false }] };
+  assert.equal(K.newMenuSpec().height, K.menuHeight({ items: 7, dividers: 1, headers: 1 }));
+  assert.equal(K.tabMenuSpec("t1", "s1").height, K.menuHeight({ items: 3, dividers: 1 }));
+  assert.equal(K.spaceMenuSpec("s1", { linked: true }).height, K.menuHeight({ items: 5, dividers: 1 }));
+  assert.equal(K.spaceMenuSpec("s1", null).height, K.menuHeight({ items: 2, dividers: 1 }));
+  assert.equal(K.renameSpec("tab", "t1").props.value, "fix");
+  for (const spec of [K.newMenuSpec(), K.tabMenuSpec("t1", "s1"), K.renameSpec("tab", "t1"), K.settingsSpec()]) assert.equal(spec.frame, "none");
+  const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr-material.json"), "utf8"));
+  const find = (n, id) => n?.id === id ? n : (n?.children ?? []).map((c) => find(c, id)).find(Boolean);
+  assert.equal(find(L, "sidebar-footer").size.px, 1 + 16 + 3 * K.ROW.one);
+  assert.equal(find(L, "tabs").size.px, K.H.sm + 16);
+  assert.equal(find(L, "brand").size.px, K.H.sm + 16);
+  assert.equal(find(L, "work-body").floating[0].content.mod, "shapr-toasts");
+});

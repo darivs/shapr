@@ -9,7 +9,7 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
-import { roles, onStatus, type, label, heading, navItem, iconButton, button, statusMark, icon, press, H, ROW, SPACE, SHAPE } from "./kit/index.js";
+import { roles, onStatus, type, label, heading, navItem, iconButton, button, statusMark, icon, press, H, ROW, SPACE, SHAPE, spaceMenuSpec } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -245,8 +245,8 @@ export default class Spaces extends View {
   }
 
   menu(w) {
-    // A popup is as tall as its items; height is only the most.
-    openOverlay({ mod: "shapr-menu", kind: "popup", width: 200, height: 260, props: { tab: "space", target: { id: w.id } } });
+    // Sized to the menu's items: a repo adds the worktree items, a worktree also Remove.
+    openOverlay(spaceMenuSpec(w.id, this.git[where(w, panes())] ?? null));
   }
 
   // Spaces in order, each worktree space moved under its main checkout's.

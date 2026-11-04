@@ -2,7 +2,7 @@
 import { View, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, window, shared, layout, settings } from "herdr";
-import { button, iconButton, statusMark, roles, icon, divider, H, SPACE } from "./kit/index.js";
+import { button, iconButton, statusMark, roles, icon, divider, H, SPACE, newMenuSpec, tabMenuSpec, renameSpec } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -60,13 +60,13 @@ export default class Tabs extends View {
       const end = status || close ? h_flex().gap(SPACE.xs).items_center().when(Boolean(status), el => el.child(status)).when(Boolean(close), el => el.child(close)) : null;
       return button(`tab-${c.id}`, c.zoomed ? `${name} Z` : name, { kind: "text", size: "sm", selected: c.active, leading: glyph, end, maxLabel: 170, interactive: true })
         .when(!c.active, el => el.text_color(r.onSurfaceVariant))
-        .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); })
+        .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) openOverlay(renameSpec("tab", c.id)); })
         .on_mouse_up("left", () => {
           const from = this.pressed; this.pressed = null;
           if (from !== null && from !== i) run("tab.move", { id: shown[from].id, index: space.tabs.findIndex(x => x.id === c.id) + 1 });
           else run("tab.select", { id: c.id });
         })
-        .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "shapr-menu", kind: "popup", width: 200, props: { tab: "tab", target: { id: c.id, space: space.id } } }); });
+        .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openOverlay(tabMenuSpec(c.id, space.id)); });
     };
     const root = layout(), sidebar = find(root, "sidebar"), w = window();
     // Old saved rails and a dragged-narrow sidebar can be smaller than the window buttons.
@@ -89,7 +89,7 @@ export default class Tabs extends View {
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(SPACE.xs).overflow_x_scrollbar().children(shown.map(item)))
-      .child(iconButton("tab-new", icon("plus"), { size: "sm", tip: "New tab", onClick: () => openOverlay({ mod: "shapr-new-menu", kind: "popup", width: 250, height: 512 }) }))
+      .child(iconButton("tab-new", icon("plus"), { size: "sm", tip: "New tab", onClick: () => openOverlay(newMenuSpec()) }))
       .when(enabled.length > 0, el => el.child(divider({ vertical: true, space: SPACE.xs }).h(H.xs)))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/shapr-files/file.svg")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/shapr-changes/changes.svg")))
