@@ -55,7 +55,7 @@ test("the terminal menu's Split down has its own icon", async () => {
 test("in a narrow pane the header's name truncates and nothing runs past the card", async () => {
   const { reset } = await import("herdr");
   const { default: Pane } = await import("../shapr/mods/shapr-pane/main.js");
-  reset({ props: { pane: "p1" }, panes: [{ pane: "p1", title: "Layout file", cwd: "/user-home/demo", status: "blocked", program: { name: "sh", shell: true } }] });
+  reset({ props: { pane: "p1" }, panes: [{ pane: "p1", title: "Layout file", cwd: "/user-home/demo", status: "blocked" }] });
   const v = new Pane();
   const root = v.render(cx).__node;
   assert.ok(root.calls.some(([m]) => m === "overflow_hidden"), "the header clips");
