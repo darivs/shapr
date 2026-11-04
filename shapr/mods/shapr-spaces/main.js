@@ -340,7 +340,7 @@ export default class Spaces extends View {
     const branch = g ? g.branch ?? "detached" : null;
     return navItem(`space-${w.id}`, w.name, {
       icon: symbol(tree ? "call_split" : "folder"),
-      activeIcon: symbol(tree ? "call_split" : "folder-fill"),
+      activeIcon: symbol(tree ? "call_split-fill" : "folder-fill"),
       active: on,
       supporting: on && g && !tree ? branch : null,
       badge: w.status === "blocked" ? statusMark("blocked") : null,
@@ -391,7 +391,7 @@ export default class Spaces extends View {
       .when(w.active, (el) => el.bg(r.secondaryContainer));
     el = el.text_color(w.active ? r.onSecondaryContainer : r.onSurfaceVariant).tooltip(w.name);
     el = press(el, () => run("space.select", { id: w.id }), { layer: w.active ? "lift" : r.hover });
-    const path = tree ? symbol("call_split") : symbol(w.active ? "folder-fill" : "folder");
+    const path = symbol(tree ? (w.active ? "call_split-fill" : "call_split") : (w.active ? "folder-fill" : "folder"));
     return el.child(svg(path).size(20).flex_none()).child(mark);
   }
 
