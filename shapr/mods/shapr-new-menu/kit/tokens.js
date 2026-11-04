@@ -15,20 +15,24 @@ export function prefs() {
 }
 
 // Type ---------------------------------------------------------------------
-// [size, weight, line height] per MD3 style. Emphasized (Expressive) takes two weight steps up,
-// to the next static cut of Roboto Flex (400 → 600, 500 → 700).
+// [size, weight, line height] per MD3 style, in thin weights (D11): display and headline at 300,
+// title large, body and labels at 400, title medium and small at 500. Hierarchy comes from size
+// and role, not weight. Emphasized takes one step up to the next static cut of Roboto Flex, at
+// most 500 (300 → 400, 400 → 500, 500 stays).
 export const TYPE = {
-  displayLarge: [57, 400, 64], displayMedium: [45, 400, 52], displaySmall: [36, 400, 44],
-  headlineLarge: [32, 400, 40], headlineMedium: [28, 400, 36], headlineSmall: [24, 400, 32],
+  displayLarge: [57, 300, 64], displayMedium: [45, 300, 52], displaySmall: [36, 300, 44],
+  headlineLarge: [32, 300, 40], headlineMedium: [28, 300, 36], headlineSmall: [24, 300, 32],
   titleLarge: [22, 400, 28], titleMedium: [16, 500, 24], titleSmall: [14, 500, 20],
   bodyLarge: [16, 400, 24], bodyMedium: [14, 400, 20], bodySmall: [12, 400, 16],
-  labelLarge: [14, 500, 20], labelMedium: [12, 500, 16], labelSmall: [11, 500, 16],
+  labelLarge: [14, 400, 20], labelMedium: [12, 400, 16], labelSmall: [11, 400, 16],
 };
+/** The heaviest weight any text takes. */
+export const MAX_WEIGHT = 500;
 
 /** Sets an element's MD3 type style: size, weight and line height. */
 export function type(el, style, emphasized = false) {
   const [size, weight, line] = TYPE[style] ?? TYPE.bodyMedium;
-  return el.text_size(size).font_weight(emphasized ? Math.min(700, weight + 200) : weight).line_height(`${line}px`);
+  return el.text_size(size).font_weight(emphasized ? Math.min(MAX_WEIGHT, weight + 100) : weight).line_height(`${line}px`);
 }
 
 /** The line height of a type style, for openers that count an overlay's height. */

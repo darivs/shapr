@@ -105,7 +105,7 @@ test("type sets size, a static weight and the line height", () => {
   reset();
   const t = K.type(K.label("x").__node ? K.label("x") : null, "labelLarge", true);
   const calls = [...walk(t)][0].calls;
-  assert.ok(calls.some(([m, a]) => m === "font_weight" && a[0] === 700));
+  assert.ok(calls.some(([m, a]) => m === "font_weight" && a[0] === 500));
   assert.ok(calls.some(([m, a]) => m === "line_height" && a[0] === "20px"));
   assert.equal(K.layoutPx(150), 150);
 });

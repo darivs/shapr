@@ -11,7 +11,7 @@ fails on a stale copy. Edit `kit/`, never a copy. Import from `./kit/index.js` o
 
 | Token | Value |
 |---|---|
-| `type(el, style, emphasized?)` | MD3 type scale (`TYPE`): size, weight, line height. Emphasized takes the next static cut (400 → 600, 500 → 700). `lineOf(style)` is its line height |
+| `type(el, style, emphasized?)` | MD3 type scale (`TYPE`): size, weight, line height. Thin weights: display and headline 300, title large, body and labels 400, title medium and small 500. Emphasized takes one step up, at most 500 (300 → 400, 400 → 500). `lineOf(style)` is its line height |
 | `SHAPE` | `none 0, xs 4, sm 8, md 12, lg 16, lgPlus 20, xl 28, xlPlus 32`; the "round" corner setting raises each step. Pills: `.rounded_full()` |
 | `RADIUS` | by use: `field` xs, `chip` sm, `card` / `row` md, `menu` lg, `dialog` xl |
 | `H` | control heights `xs 24, sm 32, md 36, lg 40, xl 48` |
