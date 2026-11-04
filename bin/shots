@@ -1,10 +1,17 @@
 #!/usr/bin/env node
-// The shot loop's image tools.
+// The shot loop, run from the demo space (bin/demo up): one `herdr-app shot` per state.
 // Usage:
+//   bin/shots <prefix> [states...] [--light|--dark] [--zoom <z>] [--density <d>] [--corners <c>]
+//             [--motion <m>] [--contrast <c>] [--seed <rrggbb>]
+//       writes <prefix>-<state>.png for each state (default: every one in STATES), closing each
+//       overlay before the next. Light or dark and zoom go into settings.json, the theme settings
+//       through shapr-workspace-chrome's commands; bin/demo down puts both back.
+//   bin/shots --restore-theme <file>   sets the theme settings saved in <file> (JSON) again
 //   bin/shots [--crop sidebar|work] [--mask] <in.png> [<out.png>]
 //       cuts an image to one area, and covers every sidebar row outside the demo space (bin/demo
 //       puts it first in the spaces list and pins its agents) with a solid box, so the image can
 //       be committed. Writes over <in.png> when no <out.png>.
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -173,17 +180,88 @@ function edit(file, out, { cropTo, mask }) {
   writeFileSync(out, encodePng(img));
 }
 
+// The app ---------------------------------------------------------------------------------------
+
+const app = (...args) => execFileSync("herdr-app", args, { encoding: "utf8" });
+// A command; one with nothing to act on (overlay.close with no overlay open) is no failure.
+const run = (name, args) => {
+  try { app("do", name, ...(args ? [JSON.stringify(args)] : [])); } catch { /* nothing to act on */ }
+};
+const sleep = (s) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, s * 1000);
+
+// Every state, as what opens it from a window with no overlay open, and what it leaves open
+// beyond an overlay: the gallery is a window mod.open toggles, Files and Changes the panel.
+const chrome = (c) => () => run(`shapr-workspace-chrome.${c}`);
+const modOpen = (name) => () => run("mod.open", { name });
+const panel = (child) => () => { run("layout.select", { stack: "panel-body", child }); run("layout.show", { id: "panel" }); };
+const hidePanel = () => run("layout.hide", { id: "panel" });
+export const STATES = {
+  base: [() => {}],
+  "new-menu": [chrome("new-menu")],
+  "tab-menu": [chrome("tab-menu")],
+  "space-menu": [chrome("space-menu")],
+  "terminal-menu": [chrome("terminal-menu")],
+  rename: [chrome("rename-tab")],
+  theme: [chrome("theme")],
+  picker: [modOpen("shapr-picker")],
+  help: [modOpen("shapr-help")],
+  "machine-add": [modOpen("shapr-machine-add")],
+  gallery: [modOpen("shapr-gallery"), modOpen("shapr-gallery")],
+  files: [panel("files"), hidePanel],
+  changes: [panel("changes"), hidePanel],
+};
+
+const close = () => { run("overlay.close"); run("overlay.close"); sleep(0.4); };
+
+const PREFS = { density: ["compact", "standard", "comfortable"], corners: ["standard", "round"], motion: ["expressive", "calm", "reduced"], contrast: ["standard", "medium", "high"] };
+
+/** Sets theme settings ({ density, corners, motion, contrast, seed }) by shapr-workspace-chrome's commands. */
+function setTheme(t, { reset = false } = {}) {
+  if (reset) run("shapr-workspace-chrome.reset-theme");
+  for (const [k, values] of Object.entries(PREFS)) if (values.includes(t[k])) run(`shapr-workspace-chrome.set-${k}-${t[k]}`);
+  if (/^#?[0-9a-fA-F]{6}$/.test(t.seed ?? "")) run(`shapr-workspace-chrome.seed-${t.seed.replace("#", "")}`);
+}
+
+function shoot(prefix, states, opts) {
+  for (const name of states) if (!STATES[name]) throw new Error(`no state ${name} (${Object.keys(STATES).join(", ")})`);
+  const path = join(home, "settings.json"), s = readJson(path, {});
+  if (opts.appearance) s.appearance = opts.appearance;
+  if (opts.zoom) s.zoom = Number(opts.zoom);
+  if (opts.appearance || opts.zoom) { writeFileSync(path, JSON.stringify(s, null, 2) + "\n"); sleep(1); }
+  setTheme(opts);
+  hidePanel();
+  for (const name of states) {
+    const [open, after] = STATES[name];
+    close();
+    open();
+    sleep(1.2);
+    console.log(app("shot", `${prefix}-${name}.png`).trim());
+    after?.();
+  }
+  close();
+}
+
 function main(argv) {
   const opts = {}, rest = [];
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--crop") opts.cropTo = argv[++i];
-    else if (argv[i] === "--mask") opts.mask = true;
-    else rest.push(argv[i]);
+    const a = argv[i];
+    if (a === "--crop") opts.cropTo = argv[++i];
+    else if (a === "--mask") opts.mask = true;
+    else if (a === "--light" || a === "--dark") opts.appearance = a.slice(2);
+    else if (a === "--restore-theme") opts.restore = argv[++i];
+    else if (["--zoom", "--density", "--corners", "--motion", "--contrast", "--seed"].includes(a)) opts[a.slice(2)] = argv[++i];
+    else rest.push(a);
   }
+  if (opts.restore) return setTheme(readJson(opts.restore, null) ?? {}, { reset: true });
   if (opts.cropTo !== undefined && !["sidebar", "work"].includes(opts.cropTo)) throw new Error("--crop sidebar|work");
-  const [file, out = file] = rest;
-  if (!(opts.mask || opts.cropTo) || !file || !existsSync(file)) throw new Error("usage: bin/shots [--crop sidebar|work] [--mask] <in.png> [<out.png>]");
-  edit(file, out, opts);
+  if (opts.mask || opts.cropTo) {
+    const [file, out = file] = rest;
+    if (!file || !existsSync(file)) throw new Error("usage: bin/shots [--crop sidebar|work] [--mask] <in.png> [<out.png>]");
+    return edit(file, out, opts);
+  }
+  const [prefix, ...states] = rest;
+  if (!prefix) throw new Error("usage: bin/shots <prefix> [states...] [--light|--dark] [--zoom z] [--density d] [--corners c] [--motion m] [--contrast c] [--seed rrggbb]");
+  shoot(prefix, states.length ? states : Object.keys(STATES), opts);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

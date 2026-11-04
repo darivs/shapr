@@ -1,0 +1,123 @@
+#!/bin/sh
+# The demo space the shot loop (bin/shots) runs in, on a throwaway git repo, in the person's own
+# Herdr window.
+#   bin/demo up     back up settings.json and the theme settings, mirror shapr/, show Shapr
+#                   Material, open the demo space first in the list, with one fake agent per status
+#   bin/demo down   end the fake agents, close the demo space, show the layout and space shown
+#                   before, restore settings.json and the theme settings; fails unless cmp finds
+#                   settings.json equal to its backup
+#   bin/demo agent <status> <title>   a fake agent (what `up` starts in each terminal)
+# State lives in SHAPR_DEMO (default: $TMPDIR/shapr-demo).
+set -eu
+root=$(cd "$(dirname "$0")/.." && pwd)
+home=${HERDR_APP_HOME:-$HOME/.config/herdr-app}
+state=${SHAPR_DEMO:-${TMPDIR:-/tmp}/shapr-demo}
+state=${state%/}
+do_() { herdr-app do "$@" >/dev/null; }
+# One field of a command's JSON answer, read from stdin.
+field() { node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const v=JSON.parse(s)[process.argv[1]];process.stdout.write(v==null?"":typeof v==="string"?v:JSON.stringify(v))})' "$1"; }
+shared_settings() { node -e 'try{const s=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))["shapr.settings"];process.stdout.write(JSON.stringify(s??null))}catch{process.stdout.write("null")}' "$home/shared.json"; }
+
+# A fake agent: reports its status (OSC 7501), prints a plausible screen and sleeps.
+agent() {
+  status=$1; shift
+  # Done is news only after a turn: work for a moment first.
+  [ "$status" != done ] || { printf '\033]7501;state=working\007'; sleep 1; }
+  printf '\033]7501;state=%s\007\033]2;%s\007' "$status" "$*"
+  printf '\033[1m%s\033[0m\n\n' "$*"
+  case $status in
+    working) printf 'Reading src/theme.js\nUpdating 3 files...\n' ;;
+    blocked) printf 'Allow edit to src/layout.json?\n\n  1. Yes\n  2. No, tell me what to change\n' ;;
+    done) printf 'Done: the build passes and the tests are green.\n' ;;
+    idle) printf 'Waiting for the next task.\n' ;;
+  esac
+  exec sleep 86400
+}
+
+# The throwaway repo: a few files and one commit, then one changed, one added, one deleted.
+repo() {
+  r=$1
+  mkdir -p "$r/src"
+  git -C "$r" init -q -b main
+  printf '# Demo\n\nA small app to show the shot loop.\n' >"$r/README.md"
+  printf 'export const theme = { seed: "#6750A4", density: "standard" };\n' >"$r/src/theme.js"
+  printf '{\n  "name": "demo",\n  "panels": ["files", "changes"]\n}\n' >"$r/src/layout.json"
+  printf 'export function greet(name) {\n  return `Hello, ${name}`;\n}\n' >"$r/src/greet.js"
+  printf 'node_modules/\n' >"$r/.gitignore"
+  git -C "$r" add -A
+  git -C "$r" -c core.hooksPath=/dev/null -c user.name=demo -c user.email=demo@example.com commit -q -m "feat: a first version"
+  printf 'export const theme = { seed: "#006A6A", density: "compact" };\nexport const corners = "round";\n' >"$r/src/theme.js"
+  printf 'export function slug(text) {\n  return text.toLowerCase().replace(/\\s+/g, "-");\n}\n' >"$r/src/slug.js"
+  git -C "$r" add src/slug.js
+  git -C "$r" rm -q src/greet.js
+}
+
+up() {
+  [ ! -e "$state/space" ] || { echo "demo: already up (bin/demo down first)" >&2; exit 1; }
+  mkdir -p "$state"
+  cp "$home/settings.json" "$state/settings.json"
+  shared_settings >"$state/theme.json"
+  herdr-app status >"$state/status.json"
+  field layout <"$state/status.json" >"$state/layout"
+  field space <"$state/status.json" >"$state/prev-space"
+  rm -rf "$state/repo"
+  repo "$state/repo"
+  "$root/bin/dev-mirror"
+  do_ layout.switch '{"name":"shapr-material"}'
+  out=$(herdr-app do space.new "{\"name\":\"demo\",\"folder\":\"$state/repo\",\"tab\":\"agents\"}")
+  space=$(printf '%s' "$out" | field space)
+  tab=$(printf '%s' "$out" | field tab)
+  shell=$(printf '%s' "$out" | field terminal)
+  [ -n "$space" ] && [ -n "$tab" ] || { echo "demo: space.new answered $out" >&2; exit 1; }
+  echo "$space" >"$state/space"
+  do_ space.move "{\"id\":\"$space\",\"index\":1}"
+  # The done agent waits in a second tab: one shown is seen, and a seen done turns idle.
+  out=$(herdr-app do tab.new "{\"name\":\"review\",\"space\":\"$space\",\"folder\":\"$state/repo\"}")
+  review=$(printf '%s' "$out" | field tab)
+  shell2=$(printf '%s' "$out" | field terminal)
+  do_ tab.select "{\"id\":\"$tab\"}"
+  : >"$state/agents"
+  for s in "working:Theme tokens:$tab" "blocked:Layout file:$tab" "idle:Docs:$tab" "done:Test run:$review"; do
+    status=${s%%:*} rest=${s#*:}
+    title=${rest%%:*} where=${rest#*:}
+    t=$(hc run --json --bg --keep --no-parent --cwd "$state/repo" --name "demo-$status" \
+      --label "herdr.space=$space" --label "herdr.tab=$where" -- "$root/bin/demo" agent "$status" "$title" | field address)
+    [ -n "$t" ] || t=demo-$status
+    echo "$t" >>"$state/agents"
+  done
+  # Only the agents in the tabs, pinned so they lead the agents list (pins end with their terminal).
+  for t in $shell $shell2; do
+    pane=$(herdr-app ls | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const sp of JSON.parse(s).spaces)for(const tb of sp.tabs)for(const t of tb.terminals)if(t.terminal===process.argv[1])process.stdout.write(t.pane)})' "$t")
+    [ -z "$pane" ] || do_ pane.close "{\"pane\":\"$pane\"}" || true
+  done
+  while read -r t; do do_ terminal.pin "{\"terminal\":\"$t\",\"pinned\":true}" || true; done <"$state/agents"
+  sleep 1
+  do_ space.select "{\"id\":\"$space\"}"
+  echo "demo: up (space $space)"
+}
+
+down() {
+  [ -e "$state/settings.json" ] || { echo "demo: not up (no backup in $state)" >&2; exit 1; }
+  if [ -e "$state/agents" ]; then
+    while read -r t; do
+      hc kill "$t" >/dev/null 2>&1 || true
+      hc rm "$t" >/dev/null 2>&1 || true
+    done <"$state/agents"
+  fi
+  [ ! -e "$state/space" ] || herdr-app do space.close "{\"id\":\"$(cat "$state/space")\",\"confirmed\":true}" >/dev/null || true
+  [ ! -s "$state/layout" ] || do_ layout.switch "{\"name\":\"$(cat "$state/layout")\"}"
+  [ ! -s "$state/prev-space" ] || do_ space.select "{\"id\":\"$(cat "$state/prev-space")\"}" || true
+  "$root/bin/shots" --restore-theme "$state/theme.json"
+  cp "$state/settings.json" "$home/settings.json"
+  sleep 1
+  cmp "$home/settings.json" "$state/settings.json"
+  rm -rf "$state"
+  echo "demo: down"
+}
+
+case ${1:-} in
+  up) up ;;
+  down) down ;;
+  agent) shift; agent "$@" ;;
+  *) echo "usage: bin/demo up | down | agent <status> <title>" >&2; exit 2 ;;
+esac
