@@ -16,3 +16,15 @@ test("the layout draws no line between areas and paints no area chrome", () => {
   }
   assert.equal(L.background, "canvas");
 });
+
+test("each pane is a card: radius 16, no border at rest, a 2 px primary focus ring, lone panes too", () => {
+  const pane = find("main").content.pane;
+  assert.equal(pane.radius, 16);
+  assert.equal(pane.border, undefined);
+  assert.deepEqual(pane.focus, { width: 2, color: "solid" });
+  // Herdr's frame has one focus look for every pane and no split-only focus: a lone pane is a
+  // card too, so it carries the ring.
+  assert.equal(pane.lone, true);
+  assert.equal(pane.background, "background");
+  assert.equal(pane.header.content.mod, "pane");
+});
