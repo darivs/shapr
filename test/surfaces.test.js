@@ -7,6 +7,11 @@ import { readFileSync } from "node:fs";
 const L = JSON.parse(readFileSync(new URL("../shapr/layouts/shapr-material.json", import.meta.url), "utf8"));
 const nodes = (n) => [n, ...(n?.children ?? []).flatMap(nodes), ...(n?.floating ?? []).flatMap(nodes)];
 const find = (id) => nodes(L).find((n) => n.id === id);
+const lum = (h) => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 
 test("the layout draws no line between areas and paints no area chrome", () => {
   for (const n of nodes(L)) {
@@ -33,4 +38,13 @@ test("cards sit 12 px apart and 12 px inside the work area", () => {
   assert.equal(find("work-body").padding, 12);
   assert.equal(find("work-body").gap, 12);
   assert.equal(find("main").content.pane.gap, 12);
+});
+
+test("text on a status fill keeps its contrast now that the terminal's ground is a card", async () => {
+  const { reset } = await import("herdr");
+  const { onStatus } = await import("../kit/index.js");
+  const { themeFile } = await import("../shapr/mods/shapr-workspace-chrome/theme/scheme.js");
+  const t = themeFile({}, false).colors;
+  reset({ theme: t });
+  for (const s of ["working", "blocked", "done"]) assert.ok(ratio(onStatus(), t[s]) >= 4.5, `${s}: ${ratio(onStatus(), t[s]).toFixed(2)}`);
 });
