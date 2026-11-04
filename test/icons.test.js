@@ -82,7 +82,7 @@ test("every icon path the code names resolves to a file", () => {
 });
 
 // What Google's material-design-icons ships for Material Symbols Outlined at weight 300 and optical
-// size 20 (symbols/web/<name>/materialsymbolsoutlined/<name>[_fill1]_wght300_20px.svg): one path on
+// size 20 (symbols/web/<name>/materialsymbolsoutlined/<name>_wght300[fill1]_20px.svg): one path on
 // the 960 grid, no stroke, sized 20. The UI draws icons at 20 px or less. Lucide's are strokes on a 24 grid.
 const SYMBOL_NAME = /^[a-z0-9_]+(-fill)?\.svg$/;
 const SYMBOL = /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" height="20" viewBox="0 -960 960 960" width="20"><path d="[^"]+"\/><\/svg>\n?$/;

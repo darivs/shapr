@@ -26,7 +26,6 @@ function toggleSidebar() {
   run("layout.resize", { id: "sidebar", px: narrow() ? (shared("sidebar.width") ?? 268) : window()?.platform === "macos" ? 76 : 44 });
 }
 
-
 // The layout's fixed blocks hold one row of kit controls, so their heights follow the person's
 // density: the brand and tab bars a control (H.sm) with 8 above and below, the footer its three
 // rows with 8 above and below (space, not a line, sets it off).

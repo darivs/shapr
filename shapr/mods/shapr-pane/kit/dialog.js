@@ -7,7 +7,7 @@ import { H, RADIUS, lineOf, type } from "./tokens.js";
 import { roles } from "./roles.js";
 import { button } from "./button.js";
 
-export const DIALOG = { pad: 24, gap: 16, iconSize: 24, minW: 280, maxW: 560 };
+export const DIALOG = { pad: 24, gap: 16, iconSize: 20, minW: 280, maxW: 560 };
 
 /**
  * The dialog's surface. It fills its overlay; with `fit` it is as tall as its content (an overlay

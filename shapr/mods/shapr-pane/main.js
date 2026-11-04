@@ -11,7 +11,6 @@ import { h_flex } from "gpui-base";
 import { panes, props, run, home } from "herdr";
 import { iconButton, statusMark, label, roles, icon, SPACE, chromeIcon } from "./kit/index.js";
 
-
 function programIcon(p, size, color) {
   if (!p?.icon) return null;
   return p.tint ? svg(p.icon).size(size).flex_none().text_color(color) : image(p.icon).w(size).h(size).flex_none();

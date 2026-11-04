@@ -5,7 +5,7 @@ import { H } from "./tokens.js";
 import { roles } from "./roles.js";
 import { press, disable } from "./state.js";
 
-const ICON = { xs: 14, sm: 18, md: 20, lg: 20, xl: 24 };
+const ICON = { xs: 14, sm: 18, md: 20, lg: 20, xl: 20 };
 
 /**
  * opts: { kind: "standard" | "filled" | "tonal" | "outlined", size, width: "narrow" | "default" | "wide",

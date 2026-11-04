@@ -28,8 +28,8 @@ const iconSample = (path) => {
   const r = K.roles();
   return v_flex().w(120).items_center().gap(K.SPACE.xs)
     .child(h_flex().gap(K.SPACE.sm).items_center()
-      .child(svg(path).size(24).flex_none().text_color(r.onSurface))
-      .child(svg(path).size(20).flex_none().text_color(r.onSurfaceVariant)))
+      .child(svg(path).size(20).flex_none().text_color(r.onSurface))
+      .child(svg(path).size(18).flex_none().text_color(r.onSurfaceVariant)))
     .child(K.label(path.split("/").pop().slice(0, -4), { style: "labelSmall", role: "onSurfaceVariant", truncate: true }));
 };
 

@@ -331,7 +331,7 @@ export default class Spaces extends View {
   }
 
   // A drawer item: the space's folder (a worktree: call_split, one step in), outlined at rest and
-  // filled when active, its name and its quiet count. The active space adds its branch as a second
+  // filled when active (call_split has no filled cut: the pill marks it), its name and its quiet count. The active space adds its branch as a second
   // line (a worktree's branch is its name); every row's tooltip has the repo and branch. A blocked
   // space shows its status mark.
   row({ w, i, g, tree }, r) {
@@ -339,7 +339,7 @@ export default class Spaces extends View {
     const branch = g ? g.branch ?? "detached" : null;
     return navItem(`space-${w.id}`, w.name, {
       icon: chromeIcon(tree ? "call_split" : "folder"),
-      activeIcon: chromeIcon(tree ? "call_split-fill" : "folder-fill"),
+      activeIcon: chromeIcon(tree ? "call_split" : "folder-fill"),
       active: on,
       supporting: on && g && !tree ? branch : null,
       badge: w.status === "blocked" ? statusMark("blocked") : null,
@@ -380,7 +380,7 @@ export default class Spaces extends View {
       .on_mouse_down("right", () => this.menu(w));
   }
 
-  // The rail: a 32 pill per space, its icon (filled when active; a worktree's call_split) and
+  // The rail: a 32 pill per space, its icon (a folder filled when active; a worktree's call_split, which has no filled cut) and
   // its status mark; the tooltip names it.
   compact({ w, tree }, r) {
     const mark = w.status === "blocked" || w.status === "done"
@@ -390,7 +390,7 @@ export default class Spaces extends View {
       .when(w.active, (el) => el.bg(r.secondaryContainer));
     el = el.text_color(w.active ? r.onSecondaryContainer : r.onSurfaceVariant).tooltip(w.name);
     el = press(el, () => run("space.select", { id: w.id }), { layer: w.active ? "lift" : r.hover });
-    const path = chromeIcon(tree ? (w.active ? "call_split-fill" : "call_split") : (w.active ? "folder-fill" : "folder"));
+    const path = chromeIcon(tree ? "call_split" : w.active ? "folder-fill" : "folder");
     return el.child(svg(path).size(20).flex_none()).child(mark);
   }
 

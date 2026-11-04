@@ -16,7 +16,6 @@ import { dialogSurface, dialogHeadline, dialogBody, textField, button, iconButto
 // The terminal window's title bar height.
 const BAR = 40;
 
-
 // Host entries people can pick: named ones, not patterns.
 function parseConfig(text) {
   const hosts = [];
