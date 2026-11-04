@@ -39,6 +39,16 @@ function keepHeights() {
     if (find(layout(), id)?.size?.px !== undefined && find(layout(), id).size.px !== px) run("layout.resize", { id, px });
 }
 
+// Panes are cards rounded like the kit's large shapes (SHAPE.lg), so their frame follows the
+// person's corner setting. Herdr has no command for one frame field: the layout is set whole.
+function keepCorners() {
+  const pane = find(layout(), "main")?.content?.pane;
+  if (!pane || pane.radius === SHAPE.lg) return;
+  const next = structuredClone(layout());
+  find(next, "main").content.pane.radius = SHAPE.lg;
+  run("layout.set", { layout: next });
+}
+
 // Commands for keys.json (`shapr-workspace-chrome.<name>`): shapr's overlays for the shown space
 // and tab, opened as their own buttons open them.
 const COMMANDS = {
@@ -123,7 +133,7 @@ export default class WorkspaceChrome extends View {
   render(cx) {
     // The brand bar is always in the layout: it keeps shapr's themes in step with the settings.
     keepThemes(cx, prefs());
-    if (!props()?.footer) keepHeights();
+    if (!props()?.footer) { keepHeights(); keepCorners(); }
     const collapsed = narrow();
     return props()?.footer ? this.footer(collapsed) : this.brand(collapsed);
   }
