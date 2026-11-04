@@ -14,16 +14,19 @@ test("the terminal menu's opener counts Send back only when its parent still exi
   assert.equal(terminalMenuSpec("p1", "t1").height, menuHeight({ items: 6, dividers: 1 }));
 });
 
-test("hovering a pane header changes no layout: its buttons hold their space at rest (shapr-pane/main.js:60)", async () => {
+test("hovering a pane header changes no layout: its buttons float over it, and take no room at rest (shapr-pane/main.js:60)", async () => {
   const { default: Pane } = await import("../shapr/mods/shapr-pane/main.js");
   reset({ props: { pane: "p1" }, panes: [{ pane: "p1", title: "Docs", cwd: "/user-home/demo", status: "idle" }] });
   const v = new Pane();
   v.init();
+  const flow = (tree) => tree.__node.children.map((c) => c?.__node).filter((n) => n && !n.calls.some(([m]) => m === "absolute"));
   const ids = (tree) => [...walk(tree)].flatMap((n) => (n?.calls ?? []).filter(([m]) => m === "id").map(([, [i]]) => i));
-  const rest = ids(v.render(cx));
+  const rest = v.render(cx);
   v.hovered = true;
-  assert.deepEqual(ids(v.render(cx)), rest);
-  assert.ok(rest.includes("ph-x-p1"), "the close button is laid out at rest");
+  const hover = v.render(cx);
+  assert.equal(flow(hover).length, flow(rest).length, "hover adds an in-flow child");
+  assert.ok(!ids(rest).includes("ph-x-p1"), "the buttons take room (and clicks) at rest");
+  assert.ok(ids(hover).includes("ph-x-p1"), "hover shows the buttons");
 });
 
 test("Maximize off Windows draws a Material Symbol, not Herdr's caption icon (shapr-tabs/main.js:98)", async () => {
