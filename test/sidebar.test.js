@@ -3,6 +3,7 @@
 // color only on the active item and on status marks.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { reset } from "herdr";
 import { walk, texts, argsOf } from "./stubs/element.js";
 
