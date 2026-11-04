@@ -12,7 +12,7 @@
 //       puts it first in the spaces list and pins its agents) with a solid box, so the image can
 //       be committed. Writes over <in.png> when no <out.png>.
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { deflateSync, inflateSync } from "node:zlib";
@@ -218,6 +218,14 @@ const chrome = (c) => () => run(`shapr-workspace-chrome.${c}`);
 const modOpen = (name) => () => run("mod.open", { name });
 const panel = (child) => () => { run("layout.select", { stack: "panel-body", child }); run("layout.show", { id: "panel" }); };
 const hidePanel = () => run("layout.hide", { id: "panel" });
+// The demo space bin/demo up opened (SHAPR_DEMO/space), or null when none is up.
+function demoSpace() {
+  const f = join(process.env.SHAPR_DEMO ?? join(process.env.TMPDIR ?? "/tmp", "shapr-demo"), "space");
+  return existsSync(f) ? readFileSync(f, "utf8").trim() || null : null;
+}
+/** Whether the window (herdr-app status) shows the demo space: nothing else may be in a shot. */
+export const onDemo = (status, space) => Boolean(space) && status?.space === space;
+
 export const STATES = {
   base: [() => {}],
   "new-menu": [chrome("new-menu")],
@@ -253,12 +261,22 @@ function shoot(prefix, states, opts) {
   if (opts.appearance || opts.zoom) { writeFileSync(path, JSON.stringify(s, null, 2) + "\n"); sleep(1); }
   setTheme(opts);
   hidePanel();
+  const space = demoSpace();
+  if (!space) throw new Error("no demo space: run bin/demo up first");
   for (const name of states) {
     const [open, after] = STATES[name];
     close();
+    app("do", "space.select", JSON.stringify({ id: space }));
     open();
     sleep(1.2);
-    console.log(app("shot", `${prefix}-${name}.png`).trim());
+    const file = `${prefix}-${name}.png`;
+    console.log(app("shot", file).trim());
+    // The person may switch spaces meanwhile: a shot of anything else is deleted, never kept.
+    if (!onDemo(JSON.parse(app("status")), space)) {
+      rmSync(file, { force: true });
+      close();
+      throw new Error(`${name}: the window left the demo space; shot deleted`);
+    }
     after?.();
   }
   close();
