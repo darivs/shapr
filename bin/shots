@@ -151,7 +151,8 @@ const DENSITY = { compact: -4, standard: 0, comfortable: 4 };
  * "Pinned" header and one row an agent (bin/demo pins them). Everything else down to the next
  * divider is covered. u is image px a window px at zoom 1 (scale x zoom).
  */
-export function areas(img, { u = 2, density = "standard", agents = 4 } = {}) {
+export function areas(img, { u = 2, density = "standard", agents = 4, layout = null } = {}) {
+  if (layout) return fromLayout(img, { u, density, agents, layout });
   const edge = sidebarEdge(img), off = DENSITY[density] ?? 0, row = (40 + off) * u;
   const top = (32 + off + 16) * u, lines = dividers(img, edge).filter((y) => y > top);
   const foot = lines.at(-1) ?? img.height, list = lines.length > 1 ? lines[0] : null;
@@ -161,6 +162,26 @@ export function areas(img, { u = 2, density = "standard", agents = 4 } = {}) {
   return { sidebar: [0, 0, edge.x, img.height], work: [edge.x, 0, img.width - edge.x, img.height], mask };
 }
 
+const node = (n, id) => (n?.id === id ? n : (n?.children ?? []).map((c) => node(c, id)).find(Boolean));
+
+/**
+ * areas() when no line marks the sidebar (D10: space, not lines): the sidebar's width and the
+ * spaces and agents lists' weights from the layout, the brand bar (a control and 8 above and below)
+ * and the footer (three rows and 8 above and below) from the density. The demo space is active,
+ * so its row has two lines; the agents list keeps its heading (8 above), the "Pinned" header
+ * (4 above) and one row an agent.
+ */
+function fromLayout(img, { u, density, agents, layout }) {
+  const off = DENSITY[density] ?? 0, row = (40 + off) * u;
+  const width = Math.round((node(layout, "sidebar")?.size?.px ?? 268) * u);
+  const top = (32 + off + 16) * u, foot = img.height - (16 + 3 * (40 + off)) * u;
+  const weight = (id) => node(layout, id)?.size?.weight ?? 1;
+  const list = Math.round(top + ((foot - top) * weight("spaces")) / (weight("spaces") + weight("agents")));
+  const box = (from, to) => [0, Math.round(from), width, Math.max(0, Math.round(to - from))];
+  const mask = [box(top + 36 * u + (56 + off) * u, list), box(list + (8 + 36 + 40) * u + agents * row, foot)];
+  return { sidebar: [0, 0, width, img.height], work: [width, 0, img.width - width, img.height], mask };
+}
+
 const readJson = (p, d) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return d; } };
 
 function liveAreas(img) {
@@ -168,7 +189,9 @@ function liveAreas(img) {
   const scale = win.bounds ? img.width / win.bounds[2] : 2;
   const zoom = readJson(join(home, "settings.json"), {}).zoom ?? 1;
   const density = readJson(join(home, "shared.json"), {})["shapr.settings"]?.density;
-  return areas(img, { u: scale * zoom, density });
+  // The layout as Herdr keeps it; without one, the lines the shot shows.
+  const layout = readJson(join(home, "layouts", "shapr-material.json"), null);
+  return areas(img, { u: scale * zoom, density, layout: layout?.root ?? layout });
 }
 
 /** --mask, then --crop, on one image file. */
