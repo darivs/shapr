@@ -68,6 +68,14 @@ test("openers size their overlays to what the overlays draw", async () => {
   assert.equal(K.tabMenuSpec("t1", "s1").height, K.menuHeight({ items: 3, dividers: 1 }));
   assert.equal(K.spaceMenuSpec("s1", { linked: true }).height, K.menuHeight({ items: 5, dividers: 1 }));
   assert.equal(K.spaceMenuSpec("s1", null).height, K.menuHeight({ items: 2, dividers: 1 }));
+  // The terminal menu, as Herdr's right-click opens it: split right and down, zoom, where right-clicks
+  // go, (send back to its parent), a divider, close.
+  h.terminals = [{ address: "t7", labels: {} }, { address: "t8", parent: "t7", labels: {} }];
+  const term = K.terminalMenuSpec("p1", "t7");
+  assert.deepEqual([term.mod, term.kind, term.frame], ["shapr-menu", "popup", "none"]);
+  assert.deepEqual(term.props, { tab: "pane", target: { pane: "p1", terminal: "t7" } });
+  assert.equal(term.height, K.menuHeight({ items: 5, dividers: 1 }));
+  assert.equal(K.terminalMenuSpec("p2", "t8").height, K.menuHeight({ items: 6, dividers: 1 }));
   assert.equal(K.renameSpec("tab", "t1").props.value, "fix");
   for (const spec of [K.newMenuSpec(), K.tabMenuSpec("t1", "s1"), K.renameSpec("tab", "t1"), K.settingsSpec()]) assert.equal(spec.frame, "none");
   const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr-material.json"), "utf8"));
