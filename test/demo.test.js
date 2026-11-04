@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -29,7 +29,10 @@ test("bin/demo up, bin/shots r1 and bin/demo down leave the window as it was", {
   } finally {
     run("bin/demo", "down");
   }
-  for (const s of STATES) assert.ok(existsSync(join(dir, `r1-${s}.png`)), `r1-${s}.png`);
+  const shot = STATES.map((s) => existsSync(join(dir, `r1-${s}.png`)));
+  // The shots show the person's other spaces: they don't stay behind.
+  rmSync(dir, { recursive: true, force: true });
+  STATES.forEach((s, i) => assert.ok(shot[i], `r1-${s}.png`));
   assert.ok(readFileSync(join(home, "settings.json")).equals(settings), "settings.json as before");
   const after = json("herdr-app", "status");
   assert.equal(after.layout, before.layout);
