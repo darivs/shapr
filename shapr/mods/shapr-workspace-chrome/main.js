@@ -1,8 +1,8 @@
 // style: md3
 import { View, div, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces } from "herdr";
-import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, divider, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, renameSpec } from "./kit/index.js";
+import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces, focused } from "herdr";
+import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, divider, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -45,6 +45,7 @@ const COMMANDS = {
   "new-menu": () => openOverlay(newMenuSpec()),
   "tab-menu": (s) => s && openOverlay(tabMenuSpec(s.tabs.find((t) => t.active)?.id, s.id)),
   "space-menu": (s) => s && openOverlay(spaceMenuSpec(s.id, undefined)),
+  "terminal-menu": () => { const f = focused(); if (f?.pane) openOverlay(terminalMenuSpec(f.pane, f.terminal)); },
   "rename-tab": (s) => s && openOverlay(renameSpec("tab", s.tabs.find((t) => t.active)?.id)),
   "rename-space": (s) => s && openOverlay(renameSpec("space", s.id)),
   theme: () => openOverlay(settingsSpec()),

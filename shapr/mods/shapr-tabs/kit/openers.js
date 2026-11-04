@@ -1,7 +1,7 @@
 // Where shapr's overlays open and how big, in one place: every opener sizes an overlay to exactly
 // what that overlay draws (its menu items, dialog lines and fields), at the person's density.
 // Each overlay mod's own header says what it draws; these follow it.
-import { spaces, shared } from "herdr";
+import { spaces, shared, terminals } from "herdr";
 import { menuHeight } from "./menu.js";
 import { dialogHeight } from "./dialog.js";
 import { fieldHeight } from "./text-field.js";
@@ -24,6 +24,16 @@ export function newMenuSpec() {
 /** A tab's menu: Rename, New tab, a divider, Close. */
 export function tabMenuSpec(tab, space) {
   return { mod: "shapr-menu", kind: "popup", frame: "none", width: OVERLAY_W.menu, height: menuHeight({ items: 3, dividers: 1 }), props: { tab: "tab", target: { id: tab, space } } };
+}
+
+/**
+ * A terminal's menu, as Herdr's right-click opens it: Split right, Split down, Zoom, where
+ * right-clicks go (a terminal), Send back to its parent (a kept sub-agent), a divider, Close pane.
+ */
+export function terminalMenuSpec(pane, terminal) {
+  const t = terminals().find((x) => x.address === terminal);
+  const items = 4 + (t ? 1 : 0) + (t?.parent ? 1 : 0);
+  return { mod: "shapr-menu", kind: "popup", frame: "none", width: OVERLAY_W.menu, height: menuHeight({ items, dividers: 1 }), props: { tab: "pane", target: { pane, terminal } } };
 }
 
 /**

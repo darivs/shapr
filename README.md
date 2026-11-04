@@ -23,6 +23,6 @@ Lucide icons under ISC (`LICENSES/`).
 ## Keys
 
 `shapr-workspace-chrome` takes commands a `keys.json` can bind (`"alt-t": "shapr-workspace-chrome.theme"`):
-`new-menu`, `tab-menu`, `space-menu`, `rename-tab`, `rename-space`, `theme`, and the theme settings
+`new-menu`, `tab-menu`, `space-menu`, `terminal-menu` (the focused terminal's), `rename-tab`, `rename-space`, `theme`, and the theme settings
 `set-density-<compact|standard|comfortable>`, `set-corners-<standard|round>`,
 `set-motion-<expressive|calm|reduced>`, `set-contrast-<standard|medium|high>`, `seed-<rrggbb>`, `reset-theme`.
