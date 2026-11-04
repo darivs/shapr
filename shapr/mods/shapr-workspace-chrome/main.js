@@ -2,7 +2,7 @@
 import { View, div, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces } from "herdr";
-import { prefs, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, divider, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, renameSpec } from "./kit/index.js";
+import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, divider, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, renameSpec } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -50,13 +50,26 @@ const COMMANDS = {
   theme: () => openOverlay(settingsSpec()),
 };
 
+// Theme settings by key (keys.json): set-density-compact, set-corners-round, set-motion-reduced,
+// set-contrast-high, seed-006a6a, reset-theme. The same values the settings window stores.
+const PREF_VALUES = { density: ["compact", "standard", "comfortable"], corners: ["standard", "round"], motion: ["expressive", "calm", "reduced"], contrast: ["standard", "medium", "high"] };
+function setPref(c) {
+  const cur = shared(SETTINGS) ?? {};
+  if (c === "reset-theme") return setShared(SETTINGS, { ...DEFAULTS });
+  const seed = /^seed-([0-9a-fA-F]{6})$/.exec(c);
+  if (seed) return setShared(SETTINGS, { ...cur, seed: `#${seed[1].toUpperCase()}` });
+  const m = /^set-(density|corners|motion|contrast)-([a-z]+)$/.exec(c);
+  if (m && PREF_VALUES[m[1]].includes(m[2])) setShared(SETTINGS, { ...cur, [m[1]]: m[2] });
+}
+
 export default class WorkspaceChrome extends View {
   init(_props, cx) {
     if (props()?.footer) return;
     cx.spawn(async () => {
       for (;;) {
         const c = await nextCommand();
-        COMMANDS[c]?.(spaces().find((s) => s.active));
+        if (COMMANDS[c]) COMMANDS[c](spaces().find((s) => s.active));
+        else setPref(c);
       }
     });
   }
