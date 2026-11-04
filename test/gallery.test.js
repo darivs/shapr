@@ -108,7 +108,7 @@ test("the gallery follows its measured width through layoutPx", () => {
   assert.equal(notified, 1);
 });
 
-test("the gallery's icon section shows each kit icon by name, at 20 and 24", () => {
+test("the gallery's icon section shows each kit icon by name, at 18 and 20", () => {
   reset();
   const tree = open().render();
   const names = readdirSync(new URL("icons/", kitDir)).filter((f) => f.endsWith(".svg")).map((f) => f.slice(0, -4));
@@ -119,7 +119,7 @@ test("the gallery's icon section shows each kit icon by name, at 20 and 24", () 
   for (const n of names) {
     assert.ok(shown.includes(n), `${n} isn't named`);
     const sizes = drawn.filter((s) => s.arg === real.icon(n)).flatMap((s) => s.calls.filter(([m]) => m === "size").map(([, [px]]) => px));
-    for (const px of [20, 24]) assert.ok(sizes.includes(px), `${n} isn't drawn at ${px}`);
+    for (const px of [18, 20]) assert.ok(sizes.includes(px), `${n} isn't drawn at ${px}`);
   }
 });
 

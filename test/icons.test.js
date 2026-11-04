@@ -103,3 +103,12 @@ test("no Lucide license remains, and Apache-2.0 covers the symbols", () => {
   for (const f of ["README.md", "LICENSES/README.md"]) assert.doesNotMatch(readFileSync(join(root, f), "utf8"), /lucide|\bISC\b/i, f);
   assert.match(readFileSync(join(root, "LICENSES", "README.md"), "utf8"), /Material Symbols.*Apache-2\.0\.txt/);
 });
+
+test("no icon is drawn above the 20 px its optical size is cut for", async () => {
+  const { DIALOG } = await import("../kit/index.js");
+  assert.ok(DIALOG.iconSize <= 20, `dialog icon ${DIALOG.iconSize}`);
+  const sizes = [...readFileSync(join(root, "kit", "icon-button.js"), "utf8").match(/const ICON = \{([^}]*)\}/)[1].matchAll(/:\s*(\d+)/g)].map((m) => Number(m[1]));
+  assert.ok(sizes.every((s) => s <= 20), `icon button sizes ${sizes}`);
+  const gallery = readFileSync(join(MODS, "shapr-gallery", "main.js"), "utf8");
+  assert.deepEqual([...gallery.matchAll(/svg\(path\)\.size\((\d+)\)/g)].map((m) => Number(m[1])).filter((s) => s > 20), []);
+});
