@@ -413,7 +413,7 @@ export default class Spaces extends View {
       .child(collapsed
         ? h_flex().h(36).flex_none().items_center().justify_center().child(add)
         : heading("Spaces", { trailing: add }).pr(SPACE.sm))
-      .child(v_flex().flex_1().min_h(0).px(collapsed ? SPACE.xs : SPACE.md).pb(SPACE.md).gap(collapsed ? SPACE.xxs : 0).overflow_y_scrollbar().mode("always")
+      .child(v_flex().flex_1().min_h(0).px(collapsed ? SPACE.xs : SPACE.md).pb(SPACE.md).gap(collapsed ? SPACE.xxs : 0).overflow_y_scrollbar().mode("scrolling")
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
         .children(this.grouped(r, collapsed)));
   }

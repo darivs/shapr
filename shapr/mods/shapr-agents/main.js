@@ -404,7 +404,7 @@ export default class Agents extends View {
       .when(list.length === 0 && !collapsed, (el) =>
         el.child(label("No agent status yet. Agents show up here when they report their status. Older versions and agents inside tmux may not.", { style: "bodySmall", role: "onSurfaceVariant" }).px(SPACE.lg).py(SPACE.sm)),
       )
-      .child(v_flex().id("ag-list").flex_1().min_h(0).px(collapsed ? SPACE.xs : SPACE.md).pb(SPACE.sm).gap(collapsed ? SPACE.xxs : 0).overflow_y_scrollbar().mode("always").children(rows))
+      .child(v_flex().id("ag-list").flex_1().min_h(0).px(collapsed ? SPACE.xs : SPACE.md).pb(SPACE.sm).gap(collapsed ? SPACE.xxs : 0).overflow_y_scrollbar().mode("scrolling").children(rows))
       .when(collapsed, (el) =>
         el.child(
           h_flex()
