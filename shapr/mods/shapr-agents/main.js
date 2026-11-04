@@ -389,8 +389,6 @@ export default class Agents extends View {
       .size_full()
       .min_h(0)
       .bg(r.surface)
-      .border_t(1)
-      .border_color(r.outlineVariant)
       .text_color(r.onSurface)
       .when(!collapsed, (el) =>
         el.child(

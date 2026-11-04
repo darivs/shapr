@@ -70,7 +70,7 @@
           "id": "sidebar-footer",
           "type": "block",
           "size": {
-            "px": 137
+            "px": 136
           },
           "content": {
             "mod": "shapr-workspace-chrome",

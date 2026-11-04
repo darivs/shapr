@@ -2,7 +2,7 @@
 import { View, div, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces, focused } from "herdr";
-import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, divider, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec } from "./kit/index.js";
+import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -29,10 +29,11 @@ function toggleSidebar() {
 const glyph = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
 // The layout's fixed blocks hold one row of kit controls, so their heights follow the person's
-// density: the brand and tab bars a control (H.sm) with 8 above and below, the footer a
-// divider and its three rows with 8 above and below. The status bar's xs controls don't change.
+// density: the brand and tab bars a control (H.sm) with 8 above and below, the footer its three
+// rows with 8 above and below (space, not a line, sets it off). The status bar's xs controls don't
+// change.
 export function blockHeights() {
-  return { brand: H.sm + 16, tabs: H.sm + 16, "sidebar-footer": 1 + 16 + 3 * ROW.one };
+  return { brand: H.sm + 16, tabs: H.sm + 16, "sidebar-footer": 16 + 3 * ROW.one };
 }
 function keepHeights() {
   for (const [id, px] of Object.entries(blockHeights()))
@@ -106,7 +107,7 @@ export default class WorkspaceChrome extends View {
         .child(navItem("theme", "Theme", { icon: glyph("palette"), onClick: theme }))
         .child(navItem("settings", "Settings", { icon: glyph("settings"), badge: ready ? dot() : null, onClick: settings }))
         .child(navItem("machine", "Add machine", { icon: icon("add"), onClick: machine }));
-    return v_flex().size_full().bg(r.surfaceContainer).child(divider()).child(rows);
+    return v_flex().size_full().bg(r.surface).child(rows);
   }
 
   // The brand bar: the Herdr mark and name (after the macOS traffic lights), search and the

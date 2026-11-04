@@ -80,7 +80,7 @@ test("openers size their overlays to what the overlays draw", async () => {
   for (const spec of [K.newMenuSpec(), K.tabMenuSpec("t1", "s1"), K.renameSpec("tab", "t1"), K.settingsSpec()]) assert.equal(spec.frame, "none");
   const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr-material.json"), "utf8"));
   const find = (n, id) => n?.id === id ? n : (n?.children ?? []).map((c) => find(c, id)).find(Boolean);
-  assert.equal(find(L, "sidebar-footer").size.px, 1 + 16 + 3 * K.ROW.one);
+  assert.equal(find(L, "sidebar-footer").size.px, 16 + 3 * K.ROW.one);
   assert.equal(find(L, "tabs").size.px, K.H.sm + 16);
   assert.equal(find(L, "brand").size.px, K.H.sm + 16);
   assert.equal(find(L, "work-body").floating[0].content.mod, "shapr-toasts");
