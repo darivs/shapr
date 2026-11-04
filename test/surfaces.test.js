@@ -34,6 +34,17 @@ test("each pane is a card: radius 16, no border at rest, a 2 px primary focus ri
   assert.equal(pane.header.content.mod, "pane");
 });
 
+test("no status bar runs under the panes: the work area's cards reach the window's bottom margin", async () => {
+  const { existsSync } = await import("node:fs");
+  const { CLONED } = await import("../bin/clone-mods");
+  assert.equal(find("status"), undefined, "a status block");
+  assert.deepEqual(nodes(L).filter((n) => n.content?.mod === "shapr-workspace-status").map((n) => n.id), []);
+  // The work column holds the tab bar and the cards' row, and the row's padding is the margin.
+  assert.deepEqual(find("work").children.map((n) => n.id), ["tabs", "work-body"]);
+  assert.equal(existsSync(new URL("../shapr/mods/shapr-workspace-status", import.meta.url)), false, "the mod is in the repo");
+  assert.equal(CLONED.includes("workspace-status"), false, "clone-mods still clones it");
+});
+
 test("cards sit 12 px apart and 12 px inside the work area", () => {
   assert.equal(find("work-body").padding, 12);
   assert.equal(find("work-body").gap, 12);
