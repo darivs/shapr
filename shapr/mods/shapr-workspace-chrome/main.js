@@ -2,7 +2,7 @@
 import { View, div, image, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces, focused, machines, agents } from "herdr";
-import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, transition, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec } from "./kit/index.js";
+import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, transition, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec, chromeIcon } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -26,7 +26,6 @@ function toggleSidebar() {
   run("layout.resize", { id: "sidebar", px: narrow() ? (shared("sidebar.width") ?? 268) : window()?.platform === "macos" ? 76 : 44 });
 }
 
-const glyph = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
 // The layout's fixed blocks hold one row of kit controls, so their heights follow the person's
 // density: the brand and tab bars a control (H.sm) with 8 above and below, the footer its three
@@ -87,12 +86,12 @@ export default class WorkspaceChrome extends View {
 
   // Where agents run: this computer, or how many machines (this computer among them), and the
   // agents on all of them.
-  machines() {
+  machineLabel() {
     const n = machines().length, count = agents().length;
-    return `${n > 1 ? `${n} machines` : "This computer"} · ${count} agents`;
+    return `${n > 1 ? `${n} machines` : "This computer"} · ${count} ${count === 1 ? "agent" : "agents"}`;
   }
 
-  // The machine row: at rest the computer and what machines() and agents() say; pointed at, add
+  // The machine row: at rest the computer and what machineLabel() says; pointed at, add
   // machine. Both faces are drawn on top of each other and cross-fade (instant under reduced
   // motion), so the row and its text slot keep their size; the text truncates.
   machineRow(onClick) {
@@ -100,10 +99,10 @@ export default class WorkspaceChrome extends View {
     const on = Boolean(this.hovered);
     const fade = (el, shown) => transition(el.opacity(shown ? 1 : 0), "opacity", "short");
     const glyphs = div().relative().size(20).flex_none().text_color(r.onSurfaceVariant)
-      .child(fade(div().id("machine-icon-rest").size(20).child(svg(glyph("computer")).size(20)), !on))
+      .child(fade(div().id("machine-icon-rest").size(20).child(svg(chromeIcon("computer")).size(20)), !on))
       .child(fade(div().id("machine-icon-add").absolute().top(0).left(0).size(20).child(svg(icon("add")).size(20)), on));
     const text = div().relative().w_full().min_w(0)
-      .child(fade(div().id("machine-facts").min_w(0).truncate().child(this.machines()), !on))
+      .child(fade(div().id("machine-facts").min_w(0).truncate().child(this.machineLabel()), !on))
       .child(fade(div().id("machine-add").absolute().top(0).left(0).right(0).truncate().child("Add machine"), on));
     return navItem("machine", text, { leading: glyphs, tip: "Add machine", onClick }).on_hover((hovered, cx) => this.hover(hovered, cx));
   }
@@ -125,15 +124,15 @@ export default class WorkspaceChrome extends View {
     const machine = () => run("mod.open", { name: "shapr-machine-add" });
     const rows = collapsed
       ? v_flex().flex_1().min_h(0).gap(SPACE.xs).items_center().justify_center()
-        .child(iconButton("theme", glyph("palette"), { size: "sm", tip: "Theme", onClick: theme }))
+        .child(iconButton("theme", chromeIcon("palette"), { size: "sm", tip: "Theme", onClick: theme }))
         .child(div().relative().flex_none()
-          .child(iconButton("settings", glyph("settings"), { size: "sm", tip: "Settings", onClick: settings }))
+          .child(iconButton("settings", chromeIcon("settings"), { size: "sm", tip: "Settings", onClick: settings }))
           .when(ready, el => el.child(div().absolute().top(SPACE.xs).right(SPACE.xs).child(dot()))))
-        .child(iconButton("machine", this.hovered ? icon("add") : glyph("computer"), { size: "sm", tip: "Add machine", onClick: machine })
+        .child(iconButton("machine", this.hovered ? icon("add") : chromeIcon("computer"), { size: "sm", tip: "Add machine", onClick: machine })
           .on_hover((hovered, cx) => this.hover(hovered, cx)))
       : v_flex().flex_1().min_h(0).px(SPACE.md).justify_center()
-        .child(navItem("theme", "Theme", { icon: glyph("palette"), onClick: theme }))
-        .child(navItem("settings", "Settings", { icon: glyph("settings"), badge: ready ? dot() : null, onClick: settings }))
+        .child(navItem("theme", "Theme", { icon: chromeIcon("palette"), onClick: theme }))
+        .child(navItem("settings", "Settings", { icon: chromeIcon("settings"), badge: ready ? dot() : null, onClick: settings }))
         .child(this.machineRow(machine));
     return v_flex().size_full().bg(r.surface).child(rows);
   }
@@ -145,7 +144,7 @@ export default class WorkspaceChrome extends View {
     const r = roles();
     const w = window();
     const mac = w?.platform === "macos";
-    const toggle = iconButton("sidebar-toggle", glyph("dock_to_left"), { size: "sm", tip: collapsed ? "Show sidebar" : "Hide sidebar", onClick: toggleSidebar });
+    const toggle = iconButton("sidebar-toggle", chromeIcon("dock_to_left"), { size: "sm", tip: collapsed ? "Show sidebar" : "Hide sidebar", onClick: toggleSidebar });
     if (collapsed) {
       return h_flex().size_full().bg(r.surface).items_center().justify_center()
         .when(!mac, el => el.child(toggle));

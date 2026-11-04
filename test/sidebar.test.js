@@ -247,6 +247,6 @@ test("hovering the machine row swaps to add machine without resizing it, animate
 
 test("an active worktree's icon is filled, in the drawer and the rail", () => {
   const src = readFileSync(new URL("../shapr/mods/shapr-spaces/main.js", import.meta.url), "utf8");
-  assert.match(src, /activeIcon: symbol\(tree \? "call_split-fill" : "folder-fill"\)/);
-  assert.match(src, /symbol\(tree \? \(w\.active \? "call_split-fill" : "call_split"\)/);
+  assert.match(src, /activeIcon: chromeIcon\(tree \? "call_split-fill" : "folder-fill"\)/);
+  assert.match(src, /chromeIcon\(tree \? \(w\.active \? "call_split-fill" : "call_split"\)/);
 });

@@ -8,7 +8,7 @@
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { agents, terminals, panes, focused, spaces, run, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout } from "herdr";
-import { roles, onStatus, type, label, heading, navItem, iconButton, statusMark, menuSurface, menuHeader, menuItem, menuHeight, icon as kitIcon, press, H, SPACE, SHAPE } from "./kit/index.js";
+import { roles, onStatus, type, label, heading, navItem, iconButton, statusMark, menuSurface, menuHeader, menuItem, menuHeight, icon as kitIcon, press, H, SPACE, SHAPE, chromeIcon } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -51,11 +51,9 @@ const kidStatus = (k, listed) => {
   const s = listed.get(k.address) ?? k.status;
   return s === "error" ? "blocked" : s === "done" ? "idle" : s;
 };
-// An icon shapr-workspace-chrome holds for the chrome's mods.
-const chrome = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 const SORTS = [
-  { id: "priority", label: "Priority", icon: chrome("schedule") },
-  { id: "grouped", label: "Grouped by space", icon: chrome("layers") },
+  { id: "priority", label: "Priority", icon: chromeIcon("schedule") },
+  { id: "grouped", label: "Grouped by space", icon: chromeIcon("layers") },
 ];
 // The sort popup's size: exactly its menu, a header and one item per sort (kit menuHeight).
 const SORT_W = 224;
@@ -304,7 +302,7 @@ export default class Agents extends View {
       const when = this.since(a);
       const isPinned = a.pinned;
       const hovered = this.hovered === a.address;
-      const pin = iconButton(`pin-${a.address}`, chrome(isPinned ? "keep_off" : "keep"), {
+      const pin = iconButton(`pin-${a.address}`, chromeIcon(isPinned ? "keep_off" : "keep"), {
         size: "xs",
         tip: isPinned ? "Unpin" : "Pin to the top",
         onClick: () => {

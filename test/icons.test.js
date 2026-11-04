@@ -38,13 +38,14 @@ export function references() {
   const out = [], unresolved = [];
   for (const file of code()) {
     const src = readFileSync(file, "utf8"), at = relative(root, file);
-    // Helpers that make an icon path from a name: the kit's icon(name) and a mod's own
+    // Helpers that make an icon path from a name: the kit's icon(name) and chromeIcon(name), and a mod's own
     // `const glyph = (name) => \`mods/<mod>/${name}.svg\``.
     const helpers = new Map();
     for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']\.\/(?:kit\/index|state|index)\.js["']/g))
       for (const part of m[1].split(",").map((s) => s.trim())) {
         const [name, alias] = part.split(/\s+as\s+/);
         if (name === "icon") helpers.set(alias ?? name, KIT_ICONS);
+        if (name === "chromeIcon") helpers.set(alias ?? name, join(MODS, "shapr-workspace-chrome"));
       }
     for (const m of src.matchAll(/import\s*\*\s*as\s+(\w+)\s+from\s*["']\.\/(?:kit\/)?index\.js["']/g)) helpers.set(`${m[1]}.icon`, KIT_ICONS);
     const defs = /(?:const|let)\s+([\w$]+)\s*=\s*\(\s*(\w+)\s*\)\s*=>\s*`mods\/([\w-]+|\$\{SELF\}\/kit\/icons)\/\$\{\2\}\.svg`/g;

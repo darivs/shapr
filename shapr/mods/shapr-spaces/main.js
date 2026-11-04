@@ -9,7 +9,7 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
-import { roles, type, label, heading, navItem, iconButton, button, statusMark, icon, press, H, ROW, SPACE, spaceMenuSpec } from "./kit/index.js";
+import { roles, type, label, heading, navItem, iconButton, button, statusMark, icon, press, H, ROW, SPACE, spaceMenuSpec, chromeIcon } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -30,7 +30,6 @@ function place(s, ps) {
   return ps.find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder;
 }
 const where = (s, ps) => JSON.stringify([s.machine ?? null, place(s, ps)]);
-const symbol = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 const base = (path) => path.replace(/\/+$/, "").split("/").pop();
 // Changes made outside Herdr (an editor's save, a commit in another app): looked
 // for this often, in repos the list shows, while the window is in front.
@@ -302,7 +301,7 @@ export default class Spaces extends View {
         cx.notify();
       }, { layer: r.hover });
       head = head
-        .child(svg(`mods/shapr-workspace-chrome/${m ? "dns" : "monitor"}.svg`).size(collapsed ? 14 : 18).flex_none())
+        .child(svg(chromeIcon(m ? "dns" : "monitor")).size(collapsed ? 14 : 18).flex_none())
         .when(!collapsed, el => el.child(div().flex_1().min_w(0).truncate().child(m ?? "This computer"))
           .when(!connected && !rebuilt, el => el.child(label((machine?.state ?? "asleep").replace(/_/g, " "), { style: "labelSmall", role: "onSurfaceVariant" }).flex_none()))
           .when(rebuilt, el => el.child(h_flex().flex_none().gap(SPACE.xs).items_center()
@@ -339,8 +338,8 @@ export default class Spaces extends View {
     const on = w.active;
     const branch = g ? g.branch ?? "detached" : null;
     return navItem(`space-${w.id}`, w.name, {
-      icon: symbol(tree ? "call_split" : "folder"),
-      activeIcon: symbol(tree ? "call_split-fill" : "folder-fill"),
+      icon: chromeIcon(tree ? "call_split" : "folder"),
+      activeIcon: chromeIcon(tree ? "call_split-fill" : "folder-fill"),
       active: on,
       supporting: on && g && !tree ? branch : null,
       badge: w.status === "blocked" ? statusMark("blocked") : null,
@@ -391,7 +390,7 @@ export default class Spaces extends View {
       .when(w.active, (el) => el.bg(r.secondaryContainer));
     el = el.text_color(w.active ? r.onSecondaryContainer : r.onSurfaceVariant).tooltip(w.name);
     el = press(el, () => run("space.select", { id: w.id }), { layer: w.active ? "lift" : r.hover });
-    const path = symbol(tree ? (w.active ? "call_split-fill" : "call_split") : (w.active ? "folder-fill" : "folder"));
+    const path = chromeIcon(tree ? (w.active ? "call_split-fill" : "call_split") : (w.active ? "folder-fill" : "folder"));
     return el.child(svg(path).size(20).flex_none()).child(mark);
   }
 

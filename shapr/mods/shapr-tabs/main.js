@@ -2,7 +2,7 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, window, shared, layout, settings } from "herdr";
-import { button, iconButton, statusMark, roles, icon, H, SPACE, newMenuSpec, tabMenuSpec, renameSpec } from "./kit/index.js";
+import { button, iconButton, statusMark, roles, icon, H, SPACE, newMenuSpec, tabMenuSpec, renameSpec, chromeIcon } from "./kit/index.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -95,7 +95,7 @@ export default class Tabs extends View {
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/shapr-changes/difference.svg")))
       .when(w?.buttons, el => el
         .child(iconButton("minimize", windows ? "mods/shapr-tabs/win-min.svg" : icon("remove"), { size: "sm", tip: "Minimize", onClick: () => run("window.minimize") }))
-        .child(iconButton("maximize", windows ? `mods/shapr-tabs/${w.maximized ? "win-restore" : "win-max"}.svg` : "mods/shapr-tabs/win-max.svg", { size: "sm", tip: w.maximized ? "Restore" : "Maximize", onClick: () => run("window.maximize") }))
+        .child(iconButton("maximize", windows ? `mods/shapr-tabs/${w.maximized ? "win-restore" : "win-max"}.svg` : chromeIcon("crop_square"), { size: "sm", tip: w.maximized ? "Restore" : "Maximize", onClick: () => run("window.maximize") }))
         .child(iconButton("close-window", windows ? "mods/shapr-tabs/win-close.svg" : icon("close"), { size: "sm", tip: "Close", onClick: () => run("window.close") })));
   }
 }

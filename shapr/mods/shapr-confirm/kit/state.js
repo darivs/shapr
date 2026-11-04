@@ -4,6 +4,8 @@ import { SELF } from "./self.js";
 
 /** A kit icon's path, inside the mod that holds this copy of the kit. */
 export const icon = (name) => `mods/${SELF}/kit/icons/${name}.svg`;
+/** A Material Symbol shapr-workspace-chrome holds for every chrome mod (not part of the kit's own icons). */
+export const chromeIcon = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
 /** Stops a press so a control inside a window_drag block clicks instead of dragging. */
 export const stopPress = (el) => el.on_mouse_down("left", (_e, cx) => cx.stop_propagation());

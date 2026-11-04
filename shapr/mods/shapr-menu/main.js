@@ -10,7 +10,7 @@
 import { View } from "gpui-kit";
 import { v_flex } from "gpui-base";
 import { run, props, closeOverlay, openOverlay, keys, terminals, spaces, panes, exec } from "herdr";
-import { menuSurface, menuItem, menuDivider, dialogHeight, fieldHeight, roles, icon, textLines, H, ROW, keyLabel } from "./kit/index.js";
+import { menuSurface, menuItem, menuDivider, dialogHeight, fieldHeight, roles, icon, textLines, H, ROW, keyLabel, chromeIcon } from "./kit/index.js";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
 function place(s) {
@@ -89,15 +89,13 @@ export function menuSize(p, git) {
 function menuIcon(command, args) {
   if (command.endsWith(".close")) return icon("close");
   if (command.endsWith(".new")) return icon("add");
-  if (command.endsWith(".rename")) return chrome("edit_square");
-  if (command === "worktree") return chrome("call_split");
-  if (command === "app.theme") return chrome("settings");
-  if (command === "pane.split") return chrome(args?.direction === "down" ? "splitscreen_bottom" : "splitscreen_right");
-  if (command === "pane.zoom") return chrome("crop_square");
-  return chrome("terminal");
+  if (command.endsWith(".rename")) return chromeIcon("edit_square");
+  if (command === "worktree") return chromeIcon("call_split");
+  if (command === "app.theme") return chromeIcon("settings");
+  if (command === "pane.split") return chromeIcon(args?.direction === "down" ? "splitscreen_bottom" : "splitscreen_right");
+  if (command === "pane.zoom") return chromeIcon("crop_square");
+  return chromeIcon("terminal");
 }
-// An icon shapr-workspace-chrome holds for the chrome's mods.
-const chrome = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
 // The key bound to a command, for the hint on the right.
 function shortcut(name, args) {

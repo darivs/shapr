@@ -7,7 +7,7 @@
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex } from "gpui-base";
 import { spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, shared, setShared } from "herdr";
-import { menuSurface, menuItem, menuDivider, menuHeader, menuHeight, dialogHeight, fieldHeight, roles, icon, type, H, ROW, MENU, keyLabel } from "./kit/index.js";
+import { menuSurface, menuItem, menuDivider, menuHeader, menuHeight, dialogHeight, fieldHeight, roles, icon, type, H, ROW, MENU, keyLabel, chromeIcon } from "./kit/index.js";
 
 // The last agents each machine reported, shown at once while knownAgents() checks again.
 const KNOWN = "new-menu.agents";
@@ -80,7 +80,7 @@ export default class NewMenu extends View {
           .child(this.failed ? "Could not load agents" : "Checking installed agents…"))))
       .child(menuDivider())
       .child(this.row("space", glyph(icon("add")), "New space", () => run("space.new"), shortcut("space.new")))
-      .child(this.row("worktree", glyph("mods/shapr-workspace-chrome/call_split.svg"), "New worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "new" })), "", Boolean(space)))
-      .child(this.row("worktree-open", glyph("mods/shapr-workspace-chrome/call_split.svg"), "Open worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "open" })), "", Boolean(space)));
+      .child(this.row("worktree", glyph(chromeIcon("call_split")), "New worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "new" })), "", Boolean(space)))
+      .child(this.row("worktree-open", glyph(chromeIcon("call_split")), "Open worktree…", () => openOverlay(worktree({ space: space?.id, folder: folder(), action: "open" })), "", Boolean(space)));
   }
 }

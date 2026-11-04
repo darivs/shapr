@@ -11,12 +11,11 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { hc, exec, home, readTextFile, props, closeOverlay, openOverlay } from "herdr";
-import { dialogSurface, dialogHeadline, dialogBody, textField, button, iconButton, listItem, heading, card, label, circularProgress, roles, icon, type, RADIUS } from "./kit/index.js";
+import { dialogSurface, dialogHeadline, dialogBody, textField, button, iconButton, listItem, heading, card, label, circularProgress, roles, icon, type, RADIUS, chromeIcon } from "./kit/index.js";
 
 // The terminal window's title bar height.
 const BAR = 40;
 
-const I = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
 // Host entries people can pick: named ones, not patterns.
 function parseConfig(text) {
@@ -193,7 +192,7 @@ export default class MachineAdd extends View {
       .border_b(1)
       .border_color(r.outlineVariant)
       .text_color(r.onSurfaceVariant)
-      .child(svg(I("dns")).size(18).flex_none())
+      .child(svg(chromeIcon("dns")).size(18).flex_none())
       .child(type(div(), "titleSmall").flex_1().min_w(0).truncate().text_color(r.onSurface).child(`Adding ${props().target}: answer it here`))
       .child(iconButton("ma-bar-close", icon("close"), { size: "sm", tip: "Close", onClick: () => closeOverlay(props().overlay) }));
   }
@@ -203,7 +202,7 @@ export default class MachineAdd extends View {
     const st = this.state[target];
     const done = this.isAdded(target);
     const right = done
-      ? h_flex().gap(6).items_center().text_color(r.primary).child(svg(I("check_circle")).size(18)).child(type(div(), "labelLarge").child("Added"))
+      ? h_flex().gap(6).items_center().text_color(r.primary).child(svg(chromeIcon("check_circle")).size(18)).child(type(div(), "labelLarge").child("Added"))
       : st === "adding"
         ? h_flex().gap(8).items_center().child(circularProgress(18)).child(label("Connecting", { style: "labelLarge", role: "onSurfaceVariant" }))
         : st === "terminal"
@@ -214,7 +213,7 @@ export default class MachineAdd extends View {
       .flex_none()
       .child(listItem(`ma-row-${target}`, name, {
         supporting: sub || null,
-        leading: svg(I("dns")).size(20),
+        leading: svg(chromeIcon("dns")).size(20),
         trailing: right,
         interactive: !idle,
         onClick: idle ? (_e, cx) => this.add(target, cx) : null,

@@ -9,10 +9,8 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { panes, props, run, home } from "herdr";
-import { iconButton, statusMark, label, roles, icon, SPACE } from "./kit/index.js";
+import { iconButton, statusMark, label, roles, icon, SPACE, chromeIcon } from "./kit/index.js";
 
-// An icon shapr-workspace-chrome holds for the chrome's mods.
-const chrome = (name) => `mods/shapr-workspace-chrome/${name}.svg`;
 
 function programIcon(p, size, color) {
   if (!p?.icon) return null;
@@ -57,10 +55,11 @@ export default class Pane extends View {
       .child(label(name, { style: "labelLarge", truncate: true }).flex_shrink(1).max_w(260))
       .child(label(folder(p.cwd), { style: "bodySmall", role: "onSurfaceVariant", truncate: true, grow: true }))
       .when(["working", "blocked", "done"].includes(st), (el) => el.child(statusMark(st)))
-      .when(this.hovered, (el) => el
-        .child(this.button(`ph-r-${pane}`, chrome("splitscreen_right"), "Split right", "pane.split", { direction: "right", pane }))
-        .child(this.button(`ph-d-${pane}`, chrome("splitscreen_bottom"), "Split down", "pane.split", { direction: "down", pane }))
-        .child(this.button(`ph-z-${pane}`, chrome(p.zoomed ? "close_fullscreen" : "open_in_full"), p.zoomed ? "Unzoom" : "Zoom", "pane.zoom", { pane }))
+      // The buttons keep their space at rest and only show on hover, so nothing moves.
+      .child(h_flex().flex_none().items_center().opacity(this.hovered ? 1 : 0)
+        .child(this.button(`ph-r-${pane}`, chromeIcon("splitscreen_right"), "Split right", "pane.split", { direction: "right", pane }))
+        .child(this.button(`ph-d-${pane}`, chromeIcon("splitscreen_bottom"), "Split down", "pane.split", { direction: "down", pane }))
+        .child(this.button(`ph-z-${pane}`, chromeIcon(p.zoomed ? "close_fullscreen" : "open_in_full"), p.zoomed ? "Unzoom" : "Zoom", "pane.zoom", { pane }))
         .child(this.button(`ph-x-${pane}`, icon("close"), "Close pane", "pane.close", { pane })));
   }
 }
