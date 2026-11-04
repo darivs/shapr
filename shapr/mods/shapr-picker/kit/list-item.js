@@ -2,19 +2,21 @@
 // selected item sits on secondary-container, as Expressive lists do.
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { ROW, RADIUS, type } from "./tokens.js";
+import { H, ROW, RADIUS, type } from "./tokens.js";
 import { roles } from "./roles.js";
 import { press, disable } from "./state.js";
 
 /**
  * opts: { overline, supporting, lines (2 or 3 when supporting wraps), leading, trailing (elements),
- *   trailingText, selected, disabled, interactive (hover without its own click), propagate, onClick }
+ *   trailingText, selected, disabled, interactive (hover without its own click), propagate, onClick,
+ *   dense (one line at H.sm, 12 inside: trees and long lists), indent (px added at the start) }
  */
-export function listItem(id, headline, { overline = null, supporting = null, lines = null, leading = null, trailing = null, trailingText = null, selected = false, disabled = false, interactive = false, propagate = false, onClick = null } = {}) {
+export function listItem(id, headline, { overline = null, supporting = null, lines = null, leading = null, trailing = null, trailingText = null, selected = false, disabled = false, interactive = false, propagate = false, onClick = null, dense = false, indent = 0 } = {}) {
   const r = roles();
   const n = lines ?? (supporting || overline ? 2 : 1);
-  const h = n >= 3 ? ROW.three : n === 2 ? ROW.two : ROW.one;
-  let el = h_flex().id(id).h(h).w_full().flex_none().pl(16).pr(trailing || trailingText ? 12 : 16).gap(12).items_center().rounded(RADIUS.row);
+  const h = dense && n === 1 ? H.sm : n >= 3 ? ROW.three : n === 2 ? ROW.two : ROW.one;
+  const inset = dense ? 12 : 16;
+  let el = h_flex().id(id).h(h).w_full().flex_none().pl(inset + indent).pr(trailing || trailingText ? 12 : inset).gap(dense ? 8 : 12).items_center().rounded(RADIUS.row);
   if (selected) el = el.bg(r.secondaryContainer);
   if (onClick) el = press(el, onClick, { disabled, layer: selected ? "lift" : r.hover, propagate });
   else if (interactive && !disabled) el = el.cursor_pointer().hover((s) => (selected ? s.opacity(0.92) : s.bg(r.hover)));

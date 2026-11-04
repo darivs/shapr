@@ -6,13 +6,18 @@ import { SHAPE, type } from "./tokens.js";
 import { roles } from "./roles.js";
 import { press, icon } from "./state.js";
 
-/** opts: { title, body, action: { label, onClick }, onClose, tone (a status role), width, onClick } */
-export function snackbar(id, { title, body = null, action = null, onClose = null, tone = null, width = 360, onClick = null } = {}) {
+/**
+ * opts: { title, body, action: { label, onClick }, onClose, tone (a status role), loud (outlined in
+ *   the tone: a blocked agent, the loudest thing on screen), icon (svg path), width, onClick }
+ */
+export function snackbar(id, { title, body = null, action = null, onClose = null, tone = null, loud = false, icon: glyph = null, width = 360, onClick = null } = {}) {
   const r = roles();
   let el = h_flex().id(id).w(width).min_h(48).flex_none().items_center().gap(4).pl(tone ? 12 : 16).pr(onClose || action ? 8 : 16).py(8)
     .rounded(SHAPE.xs).bg(r.inverseSurface).text_color(r.inverseOnSurface).shadow_md();
   el = press(el, onClick, { layer: "lift" });
+  if (loud && tone) el = el.border_2().border_color(r[tone] ?? r.primary);
   if (tone) el = el.child(div().w(4).h(32).mr(8).flex_none().rounded_full().bg(r[tone] ?? r.primary));
+  if (glyph) el = el.child(svg(glyph).size(20).mr(8).flex_none());
   el = el.child(v_flex().flex_1().min_w(0).gap(2)
     .child(type(div(), "bodyMedium", Boolean(body)).truncate().child(title))
     .when(Boolean(body), (el) => el.child(type(div(), "bodySmall").max_h(48).overflow_hidden().opacity(0.86).child(body))));

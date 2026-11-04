@@ -1,7 +1,7 @@
 // MD3 badges: small (a 6 dot) and large (16 tall, a number up to 999+), error by default; and
 // the agent status mark, which keeps Herdr's status colors (blocked is the loudest).
 import { div, svg } from "gpui-kit";
-import { type, loop } from "./tokens.js";
+import { type, loop, reducedMotion } from "./tokens.js";
 import { roles } from "./roles.js";
 import { icon } from "./state.js";
 
@@ -20,7 +20,10 @@ export function badge({ count = null, max = 999, role = "error", on = "onError" 
  */
 export function statusMark(status, { size = 8 } = {}) {
   const r = roles();
-  if (status === "working") return svg(icon("spinner")).size(size + 4).flex_none().text_color(r.working).spin(900);
+  if (status === "working") {
+    const s = svg(icon("spinner")).size(size + 4).flex_none().text_color(r.working);
+    return reducedMotion() ? s : s.spin(900);
+  }
   if (status === "blocked") return loop(div().size(size + 2).flex_none().rounded_full().bg(r.blocked), "opacity", { from: 0.55, to: 1, period: 1200 });
   if (status === "done") return div().size(size).flex_none().rounded_full().bg(r.done);
   return div().size(size).flex_none().rounded_full().border_1().border_color(r.idle);

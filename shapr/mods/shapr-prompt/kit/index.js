@@ -21,3 +21,6 @@ export * from "./badge.js";
 export * from "./progress.js";
 export * from "./divider.js";
 export * from "./snackbar.js";
+export * from "./keycap.js";
+export * from "./search-bar.js";
+export * from "./panel.js";

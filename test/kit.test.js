@@ -37,6 +37,8 @@ export function everyState() {
   out.push(K.dialogSurface().child(K.dialogHeadline("Title", { icon: K.icon("plus") })).child(K.dialogBody("Body")).child(K.dialogActions({ onCancel: noop, primary: { label: "Save", onClick: noop }, note: "n", error: true })));
   for (const s of ["working", "blocked", "done", "idle"]) out.push(K.statusMark(s), K.statusBadge(s, 3));
   out.push(K.linearProgress(120, null), K.linearProgress(120, 0.4), K.linearProgress(120, 1), K.circularProgress(), K.divider(), K.divider({ vertical: true, inset: 16 }));
+  out.push(K.keycap("⌘"), K.shortcut(["⌘", "K"]), K.searchBar(K.label("q"), { trailing: K.label("Esc") }), K.panelCard().child(K.panelHeader("Files", { leading: K.iconButton("pb", K.icon("arrow-left"), { onClick: noop }), detail: "~/x", actions: [K.iconButton("pa", K.icon("plus"), { onClick: noop })] })).child(K.panelWell()),
+    K.listItem("dense", "src", { dense: true, indent: 32, onClick: noop }), K.dialogSurface(undefined, { fit: true }), K.snackbar("loud", { title: "x", tone: "blocked", loud: true, icon: K.icon("plus") }));
   out.push(K.snackbar("t", { title: "Saved", body: "Long body", action: { label: "Undo", onClick: noop }, onClose: noop, tone: "blocked", onClick: noop }));
   return out;
 }
@@ -76,6 +78,12 @@ test("menuHeight and dialogHeight count what the components draw", () => {
   assert.equal(K.menuHeight({ items: 3 }), 4 + 40 * 3 + 2 * 2 + 4);
   assert.equal(K.menuHeight({ items: 2, dividers: 1, headers: 1 }), 8 + 80 + 9 + 32 + 3 * 2);
   assert.equal(K.dialogHeight({ headlineLines: 1, bodyLines: 2 }), 48 + 32 + 40 + 40 + 2 * 16);
+});
+
+test("textLines estimates wrapping for openers", () => {
+  reset();
+  assert.equal(K.textLines("", "bodyMedium", 300), 1);
+  assert.equal(K.textLines("x".repeat(100), "bodyMedium", 300), Math.ceil(100 * 14 * 0.55 / 300));
 });
 
 test("type sets size, a static weight and the line height", () => {

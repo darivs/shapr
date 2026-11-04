@@ -34,6 +34,12 @@ export function type(el, style, emphasized = false) {
 /** The line height of a type style, for openers that count an overlay's height. */
 export const lineOf = (style) => (TYPE[style] ?? TYPE.bodyMedium)[2];
 
+/** How many lines `text` wraps to in `style` at `width` px (Roboto Flex averages 0.55 em a glyph). */
+export function textLines(text, style, width) {
+  const size = (TYPE[style] ?? TYPE.bodyMedium)[0];
+  return Math.max(1, Math.ceil((String(text ?? "").length * size * 0.55) / Math.max(1, width)));
+}
+
 // Shape --------------------------------------------------------------------
 // The MD3 corner scale; "round" is the person's larger scale. full = .rounded_full().
 const SHAPES = {

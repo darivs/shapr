@@ -102,7 +102,7 @@ test("reduced motion makes the kit stop animating", () => {
   assert.deepEqual(kit.flatMap((t) => MOTION.flatMap((m) => argsOf(t, m))), []);
 });
 
-test("the working spinner stops under reduced motion", { todo: "kit/badge.js statusMark calls .spin directly" }, () => {
+test("the working spinner stops under reduced motion", () => {
   reset({ shared: { [K.SETTINGS]: { motion: "reduced" } } });
   assert.deepEqual(argsOf(K.statusMark("working"), "spin"), []);
 });

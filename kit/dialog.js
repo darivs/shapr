@@ -9,10 +9,13 @@ import { button } from "./button.js";
 
 export const DIALOG = { pad: 24, gap: 16, iconSize: 24, minW: 280, maxW: 560 };
 
-/** The dialog's surface. It fills its overlay; rows inside run edge to edge with negative margins. */
-export function dialogSurface(el = v_flex()) {
+/**
+ * The dialog's surface. It fills its overlay; with `fit` it is as tall as its content (an overlay
+ * opened without a height) and never taller than the overlay.
+ */
+export function dialogSurface(el = v_flex(), { fit = false } = {}) {
   const r = roles();
-  return el.size_full().bg(r.surfaceHigh).rounded(RADIUS.dialog).p(DIALOG.pad).gap(DIALOG.gap).shadow_lg().overflow_hidden().text_color(r.onSurface);
+  return (fit ? el.w_full().max_h_full() : el.size_full()).bg(r.surfaceHigh).rounded(RADIUS.dialog).p(DIALOG.pad).gap(DIALOG.gap).shadow_lg().overflow_hidden().text_color(r.onSurface);
 }
 
 /** The headline, headline small; with an icon it centres under it, as MD3 does. */
