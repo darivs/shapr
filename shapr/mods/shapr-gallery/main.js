@@ -23,6 +23,15 @@ export const WIDE = MIN_W + NAME_W + K.SPACE.md;
 // "displayLarge" → "Display L": short enough that display large stays under MAX_ITEM.
 const styleName = (st) => st[0].toUpperCase() + st.slice(1).replace(/(Large|Medium|Small)$/, (m) => ` ${m[0]}`);
 const CODE = ["export function hello() {", "  return \"shapr\";", "}"];
+// A kit icon at the two sizes shapr draws it, on-surface and on-surface-variant, over its name.
+const iconSample = (path) => {
+  const r = K.roles();
+  return v_flex().w(120).items_center().gap(K.SPACE.xs)
+    .child(h_flex().gap(K.SPACE.sm).items_center()
+      .child(svg(path).size(24).flex_none().text_color(r.onSurface))
+      .child(svg(path).size(20).flex_none().text_color(r.onSurfaceVariant)))
+    .child(K.label(path.split("/").pop().slice(0, -4), { style: "labelSmall", role: "onSurfaceVariant", truncate: true }));
+};
 
 export default class Gallery extends View {
   init() {
@@ -78,6 +87,9 @@ export default class Gallery extends View {
           K.iconButton(`in-${k}`, K.icon("chevron_left"), { kind: k, width: "narrow", onClick: noop }), K.iconButton(`iw-${k}`, K.icon("search"), { kind: k, width: "wide", onClick: noop })]]),
         ["sizes", ["xs", "sm", "md", "lg", "xl"].map((z) => K.iconButton(`iz-${z}`, K.icon("add"), { kind: "tonal", size: z, onClick: noop }))],
         ["toggle sizes", ["xs", "sm", "md", "lg", "xl"].map((z) => K.iconButton(`izs-${z}`, K.icon("check"), { kind: "filled", size: z, selected: true, onClick: noop }))]))
+      .child(this.section("Icons",
+        ["24 · 20", [K.icon("add"), K.icon("arrow_back"), K.icon("check"), K.icon("chevron_left"), K.icon("chevron_right"), K.icon("close"),
+          K.icon("keyboard_arrow_down"), K.icon("progress_activity"), K.icon("remove"), K.icon("search")].map(iconSample)]))
       .child(this.section("Labels",
         ["type", Object.keys(K.TYPE).map((st) => K.label(styleName(st), { style: st }))],
         ["emphasized", ["headlineSmall", "bodyMedium", "labelLarge"].map((st) => K.label(st, { style: st, emphasized: true }))],
