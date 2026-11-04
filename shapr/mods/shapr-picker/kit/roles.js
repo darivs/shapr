@@ -29,5 +29,6 @@ export function roles() {
   };
 }
 
-/** Text on a status fill: the surface's own ground, which contrasts in light and dark. */
-export const onStatus = () => theme().background;
+/** Text on a status fill: the lowest surface (the terminal's ground under other themes), which
+ *  contrasts in light and dark. */
+export const onStatus = () => theme().surface_lowest ?? theme().background;
