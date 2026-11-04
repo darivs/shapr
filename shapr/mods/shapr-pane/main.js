@@ -56,7 +56,6 @@ export default class Pane extends View {
       .when(Boolean(pic), (el) => el.child(pic))
       .child(label(name, { style: "labelLarge", truncate: true }).flex_shrink(1).max_w(260))
       .child(label(folder(p.cwd), { style: "bodySmall", role: "onSurfaceVariant", truncate: true, grow: true }))
-      .when(st === "blocked", (el) => el.child(label("Needs you", { style: "labelMedium", role: "blocked" }).flex_none()))
       .when(["working", "blocked", "done"].includes(st), (el) => el.child(statusMark(st)))
       .when(this.hovered, (el) => el
         .child(this.button(`ph-r-${pane}`, chrome("vertical_split"), "Split right", "pane.split", { direction: "right", pane }))
