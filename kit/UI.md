@@ -45,6 +45,7 @@ fails on a stale copy. Edit `kit/`, never a copy. Import from `./kit/index.js` o
 | hover state layer | `hover` (opaque) |
 | error, tertiary, inverse surface | shapr's own names (`error`, `on_error`, `tertiary`, `inverse_surface`, ...), with Herdr fallbacks |
 | agent status | `working`, `blocked`, `done`, `idle`: Herdr's own colors, blocked the loudest |
+| terminal ground, card (`terminal`) | `background`: in shapr's themes surface-container, the fill of every pane card and of `panelCard` |
 
 Never write hex in a mod. shapr's themes come from `shapr-workspace-chrome/theme/scheme.js`.
 

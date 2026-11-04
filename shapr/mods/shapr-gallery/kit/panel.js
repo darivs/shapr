@@ -1,5 +1,5 @@
-// A side panel (Files, Changes): a card on surface-container-low, rounded lg, with an
-// outline-variant line, and its header: 48 tall, a title that never shrinks, a detail that
+// A side panel (Files, Changes): a card like a terminal pane beside it (the terminal's ground,
+// rounded lg, no line), and its header: 48 tall, a title that never shrinks, a detail that
 // shrinks and truncates, and controls that stay their size.
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
@@ -9,8 +9,7 @@ import { roles } from "./roles.js";
 /** The panel's card. It fills its block. */
 export function panelCard(el = v_flex()) {
   const r = roles();
-  return el.size_full().min_h(0).bg(r.surfaceLow).rounded(SHAPE.lg).border_1().border_color(r.outlineVariant)
-    .overflow_hidden().text_color(r.onSurface);
+  return el.size_full().min_h(0).bg(r.terminal).rounded(SHAPE.lg).overflow_hidden().text_color(r.onSurface);
 }
 
 /** opts: { leading (an element before the title, e.g. a back button), detail (text), actions: [elements] } */
