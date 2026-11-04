@@ -424,7 +424,7 @@ export default class Spaces extends View {
     }
     if (changed) setShared("space.colors", kept);
     const add = iconButton("space-new", icon("plus"), { size: "sm", tip: "New space", onClick: () => run("space.new") });
-    return type(v_flex(), "bodyMedium").size_full().min_h(0).bg(r.surfaceContainer).text_color(r.onSurface)
+    return type(v_flex(), "bodyMedium").size_full().min_h(0).bg(r.surface).text_color(r.onSurface)
       .child(collapsed
         ? h_flex().h(36).flex_none().items_center().justify_center().child(add)
         : heading("Spaces", { trailing: add }).pr(SPACE.sm))

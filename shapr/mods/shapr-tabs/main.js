@@ -85,7 +85,7 @@ export default class Tabs extends View {
       } }).when(!on, el => el.text_color(r.onSurfaceVariant));
     };
     const windows = w?.platform === "windows";
-    return h_flex().size_full().min_w(0).pr(SPACE.sm).pl(lightsPadding).gap(SPACE.xs).items_center().bg(r.surfaceContainer)
+    return h_flex().size_full().min_w(0).pr(SPACE.sm).pl(lightsPadding).gap(SPACE.xs).items_center().bg(r.surface)
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(SPACE.xs).overflow_x_scrollbar().children(shown.map(item)))

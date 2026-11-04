@@ -96,7 +96,7 @@ export default class WorkspaceChrome extends View {
         .child(navItem("theme", "Theme", { icon: glyph("palette"), onClick: theme }))
         .child(navItem("settings", "Settings", { icon: glyph("settings"), badge: ready ? dot() : null, onClick: settings }))
         .child(navItem("machine", "Add machine", { icon: glyph("plus"), onClick: machine }));
-    return v_flex().size_full().bg(r.surfaceContainer).child(divider()).child(rows);
+    return v_flex().size_full().bg(r.surface).child(divider()).child(rows);
   }
 
   // The brand bar: the Herdr mark and name (after the macOS traffic lights), search and the
@@ -108,11 +108,11 @@ export default class WorkspaceChrome extends View {
     const mac = w?.platform === "macos";
     const toggle = iconButton("sidebar-toggle", glyph("sidebar"), { size: "sm", tip: collapsed ? "Show sidebar" : "Hide sidebar", onClick: toggleSidebar });
     if (collapsed) {
-      return h_flex().size_full().bg(r.surfaceContainer).items_center().justify_center()
+      return h_flex().size_full().bg(r.surface).items_center().justify_center()
         .when(!mac, el => el.child(toggle));
     }
     const name = type(div(), "titleMedium", true).flex_1().min_w(0).truncate().text_color(r.onSurface).child("Herdr");
-    return h_flex().size_full().min_w(0).bg(r.surfaceContainer).pl(mac && !w?.fullscreen ? 76 : SPACE.lg).pr(SPACE.sm).gap(SPACE.xs).items_center()
+    return h_flex().size_full().min_w(0).bg(r.surface).pl(mac && !w?.fullscreen ? 76 : SPACE.lg).pr(SPACE.sm).gap(SPACE.xs).items_center()
       .child(h_flex().flex_1().min_w(0).gap(SPACE.md).items_center()
         .child(image("frame/welcome/herdr.png").size(24).flex_none().rounded(SHAPE.sm))
         .child(name))

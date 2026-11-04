@@ -44,11 +44,12 @@ test("the sidebar, brand, tabs, sidebar footer and status bar paint canvas, not 
   const { reset } = await import("herdr");
   const mods = ["shapr-workspace-chrome", "shapr-tabs", "shapr-workspace-status", "shapr-spaces", "shapr-agents"];
   const cx = { notify() {}, spawn() {}, focus_handle: () => ({ focus() {} }), timer: { every() {}, after() {} } };
+  globalThis.localStorage ??= { getItem: () => null, setItem() {}, removeItem() {} };
   for (const [mod, props] of [...mods.map((m) => [m, {}]), ["shapr-workspace-chrome", { footer: true }]]) {
     const h = reset({ props, spaces: [{ id: "s1", active: true, machine: null, name: "demo", tabs: [{ id: "t1", active: true, name: "main" }] }] });
     const { default: View } = await import(`../shapr/mods/${mod}/main.js`);
     const v = new View();
-    v.init(props, cx);
+    v.init?.(props, cx);
     const root = v.render(cx).__node;
     const fills = root.calls.filter(([m]) => m === "bg").map(([, [c]]) => c);
     assert.ok(fills.every((c) => c === h.theme.canvas), `${mod} ${JSON.stringify(props)} paints ${fills}`);

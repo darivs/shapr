@@ -387,7 +387,7 @@ export default class Agents extends View {
     return type(v_flex(), "bodyMedium")
       .size_full()
       .min_h(0)
-      .bg(r.surfaceContainer)
+      .bg(r.surface)
       .border_t(1)
       .border_color(r.outlineVariant)
       .text_color(r.onSurface)

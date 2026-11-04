@@ -35,7 +35,7 @@ export default class WorkspaceStatus extends View {
         .child(type(div(), "labelMedium", true).text_color(r.blocked).child(`${needs} needs you`))));
     const palette = button("palette", this.hint(), { kind: "text", size: "xs", onClick: () => run("app.palette") })
       .text_color(r.onSurfaceVariant);
-    return h_flex().size_full().min_w(0).pl(SPACE.lg).pr(SPACE.sm).gap(SPACE.lg).items_center().bg(r.surfaceContainer).text_color(r.onSurfaceVariant)
+    return h_flex().size_full().min_w(0).pl(SPACE.lg).pr(SPACE.sm).gap(SPACE.lg).items_center().bg(r.surface).text_color(r.onSurfaceVariant)
       .child(h_flex().flex_1().min_w(0).gap(SPACE.lg).items_center()
         .child(fact(space?.machine ? "server" : "monitor", space?.machine ?? "This computer"))
         .when(Boolean(space?.branch), el => el.child(fact("branch", space.branch)))
