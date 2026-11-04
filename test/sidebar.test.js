@@ -157,3 +157,15 @@ test("no line separates the sidebar's sections, and the footer's block is the he
   const find = (n, id) => (n?.id === id ? n : (n?.children ?? []).map((c) => find(c, id)).find(Boolean));
   assert.equal(find(L, "sidebar-footer").size.px, 136);
 });
+
+test("the sidebar's lists show their scrollbars only while scrolling, empty, with one item or overflowing", async () => {
+  const many = Array.from({ length: 40 }, (_, n) => ({ ...AGENTS[n % 4], address: `x${n}`, pane: `px${n}`, seq: n }));
+  const lists = [
+    (await spacesList({ spaces: [] })).tree, (await spacesList({ spaces: [SPACES[0]] })).tree, (await spacesList()).tree,
+    (await agentsList("priority", { agents: [] })).tree, (await agentsList("priority", { agents: [AGENTS[0]] })).tree, (await agentsList("grouped", { agents: many })).tree,
+  ];
+  for (const tree of lists) {
+    assert.equal(argsOf(tree, "overflow_y_scrollbar").length, 1);
+    assert.deepEqual(argsOf(tree, "mode"), [["scrolling"]]);
+  }
+});
