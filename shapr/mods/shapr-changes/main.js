@@ -1,6 +1,8 @@
+// style: md3
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list } from "gpui-base";
-import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings } from "herdr";
+import { spaces, panes, focused, exec, readTextFile, watchFolder, settings } from "herdr";
+import { roles, type, lineOf, label, button, fieldBox, press, H, SHAPE, RADIUS, SPACE } from "./kit/index.js";
 
 function location() {
   const space = spaces().find((s) => s.active), f = focused();
@@ -12,6 +14,10 @@ const key = () => JSON.stringify(location());
 // Reads write nothing under .git (no index refresh or lock, no fsmonitor cookie):
 // the folder watch would see it, and every refresh would start the next one.
 const READ = ["--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "diff.autoRefreshIndex=false"];
+// A git status in a color role (status colors stay for agents): added tertiary, deleted and
+// conflicted error, modified primary.
+const STATUS = { A: "tertiary", D: "error", U: "error", M: "primary" };
+const ROW_GAP = SPACE.xxs;
 const countLines = (text) => text ? text.split("\n").length - Number(text.endsWith("\n")) : 0;
 
 // Numbers each diff line once, so a frame only draws the rows on screen.
@@ -133,7 +139,7 @@ export default class Changes extends View {
 
   setLines(lines) {
     this.rows = diffRows(lines);
-    this.diffWidth = Math.max(300, ...lines.map(line => line.length * 7 + 50));
+    this.diffWidth = Math.max(300, ...lines.map(line => line.length * 7.5 + 50));
   }
 
   pick(path, cx) {
@@ -165,42 +171,55 @@ export default class Changes extends View {
     cx.notify();
   }
 
-  diffRow({ kind, number, text }, t) {
-    if (kind === "@") return div().w_full().px(12).h(20).flex_none().truncate().bg(t.raised).text_color(t.dim).child(text);
-    return h_flex().w_full().h(20).flex_none().gap(10).when(kind === "+", (e) => e.bg(t.ansi2 + "18")).when(kind === "-", (e) => e.bg(t.ansi1 + "18"))
-      .child(div().w(30).flex_none().text_right().text_color(t.dim).child(number === undefined ? "" : String(number)))
+  diffRow({ kind, number, text }, r) {
+    if (kind === "@") return div().w_full().px(SPACE.md).h(20).flex_none().flex().items_center().bg(r.surfaceHigh).text_color(r.onSurfaceVariant).child(div().min_w(0).truncate().child(text));
+    const ink = kind === "+" ? r.onTertiaryContainer : kind === "-" ? r.onErrorContainer : r.onSurface;
+    return h_flex().w_full().h(20).flex_none().gap(SPACE.sm).pr(SPACE.md).items_center().text_color(ink)
+      .when(kind === "+", (e) => e.bg(r.tertiaryContainer)).when(kind === "-", (e) => e.bg(r.errorContainer))
+      .child(div().w(36).flex_none().text_right().text_color(kind === "+" || kind === "-" ? ink : r.onSurfaceVariant).child(number === undefined ? "" : String(number)))
       .child(div().flex_1().min_w(0).truncate().child(text));
   }
 
   render(cx) {
     if (key() !== this.context) this.refresh(cx);
-    const t = theme(), add = this.files.reduce((n, f) => n + f.add, 0), del = this.files.reduce((n, f) => n + f.del, 0);
+    const r = roles(), add = this.files.reduce((n, f) => n + f.add, 0), del = this.files.reduce((n, f) => n + f.del, 0);
     const enabled = Boolean(this.message.trim() && this.root && !this.busy && !this.loading);
-    return v_flex().id("changes").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.background).border_1().border_color(t.border).text_color(t.foreground).text_size(13).track_focus(this.handle)
+    const rowH = H.sm, step = rowH + ROW_GAP, inner = SHAPE.sm, n = this.files.length;
+    // The list grows with its files up to six and a half rows (the half row says it scrolls).
+    const listH = Math.min(Math.round(step * 6.5), Math.max(rowH, n * step - ROW_GAP) + SPACE.sm);
+    const count = (text, role) => label(text, { style: "labelMedium", role }).flex_none();
+    // An MD3 panel: surface-container-low, rounded large, an outline-variant edge like the pane beside it.
+    return type(v_flex().id("changes").size_full().min_h(0).rounded(SHAPE.lg).overflow_hidden().bg(r.surfaceLow).border_1().border_color(r.outlineVariant).text_color(r.onSurface), "bodyMedium").track_focus(this.handle)
       .on_key_down((e, cx) => {
         if (e.key === "escape" && this.typing) { this.typing = false; this.handle.focus(); cx.stop_propagation(); cx.notify(); }
       })
-      .child(h_flex().h(42).flex_none().px(14).gap(8).items_center().border_b(1).border_color(t.border)
-        .child(div().font_semibold().child("Changes"))
-        .child(div().px(5).py(1).rounded(4).border_1().border_color(t.border).text_size(10).text_color(t.muted).child(`${this.files.length} files`))
-        .child(div().flex_1()).child(div().text_size(11).text_color(t.ansi2).child(`+${add}`)).child(div().text_size(11).text_color(t.ansi1).child(`−${del}`)))
-      .child(v_flex().id("changes-list").flex_none().h(Math.min(200, Math.max(44, this.files.length * 28 + 12))).overflow_y_scrollbar().p(6).border_b(1).border_color(t.border).children(this.files.map((f) => {
-        const parts = f.path.split("/"), name = parts.pop();
-        return h_flex().id(`change-${f.path}`).h(28).flex_none().px(8).gap(8).items_center().rounded(7).cursor_pointer().when(this.open === f.path, (e) => e.bg(t.selected)).hover((s) => s.bg(t.hover)).on_click((_e, cx) => this.pick(f.path, cx))
-          .child(div().w(14).text_size(11).text_color(f.status === "A" ? t.ansi2 : f.status === "D" ? t.ansi1 : f.status === "U" ? t.ansi1 : t.blocked).child(f.status))
-          .child(h_flex().flex_1().min_w(0).child(div().text_color(t.dim).truncate().child(parts.length ? parts.join("/") + "/" : "")).child(div().max_w(260).min_w(0).truncate().child(name)))
-          .when(f.add > 0, (e) => e.child(div().text_size(11).text_color(t.ansi2).child(`+${f.add}`))).when(f.del > 0, (e) => e.child(div().text_size(11).text_color(t.ansi1).child(`−${f.del}`)));
-      })).when(!this.files.length, (e) => e.child(div().p(8).text_color(t.dim).child(this.error || (this.loading ? "Loading changes…" : this.root ? "No uncommitted changes" : "No folder")))))
-      .when(this.limited, el => el.child(div().px(12).py(4).text_size(11).text_color(t.dim).child("Showing the first 1,000 changed files")))
-      .child(div().flex_1().min_h(0).relative().font_family(settings().font_family ?? "JetBrains Mono").text_size(11)
-        .child(div().id("changes-diff-x").size_full().overflow_x_scrollbar()
-          .child(div().w_full().min_w(this.diffWidth).h_full().child(v_virtual_list("changes-diff", this.rows.length, 20, (i) => String(i),
-            (range) => this.rows.slice(range.start, range.end).map((row) => this.diffRow(row, t))).size_full())))
-        .child(Scrollbar.vertical("changes-diff").viewport_from_layout().absolute().inset_0())
-        .when(!this.open && this.files.length > 0, (e) => e.child(div().absolute().top(6).px(12).text_color(t.dim).child("Select a file to view its changes"))))
-      .when(Boolean(this.note), (e) => e.child(div().px(10).pb(8).text_size(11).text_color(t.ansi1).child(this.note)))
-      .child(h_flex().flex_none().p(10).gap(8).border_t(1).border_color(t.border)
-        .child(div().id("commit-message").flex_1().min_w(0).h(32).px(10).flex().items_center().rounded(8).border_1().border_color(this.typing ? t.accent : t.border).cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation()).child(Input.new(this.input).h_full().text_size(12).text_color(t.foreground)))
-        .child(div().id("commit").h(32).px(14).flex().items_center().rounded(8).bg(enabled ? t.solid : t.raised).text_color(enabled ? t.solid_foreground : t.dim).text_size(12).when(enabled, (e) => e.cursor_pointer()).on_click((_e, cx) => this.commit(cx)).child(this.busy ? "Committing…" : "Commit")));
+      .child(h_flex().h(H.xl).flex_none().px(SPACE.lg).gap(SPACE.sm).items_center()
+        .child(label("Changes", { style: "titleMedium", truncate: true }))
+        .child(type(div(), "labelSmall").h(20).px(SPACE.sm).flex_none().flex().items_center().rounded_full().border_1().border_color(r.outlineVariant).text_color(r.onSurfaceVariant).child(`${n} ${n === 1 ? "file" : "files"}`))
+        .child(div().flex_1().min_w(0)).child(count(`+${add}`, "tertiary")).child(count(`−${del}`, "error")))
+      .child(v_flex().id("changes-list").flex_none().h(listH).overflow_y_scrollbar().px(SPACE.sm).pb(SPACE.sm).gap(ROW_GAP).children(this.files.map((f) => {
+        const parts = f.path.split("/"), name = parts.pop(), on = this.open === f.path;
+        let row = type(h_flex().id(`change-${f.path}`).h(rowH).w_full().flex_none().pl(SPACE.md).pr(SPACE.md).gap(SPACE.sm).items_center().rounded(RADIUS.row), "bodyMedium")
+          .text_color(on ? r.onSecondaryContainer : r.onSurface).when(on, (e) => e.bg(r.secondaryContainer));
+        row = press(row, (_e, cx) => this.pick(f.path, cx), { layer: on ? "lift" : r.hover });
+        return row
+          .child(label(f.status, { style: "labelMedium", role: STATUS[f.status] ?? "primary" }).w(14).flex_none())
+          .child(h_flex().flex_1().min_w(0).child(div().min_w(0).truncate().text_color(on ? r.onSecondaryContainer : r.onSurfaceVariant).child(parts.length ? parts.join("/") + "/" : "")).child(div().max_w(260).min_w(0).truncate().child(name)))
+          .when(f.add > 0, (e) => e.child(count(`+${f.add}`, "tertiary"))).when(f.del > 0, (e) => e.child(count(`−${f.del}`, "error")));
+      })).when(!n, (e) => e.child(label(this.error || (this.loading ? "Loading changes…" : this.root ? "No uncommitted changes" : "No folder"), { role: "onSurfaceVariant" }).px(SPACE.sm).py((rowH - lineOf("bodyMedium")) / 2))))
+      .when(this.limited, el => el.child(label("Showing the first 1,000 changed files", { style: "bodySmall", role: "onSurfaceVariant" }).px(SPACE.lg).pb(SPACE.sm)))
+      // The diff sits in a terminal-ground well; its vertical inset keeps the rows' own grounds inside the corners.
+      .child(div().flex_1().min_h(0).mx(SPACE.sm).py(inner).rounded(inner).bg(r.surfaceLowest).overflow_hidden()
+        .child(type(div().size_full().relative(), "bodySmall").font_family(settings().font_family ?? "JetBrains Mono").text_color(r.onSurface)
+          .child(div().id("changes-diff-x").size_full().overflow_x_scrollbar()
+            .child(div().w_full().min_w(this.diffWidth).h_full().child(v_virtual_list("changes-diff", this.rows.length, 20, (i) => String(i),
+              (range) => this.rows.slice(range.start, range.end).map((row) => this.diffRow(row, r))).size_full())))
+          .child(Scrollbar.vertical("changes-diff").viewport_from_layout().absolute().inset_0())
+          .when(!this.open && n > 0, (e) => e.child(label("Select a file to view its changes", { role: "onSurfaceVariant" }).absolute().top(0).px(SPACE.md)))))
+      .when(Boolean(this.note), (e) => e.child(label(this.note, { style: "bodySmall", role: "error" }).px(SPACE.lg).pt(SPACE.sm)))
+      .child(h_flex().flex_none().p(SPACE.sm).gap(SPACE.sm).items_center()
+        .child(fieldBox(div().id("commit-message").flex_1().min_w(0), { focused: this.typing }).cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+          .child(type(Input.new(this.input).h_full().w_full(), "bodyMedium").text_color(r.onSurface)))
+        .child(button("commit", this.busy ? "Committing…" : "Commit", { kind: "filled", size: "lg", disabled: !enabled, onClick: (_e, cx) => this.commit(cx) })));
   }
 }
