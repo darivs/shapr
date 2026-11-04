@@ -43,11 +43,13 @@ export function themeFile({ seed = SEED, contrast = "standard" } = {}, dark = fa
     hex(n.tone(dark ? 60 : 50)), ansiTone("red", true), ansiTone("green", true), ansiTone("yellow", true), ansiTone("blue", true), ansiTone("magenta", true), ansiTone("cyan", true), hex(n.tone(dark ? 99 : 95)),
   ];
   const surface = c("surface"), onSurface = c("onSurface"), container = c("surfaceContainer");
-  const terminal = c("surfaceContainerLowest");
+  // Panes are cards on one surface: the terminal's ground is a card, surface-container, which
+  // stands off canvas by two MD3 steps (the lowest step is too faint to tell apart).
+  const terminal = container;
   const colors = {
     canvas: surface, chrome: container, background: terminal,
     surface: c("surfaceContainerLow"), raised: c("surfaceContainerHigh"), popover: c("surfaceContainerHigh"),
-    surface_lowest: terminal, surface_highest: c("surfaceContainerHighest"),
+    surface_lowest: c("surfaceContainerLowest"), surface_highest: c("surfaceContainerHighest"),
     hover: blend(onSurface, container, 0.08), pressed: blend(onSurface, container, 0.1),
     selected: c("secondaryContainer"), on_selected: c("onSecondaryContainer"),
     foreground: onSurface, muted: c("onSurfaceVariant"), dim: blend(onSurface, surface, 0.38),
