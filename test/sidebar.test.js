@@ -75,3 +75,67 @@ test("every space row's tooltip names its repo and branch", async () => {
   assert.match(tip("space-s1")[0], /shapr.*main/);
   assert.match(tip("space-s2")[0], /shapr.*feature-x/);
 });
+
+// Fake agents in every status, one focused; a glyph program (tinted) and a picture program.
+const GLYPH = { name: "claude", key: "claude", icon: "icons/claude.svg", tint: true, agent: true };
+const PICTURE = { name: "codex", key: "codex", icon: "icons/codex.png", tint: false, agent: true };
+const AGENTS = ["blocked", "done", "working", "idle"].map((status, n) => ({
+  address: `t${n}`, pane: `p${n}`, tab: `tab${n}`, status, title: `task ${n}`, name: `agent ${n}`, program: n % 2 ? PICTURE : GLYPH,
+  space: "s1", space_name: "shapr", seq: n, pinned: false, focused: n === 3,
+}));
+async function agentsList(sort = "priority", over = {}) {
+  const h = reset({ agents: structuredClone(AGENTS), spaces: structuredClone(SPACES), shared: { "agents.sort": sort }, ...over });
+  const { default: Agents } = await import("../shapr/mods/shapr-agents/main.js");
+  const cx = context(), v = new Agents();
+  v.init({}, cx);
+  return { h, tree: v.render(cx) };
+}
+const own = (n, m) => n.calls.filter(([x]) => x === m).map(([, a]) => a[0]);
+const deep = (n, m) => [...walk(node(n))].flatMap((x) => (x?.calls ? own(x, m) : []));
+
+test("agent group headers are title small in on-surface-variant, their count plain text", async () => {
+  const { h, tree } = await agentsList();
+  for (const [id, title] of [["sec-4", "Needs you"], ["sec-3", "Done"], ["sec-2", "Working"], ["sec-1", "Idle"]]) {
+    const head = byId(tree, id);
+    assert.deepEqual(texts(node(head)), [title, "1"], id);
+    assert.deepEqual([...new Set(deep(head, "text_color"))], [h.theme.muted], `${id} ink`);
+    assert.deepEqual(deep(head, "bg"), [], `${id} fill`);
+    assert.deepEqual(own(head, "text_size"), [14], `${id} size`);
+    assert.deepEqual(own(head, "font_weight"), [500], `${id} weight`);
+  }
+});
+
+test("an agent row: name on-surface, title and time on-surface-variant, glyph icons tinted, pictures at 16", async () => {
+  const { h, tree } = await agentsList();
+  const done = byId(tree, "ag-t1"), working = byId(tree, "ag-t2");
+  const inkOf = (n, text) => [...walk(node(n))].find((x) => x?.children?.includes(text))?.calls.filter(([m]) => m === "text_color").map(([, a]) => a[0]);
+  const sizeOf = (n, text) => [...walk(node(n))].find((x) => x?.children?.includes(text))?.calls.filter(([m]) => m === "text_size").map(([, a]) => a[0]);
+  // Not focused: the name on-surface; the title and the time on-surface-variant.
+  for (const row of [done, working]) assert.deepEqual(inkOf(row, "shapr"), [h.theme.foreground]);
+  assert.deepEqual(inkOf(working, "· task 2"), [h.theme.muted]);
+  assert.deepEqual(inkOf(working, "<1m"), [h.theme.muted]);
+  // The time is a label, medium.
+  assert.deepEqual(sizeOf(working, "<1m"), [12]);
+  const glyph = [...walk(node(working))].find((x) => x?.kind === "svg" && x.arg === GLYPH.icon);
+  assert.deepEqual(own(glyph, "text_color"), [h.theme.muted]);
+  const picture = [...walk(node(done))].find((x) => x?.kind === "image" && x.arg === PICTURE.icon);
+  assert.deepEqual([own(picture, "w"), own(picture, "h")], [[16], [16]]);
+});
+
+test("color in a sidebar row is only secondary-container, primary or a status color", async () => {
+  const base = reset().theme;
+  const theme = { ...base, ansi1: "#aa0000", ansi2: "#00aa00", ansi3: "#aaaa00", ansi4: "#0000aa", ansi5: "#aa00aa", ansi6: "#00aaaa", tertiary: "#7d5260", error: "#b3261e" };
+  const neutral = [base.canvas, base.hover, base.foreground, base.muted, base.dim, base.background];
+  const color = [base.selected, base.solid, base.working, base.blocked, base.done, base.idle];
+  const allowed = new Set([...neutral, ...color]);
+  const rows = (tree) => [...walk(tree)].filter((n) => n?.calls?.some(([m, a]) => m === "id" && /^(space-s|ag-t|sec-|sp-|pinned|machine-)/.test(a[0])));
+  // A second machine, so its header shows too.
+  const machines = [{ name: null, layout: "ready" }, { name: "box", layout: "ready" }];
+  const away = { id: "s9", name: "far", folder: "/far", active: false, status: "idle", machine: "box", tabs: [] };
+  const trees = [(await spacesList({ theme, machines, spaces: [...structuredClone(SPACES), away] })).tree];
+  for (const sort of ["priority", "grouped"]) trees.push((await agentsList(sort, { theme })).tree);
+  for (const tree of trees)
+    for (const row of rows(tree))
+      for (const m of ["bg", "text_color"])
+        for (const c of deep(row, m)) assert.ok(allowed.has(c), `${own(row, "id")[0]} ${m}(${c})`);
+});
