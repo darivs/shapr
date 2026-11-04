@@ -217,3 +217,29 @@ test("the footer's machine row reads this computer and its agents, or the machin
   const two = await footer({ agents: agentsOn(18), machines: [{ name: null, layout: "ready" }, { name: "box", layout: "ready" }] });
   assert.deepEqual(shown(node(byId(two.tree, "machine"))).texts, ["2 machines · 18 agents"]);
 });
+
+test("hovering the machine row swaps to add machine without resizing it, animated unless motion is reduced", async () => {
+  const handler = (row, m) => row.calls.find(([x]) => x === m)?.[1][0];
+  // Where everything in the row sits and how big it is: no color, no opacity.
+  const SIZE = new Set(["h", "w", "w_full", "size", "min_w", "max_w", "flex_1", "flex_none", "px", "pl", "pr", "gap", "absolute", "relative", "top", "left", "right", "bottom", "inset_0", "truncate"]);
+  const frame = (row) => [...walk(node(row))].filter((x) => x?.calls).map((x) => x.calls.filter(([m]) => SIZE.has(m)));
+  for (const motion of ["expressive", "calm", "reduced"]) {
+    const { h, v, cx, tree } = await footer({ agents: agentsOn(11), shared: { "shapr.settings": { motion } } });
+    const rest = byId(tree, "machine");
+    assert.deepEqual(argsOf(node(rest), "tooltip"), [["Add machine"]], motion);
+    handler(rest, "on_hover")(true, cx);
+    const over = byId(v.render(cx), "machine");
+    assert.deepEqual(shown(node(over)), { texts: ["Add machine"], svgs: ["mods/shapr-workspace-chrome/kit/icons/add.svg"] }, motion);
+    assert.deepEqual(frame(over), frame(rest), `${motion}: the row resized`);
+    const fades = argsOf(node(over), "transition").filter(([p]) => p === "opacity");
+    if (motion === "reduced") assert.deepEqual(fades, [], "reduced motion animates");
+    else assert.ok(fades.length >= 2, `${motion}: the icon and the text don't fade`);
+    // A click opens add machine, as before.
+    handler(over, "on_click")({}, cx);
+    assert.deepEqual(h.ran.filter(([c]) => c === "mod.open"), [["mod.open", { name: "shapr-machine-add" }]]);
+    handler(over, "on_hover")(false, cx);
+    const left = byId(v.render(cx), "machine");
+    assert.deepEqual(shown(node(left)).texts, ["This computer · 11 agents"], `${motion}: leaving`);
+    assert.deepEqual(frame(left), frame(rest));
+  }
+});
