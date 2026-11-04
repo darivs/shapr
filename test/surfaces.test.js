@@ -72,6 +72,26 @@ test("Files and Changes are cards of the panes' shape and fill, without a border
   }
 });
 
+test("the pane cards' radius follows the corner setting, as the kit's SHAPE.lg", async () => {
+  const { reset } = await import("herdr");
+  const { default: Chrome } = await import("../shapr/mods/shapr-workspace-chrome/main.js");
+  const cx = { notify() {}, spawn() {} };
+  const sets = (corners) => {
+    const h = reset({ layout: structuredClone(L), shared: { "shapr.settings": { corners } } });
+    new Chrome().render(cx);
+    return h.ran.filter(([c]) => c === "layout.set").map(([, a]) => a.layout);
+  };
+  assert.deepEqual(sets("standard"), [], "16 is already standard");
+  const [round, ...more] = sets("round");
+  assert.ok(round, "round corners set no layout");
+  assert.equal(more.length, 0);
+  const at = (n, id) => n?.id === id ? n : (n?.children ?? []).map((c) => at(c, id)).find(Boolean);
+  assert.equal(at(round, "main").content.pane.radius, 20);
+  // Only the radius changes.
+  at(round, "main").content.pane.radius = 16;
+  assert.deepEqual(round, L);
+});
+
 test("text on a status fill keeps its contrast now that the terminal's ground is a card", async () => {
   const { reset } = await import("herdr");
   const { onStatus } = await import("../kit/index.js");
