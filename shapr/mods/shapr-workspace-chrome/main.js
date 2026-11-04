@@ -1,8 +1,8 @@
 // style: md3
-import { View, div, image } from "gpui-kit";
+import { View, div, image, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { run, props, window, shared, setShared, updates, layout, openOverlay, nextCommand, spaces, focused, machines, agents } from "herdr";
-import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec } from "./kit/index.js";
+import { prefs, SETTINGS, DEFAULTS, SPACE, SHAPE, H, ROW, type, roles, icon, iconButton, navItem, badge, transition, settingsSpec, newMenuSpec, tabMenuSpec, spaceMenuSpec, terminalMenuSpec, renameSpec } from "./kit/index.js";
 import { keepThemes } from "./theme/writer.js";
 
 function find(node, id) {
@@ -92,9 +92,30 @@ export default class WorkspaceChrome extends View {
     return `${n > 1 ? `${n} machines` : "This computer"} · ${count} agents`;
   }
 
+  // The machine row: at rest the computer and what machines() and agents() say; pointed at, add
+  // machine. Both faces are drawn on top of each other and cross-fade (instant under reduced
+  // motion), so the row and its text slot keep their size; the text truncates.
+  machineRow(onClick) {
+    const r = roles();
+    const on = Boolean(this.hovered);
+    const fade = (el, shown) => transition(el.opacity(shown ? 1 : 0), "opacity", "short");
+    const glyphs = div().relative().size(20).flex_none().text_color(r.onSurfaceVariant)
+      .child(fade(div().id("machine-icon-rest").size(20).child(svg(glyph("computer")).size(20)), !on))
+      .child(fade(div().id("machine-icon-add").absolute().top(0).left(0).size(20).child(svg(icon("add")).size(20)), on));
+    const text = div().relative().w_full().min_w(0)
+      .child(fade(div().id("machine-facts").min_w(0).truncate().child(this.machines()), !on))
+      .child(fade(div().id("machine-add").absolute().top(0).left(0).right(0).truncate().child("Add machine"), on));
+    return navItem("machine", text, { leading: glyphs, tip: "Add machine", onClick }).on_hover((hovered, cx) => this.hover(hovered, cx));
+  }
+
+  hover(on, cx) {
+    this.hovered = on;
+    cx.notify();
+  }
+
   // The sidebar footer: Theme (shapr's settings), Settings (Herdr's, with a dot when an update is
-  // ready) and Add machine, as
-  // navigation drawer items; on the rail, icon buttons with their names as tooltips.
+  // ready) and the machine row, as navigation drawer items; on the rail, icon buttons with their
+  // names as tooltips, the machine's swapping to add when pointed at.
   footer(collapsed) {
     const r = roles();
     const ready = Boolean(updates().app.ready);
@@ -108,11 +129,12 @@ export default class WorkspaceChrome extends View {
         .child(div().relative().flex_none()
           .child(iconButton("settings", glyph("settings"), { size: "sm", tip: "Settings", onClick: settings }))
           .when(ready, el => el.child(div().absolute().top(SPACE.xs).right(SPACE.xs).child(dot()))))
-        .child(iconButton("machine", icon("add"), { size: "sm", tip: "Add machine", onClick: machine }))
+        .child(iconButton("machine", this.hovered ? icon("add") : glyph("computer"), { size: "sm", tip: "Add machine", onClick: machine })
+          .on_hover((hovered, cx) => this.hover(hovered, cx)))
       : v_flex().flex_1().min_h(0).px(SPACE.md).justify_center()
         .child(navItem("theme", "Theme", { icon: glyph("palette"), onClick: theme }))
         .child(navItem("settings", "Settings", { icon: glyph("settings"), badge: ready ? dot() : null, onClick: settings }))
-        .child(navItem("machine", this.machines(), { icon: glyph("computer"), onClick: machine }));
+        .child(this.machineRow(machine));
     return v_flex().size_full().bg(r.surface).child(rows);
   }
 
