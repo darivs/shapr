@@ -67,7 +67,7 @@ test("the sidebar, brand, tabs and sidebar footer paint canvas, not chrome", asy
   }
 });
 
-test("Files and Changes are light cards of the panes' shape (surface-container), without a border", async () => {
+test("Files and Changes are cards of the panes' shape and fill, without a border", async () => {
   // Both draw their panel through the kit's panelCard (gpui-base's Editor keeps them out of the stubs).
   const { reset } = await import("herdr");
   const { panelCard } = await import("../kit/index.js");
@@ -77,7 +77,7 @@ test("Files and Changes are light cards of the panes' shape (surface-container),
     const h = reset({ shared: { "shapr.settings": { corners } } });
     const calls = panelCard().__node.calls;
     const of = (m) => calls.filter(([n]) => n === m).map(([, a]) => a[0]);
-    assert.deepEqual(of("bg"), [h.theme.chrome], "fill");
+    assert.deepEqual(of("bg"), [h.theme.background], "fill");
     assert.deepEqual(of("rounded"), [radius], `${corners} radius`);
     assert.deepEqual([...of("border_1"), ...of("border_color")], [], "border");
   }

@@ -8,14 +8,27 @@ import { withMode, modeOf } from "../shapr/mods/shapr-settings/main.js";
 
 const cx = { notify() {}, spawn() {}, focus_handle: () => ({ focus() {} }), timer: { every() {}, after() {} } };
 
-test("a terminal looks the same in light and dark mode: the dark scheme's ground, text and colors", () => {
-  for (const seed of ["#6750A4", "#006A6A"]) {
-    const light = themeFile({ seed }, false), dark = themeFile({ seed }, true);
-    for (const k of ["background", "foreground", "selection", "cursor"]) assert.equal(light[k], dark[k], `${seed} ${k}`);
-    assert.deepEqual(light.ansi, dark.ansi);
-    assert.equal(light.colors.background, dark.colors.background, "the pane card");
-    assert.notEqual(light.colors.canvas, dark.colors.canvas, "the rest still follows the mode");
+const lstar = (h) => {
+  const y = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  const Y = 0.2126 * y[0] + 0.7152 * y[1] + 0.0722 * y[2];
+  return Y > 216 / 24389 ? 116 * Math.cbrt(Y) - 16 : (24389 / 27) * Y;
+};
+
+test("light mode is a tinted frame with white cards: the seed colors the frame, terminals read on white", () => {
+  for (const seed of ["#6750A4", "#006A6A", "#B3261E"]) {
+    const t = themeFile({ seed }, false);
+    assert.ok(lstar(t.background) > 98, `${seed}: the terminal card is white, ${t.background}`);
+    assert.equal(t.colors.background, t.background, "the card is the terminal's ground");
+    assert.ok(lstar(t.colors.canvas) < lstar(t.background) - 4, `${seed}: the frame ${t.colors.canvas} is tinted off the cards`);
+    assert.ok(lstar(t.foreground) < 30, "dark text on the white terminal");
+    assert.ok(Math.abs(lstar(t.colors.selected) - lstar(t.colors.canvas)) >= 6, `${seed}: the active pill ${t.colors.selected} stands off the frame ${t.colors.canvas}`);
   }
+});
+
+test("dark mode keeps its dark cards on the dark canvas", () => {
+  const t = themeFile({ seed: "#6750A4" }, true);
+  assert.ok(lstar(t.background) < 20 && lstar(t.colors.canvas) < 20);
+  assert.ok(lstar(t.foreground) > 80);
 });
 
 test("the Theme window's mode writes settings.json's appearance, and System removes it", () => {
