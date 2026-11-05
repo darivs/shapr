@@ -34,29 +34,29 @@ export function themeFile({ seed = SEED, contrast = "standard" } = {}, dark = fa
   const scheme = (d) => new SchemeTonalSpot(Hct.fromInt(argbFromHex(valid(seed))), d, CONTRAST[contrast] ?? 0);
   const s = scheme(dark);
   const c = (role) => hex(M[role].getArgb(s));
-  // Terminals stay dark in light mode too: their ground, text, selection, cursor and ANSI colors
-  // always come from the dark scheme.
-  const ds = dark ? s : scheme(true);
-  const dc = (role) => hex(M[role].getArgb(ds));
   const n = s.neutralPalette;
   const ansiTone = (name, bright) => {
     const [hue, chroma] = HUES[name];
-    return hex(TonalPalette.fromHueAndChroma(hue, chroma).tone(bright ? 90 : 80));
+    return hex(TonalPalette.fromHueAndChroma(hue, chroma).tone(dark ? (bright ? 90 : 80) : bright ? 50 : 40));
   };
   const ansi = [
-    hex(n.tone(20)), ansiTone("red"), ansiTone("green"), ansiTone("yellow"), ansiTone("blue"), ansiTone("magenta"), ansiTone("cyan"), hex(n.tone(90)),
-    hex(n.tone(60)), ansiTone("red", true), ansiTone("green", true), ansiTone("yellow", true), ansiTone("blue", true), ansiTone("magenta", true), ansiTone("cyan", true), hex(n.tone(99)),
+    hex(n.tone(dark ? 20 : 30)), ansiTone("red"), ansiTone("green"), ansiTone("yellow"), ansiTone("blue"), ansiTone("magenta"), ansiTone("cyan"), hex(n.tone(dark ? 90 : 80)),
+    hex(n.tone(dark ? 60 : 50)), ansiTone("red", true), ansiTone("green", true), ansiTone("yellow", true), ansiTone("blue", true), ansiTone("magenta", true), ansiTone("cyan", true), hex(n.tone(dark ? 99 : 95)),
   ];
-  const surface = c("surface"), onSurface = c("onSurface"), container = c("surfaceContainer");
-  // Panes are cards on one surface: the terminal's ground is a card, the dark scheme's
-  // surface-container in both appearances (in dark mode two MD3 steps off canvas).
-  const terminal = dc("surfaceContainer"), onTerminal = dc("onSurface");
+  const onSurface = c("onSurface"), container = c("surfaceContainer");
+  // Light mode is a tinted frame with white cards: canvas (window, sidebar, bars) takes the seed's
+  // primary tone 90, the terminals, Files and Changes are surface-container-lowest, where text
+  // reads best. Dark mode keeps its dark cards (surface-container) on the dark surface.
+  const surface = dark ? c("surface") : hex(s.primaryPalette.tone(90));
+  const terminal = dark ? container : c("surfaceContainerLowest"), onTerminal = onSurface;
+  // The active pill on the tinted frame: a step stronger than the frame in light mode.
+  const selected = dark ? c("secondaryContainer") : hex(s.primaryPalette.tone(80));
   const colors = {
     canvas: surface, chrome: container, background: terminal,
     surface: c("surfaceContainerLow"), raised: c("surfaceContainerHigh"), popover: c("surfaceContainerHigh"),
     surface_lowest: c("surfaceContainerLowest"), surface_highest: c("surfaceContainerHighest"),
     hover: blend(onSurface, container, 0.08), pressed: blend(onSurface, container, 0.1),
-    selected: c("secondaryContainer"), on_selected: c("onSecondaryContainer"),
+    selected, on_selected: dark ? c("onSecondaryContainer") : hex(s.primaryPalette.tone(10)),
     foreground: onSurface, muted: c("onSurfaceVariant"), dim: blend(onSurface, surface, 0.38),
     border: c("outlineVariant"), input: c("outline"),
     accent: c("primaryContainer"), accent_foreground: c("onPrimaryContainer"),
@@ -65,10 +65,10 @@ export function themeFile({ seed = SEED, contrast = "standard" } = {}, dark = fa
     tertiary_container: c("tertiaryContainer"), on_tertiary_container: c("onTertiaryContainer"),
     error: c("error"), on_error: c("onError"), error_container: c("errorContainer"), on_error_container: c("onErrorContainer"),
     inverse_surface: c("inverseSurface"), inverse_on_surface: c("inverseOnSurface"), inverse_primary: c("inversePrimary"),
-    terminal_foreground: onTerminal, terminal_muted: dc("onSurfaceVariant"),
+    terminal_foreground: onTerminal, terminal_muted: c("onSurfaceVariant"),
     ...STATUS[dark ? "dark" : "light"],
   };
-  return { background: terminal, foreground: onTerminal, selection: dc("secondaryContainer"), cursor: dc("primary"), ansi, colors };
+  return { background: terminal, foreground: onTerminal, selection: c("secondaryContainer"), cursor: c("primary"), ansi, colors };
 }
 
 /** Both theme files as text, keyed by theme name. */

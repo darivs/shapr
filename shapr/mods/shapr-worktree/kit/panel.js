@@ -9,7 +9,7 @@ import { roles } from "./roles.js";
 /** The panel's card. It fills its block. */
 export function panelCard(el = v_flex()) {
   const r = roles();
-  return el.size_full().min_h(0).bg(r.surfaceContainer).rounded(SHAPE.lg).overflow_hidden().text_color(r.onSurface);
+  return el.size_full().min_h(0).bg(r.terminal).rounded(SHAPE.lg).overflow_hidden().text_color(r.onSurface);
 }
 
 /** opts: { leading (an element before the title, e.g. a back button), detail (text), actions: [elements] } */
