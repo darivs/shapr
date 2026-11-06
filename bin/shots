@@ -6,6 +6,7 @@
 //       writes <prefix>-<state>.png for each state (default: every one in STATES), closing each
 //       overlay before the next. Light or dark and zoom go into settings.json, the theme settings
 //       through shapr-workspace-chrome's commands; bin/demo down puts both back.
+//       machine-add lists a demo ssh config (DEMO_SSH_CONFIG), never the person's ~/.ssh/config.
 //   bin/shots --restore-theme <file>   sets the theme settings saved in <file> (JSON) again
 //   bin/shots [--crop sidebar|work] [--mask] <in.png> [<out.png>]
 //       cuts an image to one area, and covers every sidebar row outside the demo space (bin/demo
@@ -226,6 +227,23 @@ function demoSpace() {
 /** Whether the window (herdr-app status) shows the demo space: nothing else may be in a shot. */
 export const onDemo = (status, space) => Boolean(space) && status?.space === space;
 
+// The ssh config the machine-add dialog lists while it is shot (the mod reads it from the app home
+// when it is there): documentation hosts only, and no Include, so no shot shows the person's hosts.
+export const DEMO_SSH_CONFIG = `Host build-box
+  HostName build.example.com
+  User demo
+
+Host mac-mini
+  HostName 192.0.2.10
+  User demo
+
+Host vps
+  HostName vps.example.net
+`;
+const demoSshFile = join(home, "shapr-demo-ssh-config");
+const dropDemoSsh = () => rmSync(demoSshFile, { force: true });
+const machineAdd = () => { writeFileSync(demoSshFile, DEMO_SSH_CONFIG); modOpen("shapr-machine-add")(); };
+
 export const STATES = {
   base: [() => {}],
   "new-menu": [chrome("new-menu")],
@@ -236,7 +254,7 @@ export const STATES = {
   theme: [chrome("theme")],
   picker: [modOpen("shapr-picker")],
   help: [modOpen("shapr-help")],
-  "machine-add": [modOpen("shapr-machine-add")],
+  "machine-add": [machineAdd, dropDemoSsh],
   gallery: [modOpen("shapr-gallery"), modOpen("shapr-gallery")],
   files: [panel("files"), hidePanel],
   changes: [panel("changes"), hidePanel],
@@ -263,6 +281,10 @@ function shoot(prefix, states, opts) {
   hidePanel();
   const space = demoSpace();
   if (!space) throw new Error("no demo space: run bin/demo up first");
+  try { shootEach(prefix, states, space); } finally { dropDemoSsh(); }
+}
+
+function shootEach(prefix, states, space) {
   for (const name of states) {
     const [open, after] = STATES[name];
     close();

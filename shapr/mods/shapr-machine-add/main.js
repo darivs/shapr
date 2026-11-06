@@ -10,8 +10,12 @@
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
-import { hc, exec, home, readTextFile, props, closeOverlay, openOverlay } from "herdr";
+import { hc, exec, home, appHome, readTextFile, props, closeOverlay, openOverlay } from "herdr";
 import { dialogSurface, dialogHeadline, dialogBody, textField, button, iconButton, listItem, heading, card, label, circularProgress, roles, icon, type, RADIUS, chromeIcon } from "./kit/index.js";
+
+// The ssh config the shot loop (bin/shots machine-add) puts into the app home while it shoots: when
+// it is there the dialog lists its demo hosts, never the person's ~/.ssh/config.
+const DEMO_SSH_CONFIG = "shapr-demo-ssh-config";
 
 // The terminal window's title bar height.
 const BAR = 40;
@@ -74,7 +78,8 @@ export default class MachineAdd extends View {
     this.opened = {};
     this.handle = cx.focus_handle();
     cx.spawn(async (cx) => {
-      this.hosts = await parseConfig(await readTextFile(`${home()}/.ssh/config`).catch(() => null));
+      const demo = await readTextFile(`${appHome()}/${DEMO_SSH_CONFIG}`).catch(() => null);
+      this.hosts = await parseConfig(demo ?? await readTextFile(`${home()}/.ssh/config`).catch(() => null));
       await this.refresh();
       cx.notify();
     });
