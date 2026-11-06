@@ -2,9 +2,9 @@
   "place": "none",
   "cloned_from": {
     "name": "worktree",
-    "version": "0.1.12",
+    "version": "0.1.13",
     "files": {
-      "main.js": "c26204fa2d06994c656232ff1954590f67e9708f617fd5ee7814243ce879ce7b",
+      "main.js": "3e5f90ecb144c2224f560778e27f64f2e42f2afcf4e09e453f63e846ef64dffc",
       "mod.json": "e8e0a91d23a0addf19f9f4dab48f597f252a1d44e5063e4d6ae884a88cbf735d"
     }
   }

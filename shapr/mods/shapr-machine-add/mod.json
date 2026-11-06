@@ -8,9 +8,9 @@
   },
   "cloned_from": {
     "name": "machine-add",
-    "version": "0.1.12",
+    "version": "0.1.13",
     "files": {
-      "main.js": "4a6fca2879a4d0f2b03fb0b5f8e3acc934cbfe83acf2eb0208047d1a0ec5c21e",
+      "main.js": "1bf97001b1334201f05ee2a15ce3c21843e011dd92934bc3725a33ff9d98b9c5",
       "mod.json": "79eb0fd98586e0c6df4b8a6ce9599ba375af06eddebed6125819a929d27bff81"
     }
   }

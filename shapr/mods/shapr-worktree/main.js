@@ -14,10 +14,10 @@ import { run, props, closeOverlay, spaces, panes, exec, home } from "herdr";
 import { dialogSurface, dialogHeadline, dialogBody, dialogActions, textField, searchBar, listItem, label, circularProgress, roles, type } from "./kit/index.js";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
-function place(s) {
+function place(s, all = panes()) {
   if (!s) return null;
   const tabs = new Set((s.tabs ?? []).map((c) => c.id));
-  return panes().find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder || null;
+  return all.find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder || null;
 }
 
 // Checkouts go to <ROOT>/<repo>/<branch, slashes as dashes>.
@@ -52,10 +52,10 @@ async function checkouts(repo, on) {
 }
 
 // The space showing a checkout: its first terminal is in it (the deepest checkout wins).
-function spaceOf(path, all, on) {
+function spaceOf(path, all, on, spaceList, paneList) {
   const inside = (p, dir) => p === dir || p.startsWith(dir + "/");
-  return spaces().find((s) => (s.machine ?? null) === (on ?? null) && (() => {
-    const at = place(s)?.replace(/\\/g, "/");
+  return spaceList.find((s) => (s.machine ?? null) === (on ?? null) && (() => {
+    const at = place(s, paneList)?.replace(/\\/g, "/");
     if (!at || !inside(at, path)) return false;
     return !all.some((c) => c.path !== path && c.path.length > path.length && inside(at, c.path));
   })());
@@ -209,7 +209,7 @@ export default class Worktree extends View {
   open(c) {
     if (!c) return;
     this.close();
-    const s = spaceOf(c.path, this.list, this.on);
+    const s = spaceOf(c.path, this.list, this.on, spaces(), panes());
     if (s) run("space.select", { id: s.id });
     else run("space.new", { folder: c.path, machine: this.on });
   }
@@ -251,9 +251,11 @@ export default class Worktree extends View {
     const r = this.repo;
     const rows = this.shown();
     const all = this.list ?? [];
+    const spaceList = spaces();
+    const paneList = panes();
     const row = (c, i) => {
       const on = i === this.at;
-      const there = spaceOf(c.path, all, this.on);
+      const there = spaceOf(c.path, all, this.on, spaceList, paneList);
       const tag = c.main ? "main checkout" : there ? "open" : c.at > 0 ? ago(c.at) : null;
       return listItem(`wt-${i}`, c.branch ?? "detached", { supporting: tilde(c.path, this.userHome ?? ""), selected: on, trailingText: tag, onClick: () => this.open(c) });
     };
