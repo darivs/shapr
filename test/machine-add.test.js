@@ -44,3 +44,17 @@ test("add a machine shows each host from the ssh config", async () => {
   }
   assert.ok([...walk(root)].some((n) => (n?.calls ?? []).some(([m, a]) => m === "max_h" && a[0] === 280)), "the list stays capped at 280 and scrolls");
 });
+
+// The shot loop (bin/shots machine-add) puts a demo ssh config into the app home while it shoots:
+// then the dialog lists only its hosts and never the person's (#36).
+test("add a machine lists the app home's demo ssh config instead of the person's when there is one", async () => {
+  reset({ files: { "/user-home/.ssh/config": CONFIG, "/app-home/shapr-demo-ssh-config": "Host demo-vps\n  HostName vps.example.net\n  User demo\n" } });
+  const spawned = [];
+  const cx = { focus_handle: () => ({}), notify() {}, spawn: (f) => spawned.push(f(cx)), timer: { after() {}, every() {} } };
+  const v = new MachineAdd();
+  v.init({}, cx);
+  await Promise.all(spawned);
+  const shown = texts(v.render(cx));
+  assert.ok(shown.includes("demo-vps"), "the demo host is listed");
+  assert.ok(!shown.includes("alpha") && !shown.includes("beta"), "no host from the person's ssh config");
+});
