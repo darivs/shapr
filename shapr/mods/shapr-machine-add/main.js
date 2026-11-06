@@ -256,16 +256,14 @@ export default class MachineAdd extends View {
       .child(dialogBody("A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps."))
       .child(
         v_flex()
-          .flex_shrink(1)
-          .min_h(0)
+          .flex_none()
           .mx(-16)
           .child(heading(hosts.length ? "From your ssh config" : "Your ssh config lists no hosts"))
           .child(
             v_flex()
               .id("ma-hosts")
               .max_h(280)
-              .min_h(0)
-              .flex_shrink(1)
+              .flex_none()
               .overflow_y_scrollbar()
               .children(
                 this.hosts === null
