@@ -1,0 +1,96 @@
+#!/bin/sh
+# A Herdr window of its own for the shot loop: its own app home, so bin/demo and bin/shots switch
+# spaces, theme and zoom there and never in the person's window. Both windows share herdr-core, so
+# the demo space and its fake agents still show in the person's sidebar while the loop runs.
+# macOS stops drawing a covered window and `herdr-app shot` then returns its last frame again, so
+# the window opens on DeskPad's virtual display (brew install --cask deskpad), with DeskPad hidden:
+# nothing covers it there. Shots on it are 1x.
+#   bin/shot-window up          mirror shapr/ into the shot home, start DeskPad and the window
+#   bin/shot-window run <cmd>   run a command against the shot window (HERDR_APP_HOME set)
+#   bin/shot-window down        quit the shot window and DeskPad
+#   bin/shot-window home        print the shot home
+# The loop: bin/shot-window up; bin/shot-window run bin/demo up; bin/shot-window run bin/shots …;
+#           bin/shot-window run bin/demo down; bin/shot-window down
+# SHAPR_SHOT_HOME picks the home (default ~/.cache/shapr-shots). It stays short: macOS refuses a
+# socket path of 104 bytes or more, and the window serves herdr-app.sock in its home.
+set -eu
+root=$(cd "$(dirname "$0")/.." && pwd)
+home=${SHAPR_SHOT_HOME:-$HOME/.cache/shapr-shots}
+home=${home%/}
+person=$HOME/.config/herdr-app
+app=${HERDR_BINARY:-$HOME/Applications/Herdr.app/Contents/MacOS/Herdr}
+[ -x "$app" ] || app=/Applications/Herdr.app/Contents/MacOS/Herdr
+deskpad=${DESKPAD_APP:-/Applications/DeskPad.app}
+shot() { HERDR_APP_HOME=$home "$@"; }
+
+# DeskPad's display UUID, lower case, as Herdr's window.json names a display; empty while it is off.
+deskpad_display() {
+  swift - 2>/dev/null <<'SWIFT' || true
+import AppKit
+for s in NSScreen.screens where s.localizedName.hasPrefix("DeskPad") {
+  let n = s.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
+  print((CFUUIDCreateString(nil, CGDisplayCreateUUIDFromDisplayID(n)!.takeRetainedValue())! as String).lowercased())
+}
+SWIFT
+}
+
+up() {
+  sock="$home/herdr-app.sock"
+  [ "$(printf %s "$sock" | wc -c)" -lt 104 ] || { echo "shot-window: $sock is too long for a socket (SHAPR_SHOT_HOME)" >&2; exit 1; }
+  if shot herdr-app status >/dev/null 2>&1; then echo "shot-window: up ($home)"; return; fi
+  [ -d "$deskpad" ] || { echo "shot-window: needs DeskPad (brew install --cask deskpad)" >&2; exit 1; }
+  mkdir -p "$home"
+  # The person's fonts and sizes, so shots look like their window; bin/demo backs this up and
+  # restores it as usual.
+  [ -e "$home/settings.json" ] || [ ! -e "$person/settings.json" ] || cp "$person/settings.json" "$home/settings.json"
+  open -g -a "$deskpad"
+  display=""
+  i=0
+  while [ -z "$display" ] && [ "$i" -lt 20 ]; do
+    display=$(deskpad_display)
+    [ -n "$display" ] || sleep 0.5
+    i=$((i + 1))
+  done
+  [ -n "$display" ] || { echo "shot-window: DeskPad shows no display" >&2; exit 1; }
+  # The person's window size, on DeskPad's display.
+  node -e '
+    const fs = require("fs"), [from, to, display] = process.argv.slice(1);
+    let w = {}; try { w = JSON.parse(fs.readFileSync(from, "utf8")); } catch {}
+    const [, , width = 1470, height = 923] = w.bounds ?? [];
+    fs.writeFileSync(to, JSON.stringify({ state: "windowed", bounds: [0, 33, width, height], display }, null, 2));
+  ' "$person/window.json" "$home/window.json" "$display"
+  shot "$root/bin/dev-mirror" >/dev/null
+  HERDR_APP_HOME=$home HERDR_APP_NO_SOUND=1 HERDR_TELEMETRY=0 nohup "$app" >"$home/window.log" 2>&1 &
+  echo $! >"$home/window.pid"
+  i=0
+  until shot herdr-app status >/dev/null 2>&1; do
+    i=$((i + 1))
+    [ "$i" -lt 40 ] || { echo "shot-window: no window after 20 s (see $home/window.log)" >&2; exit 1; }
+    sleep 0.5
+  done
+  # Hidden, DeskPad's window covers nothing of the person's; its display keeps drawing.
+  osascript -e 'tell application "System Events" to set visible of process "DeskPad" to false' >/dev/null 2>&1 || true
+  echo "shot-window: up ($home)"
+}
+
+down() {
+  shot herdr-app do app.quit >/dev/null 2>&1 || true
+  if [ -e "$home/window.pid" ]; then
+    pid=$(cat "$home/window.pid")
+    i=0
+    while kill -0 "$pid" 2>/dev/null && [ "$i" -lt 20 ]; do sleep 0.5; i=$((i + 1)); done
+    ! kill -0 "$pid" 2>/dev/null || kill "$pid"
+    rm -f "$home/window.pid"
+  fi
+  # Quit DeskPad, so the pointer cannot wander onto a display nobody sees.
+  osascript -e 'tell application "DeskPad" to quit' >/dev/null 2>&1 || true
+  echo "shot-window: down"
+}
+
+case ${1:-} in
+  up) up ;;
+  down) down ;;
+  home) echo "$home" ;;
+  run) shift; [ $# -gt 0 ] || { echo "usage: bin/shot-window run <command>" >&2; exit 2; }; HERDR_APP_HOME=$home exec "$@" ;;
+  *) echo "usage: bin/shot-window up | run <command> | down | home" >&2; exit 2 ;;
+esac

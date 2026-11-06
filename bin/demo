@@ -1,6 +1,6 @@
 #!/bin/sh
-# The demo space the shot loop (bin/shots) runs in, on a throwaway git repo, in the person's own
-# Herdr window.
+# The demo space the shot loop (bin/shots) runs in, on a throwaway git repo, in the Herdr window
+# HERDR_APP_HOME picks: run it through bin/shot-window to keep the person's own window as it is.
 #   bin/demo up     back up settings.json and the theme settings, mirror shapr/, show Shapr
 #                   Material, open the demo space first in the list, with one fake agent per status
 #   bin/demo down   end the fake agents, close the demo space, show the layout and space shown
