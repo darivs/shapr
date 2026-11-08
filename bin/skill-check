@@ -1,0 +1,96 @@
+#!/usr/bin/env node
+// Checks every skill in skills/ (or the skill folders given): SKILL.md opens with frontmatter
+// whose name is the folder's and whose description is set, every file its markdown links to
+// exists, and no file names a person's machine or account: privacy-check's rules, IP addresses,
+// and the account's own login and git user.name.
+import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { userInfo } from "node:os";
+import { basename, dirname, join } from "node:path";
+import { findings } from "./privacy-check";
+
+/** The frontmatter's top-level keys: { key: value }, or null when SKILL.md has none. */
+export function frontmatter(text) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!m) return null;
+  const out = {};
+  let key = null;
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (kv) { key = kv[1]; out[key] = /^[>|][+-]?$/.test(kv[2]) ? "" : kv[2].replace(/^(["'])(.*)\1$/, "$2"); }
+    else if (key && /^\s+\S/.test(line)) out[key] = (out[key] + " " + line.trim()).trim();
+  }
+  return out;
+}
+
+/** Every problem in one skill folder: [file, problem]. */
+export function problems(dir) {
+  const skill = join(dir, "SKILL.md");
+  if (!existsSync(skill)) return [[skill, "no SKILL.md"]];
+  const fm = frontmatter(readFileSync(skill, "utf8"));
+  if (!fm) return [[skill, "frontmatter: missing"]];
+  const out = [];
+  const name = basename(dir);
+  if (fm.name !== name) out.push([skill, `frontmatter: name must be "${name}", the folder's`]);
+  if (!fm.description) out.push([skill, "frontmatter: description missing"]);
+  else if (fm.description.length > 1024) out.push([skill, "frontmatter: description over 1024 characters"]);
+  for (const f of files(dir)) {
+    const text = readFileSync(f, "utf8");
+    if (f.endsWith(".md"))
+      for (const target of links(text))
+        if (!existsSync(join(dirname(f), target))) out.push([f, `missing ${target}`]);
+    for (const [rule, m] of [...findings(text), ...privateNames(text)]) out.push([f, `${rule}: ${m}`]);
+  }
+  return out;
+}
+
+// Addresses that name no machine: loopback, any, and the documentation ranges (RFC 5737).
+const PUBLIC_IP = /^(?:127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.\d+|198\.51\.100\.\d+|203\.0\.113\.\d+)$/;
+// Account names that name nobody.
+const NOBODY = new Set(["root", "runner", "user", "admin"]);
+
+/** The account's names: the login, and git's user.name when set. */
+function accountNames() {
+  const names = [userInfo().username];
+  try { names.push(execFileSync("git", ["config", "user.name"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()); } catch {}
+  return names.filter((n) => n.length >= 3 && !NOBODY.has(n.toLowerCase()));
+}
+
+/** IP addresses and the account's names in a text: [rule, match]. */
+export function privateNames(text) {
+  const out = [];
+  for (const m of text.matchAll(/(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?!\.?\d)/g))
+    if (!PUBLIC_IP.test(m[0])) out.push(["IP address", m[0]]);
+  for (const name of accountNames()) {
+    const re = new RegExp(`(?<![A-Za-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9])`, "gi");
+    for (const m of text.matchAll(re)) out.push(["account name", m[0]]);
+  }
+  return out;
+}
+
+/** Every file under a folder. */
+function files(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
+    d.isDirectory() ? files(join(dir, d.name)) : [join(dir, d.name)]);
+}
+
+/** The local files a markdown text links to: [text](path), without anchors, URLs or mail links. */
+export function links(text) {
+  const out = [];
+  for (const m of text.matchAll(/\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/g)) {
+    const target = decodeURI(m[1].split("#")[0]);
+    if (target && !/^[a-z][a-z0-9+.-]*:/i.test(target)) out.push(target);
+  }
+  return out;
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  const dirs = args.length ? args : existsSync("skills")
+    ? readdirSync("skills", { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => join("skills", d.name))
+    : [];
+  let bad = 0;
+  for (const d of dirs) for (const [f, p] of problems(d)) { bad++; console.error(`skill-check: ${f}: ${p}`); }
+  if (bad) { console.error(`skill-check: ${bad} finding${bad > 1 ? "s" : ""}`); process.exit(1); }
+  console.log("skill-check: OK");
+}

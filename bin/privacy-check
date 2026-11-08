@@ -10,8 +10,13 @@ export const RULES = [
   ["email address", /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[a-z]{2,}\b/g],
   ["hostname", /\b[A-Za-z0-9-]+\.(?:local|lan|home|internal|fritz\.box|localdomain)\b|\b(?:MacBook|iMac|Mac-mini|DESKTOP|LAPTOP)-[A-Za-z0-9-]+/g],
 ];
-// Placeholder folders (/Users/x) and addresses that name nobody.
-const ALLOWED = [/@users\.noreply\.github\.com$/, /@example\.(com|org|net)$/];
+// Placeholder folders (/Users/x) and addresses that name nobody. A host here is only skipped
+// when scanning the repo's files: findings() still reports it, so bin/skill-check flags it.
+const ALLOWED = [
+  /@users\.noreply\.github\.com$/,
+  /@example\.(com|org|net)$/,
+  /^build-box\.local$/, // test fixture for skill-check
+];
 
 /** Every finding in a text: [rule, match]. */
 export function findings(text) {
@@ -31,7 +36,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const list = files.length ? files : git("ls-files", "--cached", "--others", "--exclude-standard").split("\n").filter(Boolean);
   let bad = 0;
   const report = (where, text) => {
-    for (const [rule, m] of findings(text)) { bad++; console.error(`${where}: ${rule}: ${m}`); }
+    for (const [rule, m] of findings(text)) { if (ALLOWED.some((a) => a.test(m))) continue; bad++; console.error(`${where}: ${rule}: ${m}`); }
   };
   for (const f of list) {
     try { if (!statSync(f).isFile()) continue; } catch { continue; }
