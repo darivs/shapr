@@ -5,14 +5,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
 const skill = join(root, "skills/shapr-for-agents");
 const live = process.env.SHAPR_LIVE_AGENTS === "1";
 const has = (cmd) => spawnSync("sh", ["-c", `command -v ${cmd}`]).status === 0;
+// The agents run with the real home, which they need to sign in. A copy of the skill there would
+// load whether or not the project's link does, so the test skips rather than pass on it.
+const inHome = (...folders) => folders.some((f) => existsSync(join(homedir(), f, "shapr-for-agents")));
+const skipFor = (cmd, ...folders) => !live ? true : !has(cmd) ? `${cmd} not found`
+  : inHome(...folders) ? `shapr-for-agents is installed in ~/${folders.join(" or ~/")}, so the run cannot show the project's link loads` : false;
+const CLAUDE = skipFor("claude", ".claude/skills");
+const CODEX = skipFor("codex", ".agents/skills", ".codex/skills");
 
 const MOD = `import { div, text, theme } from "gpui-kit";
 
@@ -57,19 +64,19 @@ function codex(dir) {
 
 const styleOf = (answer) => (answer.match(/style:\s*`?\*{0,2}([A-Za-z0-9]+)/gi) ?? []).map((s) => s.replace(/^style:\s*`?\*{0,2}/i, "").toLowerCase()).pop();
 
-test("Claude Code loads shapr-for-agents from a project's .claude/skills and applies MD3 to a mod with no style line", { skip: !live || !has("claude") }, () => {
+test("Claude Code loads shapr-for-agents from a project's .claude/skills and applies MD3 to a mod with no style line", { skip: CLAUDE }, () => {
   const { events, answer, raw } = claude(scratch(".claude/skills"));
   assert.ok(claudeLoaded(events), "Claude Code did not load shapr-for-agents:\n" + raw.slice(-2000));
   assert.equal(styleOf(answer), "md3", answer || raw.slice(-2000));
 });
 
-test("Claude Code applies MD3 to a mod whose first line is // style: md3", { skip: !live || !has("claude") }, () => {
+test("Claude Code applies MD3 to a mod whose first line is // style: md3", { skip: CLAUDE }, () => {
   const { events, answer, raw } = claude(scratch(".claude/skills", "// style: md3"));
   assert.ok(claudeLoaded(events), "Claude Code did not load shapr-for-agents:\n" + raw.slice(-2000));
   assert.equal(styleOf(answer), "md3", answer || raw.slice(-2000));
 });
 
-test("Codex loads shapr-for-agents from a project's .agents/skills", { skip: !live || !has("codex") }, () => {
+test("Codex loads shapr-for-agents from a project's .agents/skills", { skip: CODEX }, () => {
   const { raw } = codex(scratch(".agents/skills"));
   assert.match(raw, /shapr-for-agents\/SKILL\.md/, "Codex did not read shapr-for-agents:\n" + raw.slice(-2000));
 });
