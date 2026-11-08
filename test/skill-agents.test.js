@@ -1,6 +1,6 @@
 // shapr-for-agents loads by itself: in a scratch project with the skill linked into
 // .claude/skills/ (Claude Code) or .agents/skills/ (Codex), a fresh agent asked to change a Herdr
-// mod loads it, and follows the mod's style line: none means Operate, `// style: md3` means MD3.
+// mod loads it, and follows the mod's style line: none and `// style: md3` both mean MD3.
 // Live: runs the real agents (network, an account), so only with SHAPR_LIVE_AGENTS=1.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -57,10 +57,10 @@ function codex(dir) {
 
 const styleOf = (answer) => (answer.match(/style:\s*`?\*{0,2}([A-Za-z0-9]+)/gi) ?? []).map((s) => s.replace(/^style:\s*`?\*{0,2}/i, "").toLowerCase()).pop();
 
-test("Claude Code loads shapr-for-agents from a project's .claude/skills and applies Operate to a mod with no style line", { skip: !live || !has("claude") }, () => {
+test("Claude Code loads shapr-for-agents from a project's .claude/skills and applies MD3 to a mod with no style line", { skip: !live || !has("claude") }, () => {
   const { events, answer, raw } = claude(scratch(".claude/skills"));
   assert.ok(claudeLoaded(events), "Claude Code did not load shapr-for-agents:\n" + raw.slice(-2000));
-  assert.equal(styleOf(answer), "operate", answer || raw.slice(-2000));
+  assert.equal(styleOf(answer), "md3", answer || raw.slice(-2000));
 });
 
 test("Claude Code applies MD3 to a mod whose first line is // style: md3", { skip: !live || !has("claude") }, () => {

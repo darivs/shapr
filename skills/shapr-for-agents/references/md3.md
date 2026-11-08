@@ -1,6 +1,6 @@
 # MD3
 
-For a mod whose first line is `// style: md3`: Material 3 Expressive at desktop density. When a `material-3` skill is installed, it supplies the spec (tokens, component anatomy, states); its code (Compose, Flutter, web) has no Herdr counterpart, so build each component from gpui-kit elements. Agent status stays above MD3: the status colors keep their meaning, and `blocked` stays the loudest thing on screen.
+The default style, for a mod with no style line or whose first line is `// style: md3`: Material 3 Expressive at desktop density. When a `material-3` skill is installed, it supplies the spec (tokens, component anatomy, states); its code (Compose, Flutter, web) has no Herdr counterpart, so build each component from gpui-kit elements. Agent status stays above MD3: the status colors keep their meaning, and `blocked` stays the loudest thing on screen.
 
 ## Color
 
