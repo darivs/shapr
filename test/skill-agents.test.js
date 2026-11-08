@@ -38,10 +38,10 @@ const ASK = "The Herdr mod in mods/status/main.js draws a header. Make its title
 
 /** Claude Code in `dir`: its stream-json events and final answer. */
 function claude(dir) {
-  const r = spawnSync("claude", ["-p", ASK, "--output-format", "stream-json", "--verbose", "--max-turns", "8",
+  const r = spawnSync("claude", ["-p", ASK, "--output-format", "stream-json", "--verbose", "--max-turns", "20",
     "--allowedTools", "Skill", "Read", "Glob", "Grep"], { cwd: dir, encoding: "utf8", timeout: 300_000 });
   const events = r.stdout.split("\n").filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return {}; } });
-  const answer = events.filter((e) => e.type === "result").map((e) => e.result ?? "").join("\n");
+  const answer = events.filter((e) => e.type === "result").map((e) => e.result ?? `(no answer: ${e.subtype})`).join("\n");
   return { events, answer, raw: r.stdout + r.stderr };
 }
 
@@ -60,13 +60,13 @@ const styleOf = (answer) => (answer.match(/style:\s*`?\*{0,2}([A-Za-z0-9]+)/gi) 
 test("Claude Code loads shapr-for-agents from a project's .claude/skills and applies Operate to a mod with no style line", { skip: !live || !has("claude") }, () => {
   const { events, answer, raw } = claude(scratch(".claude/skills"));
   assert.ok(claudeLoaded(events), "Claude Code did not load shapr-for-agents:\n" + raw.slice(-2000));
-  assert.equal(styleOf(answer), "operate", answer);
+  assert.equal(styleOf(answer), "operate", answer || raw.slice(-2000));
 });
 
 test("Claude Code applies MD3 to a mod whose first line is // style: md3", { skip: !live || !has("claude") }, () => {
   const { events, answer, raw } = claude(scratch(".claude/skills", "// style: md3"));
   assert.ok(claudeLoaded(events), "Claude Code did not load shapr-for-agents:\n" + raw.slice(-2000));
-  assert.equal(styleOf(answer), "md3", answer);
+  assert.equal(styleOf(answer), "md3", answer || raw.slice(-2000));
 });
 
 test("Codex loads shapr-for-agents from a project's .agents/skills", { skip: !live || !has("codex") }, () => {
