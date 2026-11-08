@@ -15,8 +15,8 @@ failure. The tests alone: `node --import ./test/loader.js --test test/`.
 | `bin/skill-check` | checks each skill's frontmatter, linked files and private data |
 | `bin/privacy-check` | fails on home paths, email addresses and local hostnames; `--history` checks every commit too |
 | `bin/shot-window` | a Herdr window of its own, on DeskPad's hidden display and its own herdr-core session, for the shot loop |
-| `bin/demo` | the demo space with fake agents that shots are taken in |
-| `bin/shots` | the shot loop: one `herdr-app shot` per state; `--crop sidebar\|work` and `--mask` make a shot safe to commit |
+| `bin/demo` | the demo spaces (acme-web with two worktrees, api-gateway, docs-site) and six fake agents that shots are taken in |
+| `bin/shots` | the shot loop: one `herdr-app shot` per state; `--mask` makes a shot safe to commit, `--crop sidebar\|work\|x,y,w,h` cuts it |
 | `bin/preview` | renders `docs/preview/template.html` to `shapr/preview.png` in headless Chromium |
 | `test/` | `node --import ./test/loader.js --test test/` |
 
@@ -34,7 +34,8 @@ bin/shot-window down
 ```
 
 `SHAPR_DEMO=/tmp/shapr-demo` keeps the pane headers on a neutral folder. Look at every shot before
-you commit it: only the demo space and its fake agents may show.
+you commit it: only the demo spaces and their fake agents may show. A shot is deleted when the
+window leaves the demo space or its spaces list does not start with the demo spaces.
 
 ## The preview
 

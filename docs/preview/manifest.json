@@ -1,6 +1,11 @@
 {
   "out": "shapr/preview.png",
-  "canvas": { "width": 1600, "height": 1000, "scale": 2, "maxBytes": 2000000 },
+  "canvas": {
+    "width": 1600,
+    "height": 1000,
+    "scale": 2,
+    "maxBytes": 2000000
+  },
   "seed": "#6750A4",
   "copy": {
     "eyebrow": "Shapr · Material 3 for Herdr",
@@ -8,39 +13,39 @@
     "accent": "your colour.",
     "subline": "Spaces and agents on the left, the work on the right. One seed colour restyles it all.",
     "captions": {
-      "sidebar": "spaces and agents",
+      "main": "spaces and agents",
       "light": "light or dark",
-      "seed": "one seed colour"
+      "theme": "one seed, your theme"
     }
   },
   "shots": [
     {
       "role": "main",
-      "file": "shots/dark-6750a4-base.png",
-      "state": "base",
+      "file": "shots/dark-6750a4-files.png",
+      "state": "files",
       "mode": "dark",
       "seed": "#6750A4",
-      "made": "bin/shots <prefix> base --dark --seed 6750a4, then bin/shots --mask",
-      "alt": "Shapr in dark mode with the baseline purple seed: the demo space and its agents in the sidebar, three agent terminals as cards, a needs-you snackbar"
+      "made": "bin/shots <prefix> files --dark --seed 6750a4, then bin/shots --mask",
+      "alt": "Shapr in dark mode with the baseline purple seed: demo spaces with two worktrees and six agents in the sidebar, an agent session in the centre, the Files panel open on the right"
     },
     {
       "role": "light",
-      "file": "shots/light-006a6a-base.png",
-      "state": "base",
+      "file": "shots/light-006a6a-files.png",
+      "state": "files",
       "mode": "light",
       "seed": "#006A6A",
-      "made": "bin/shots <prefix> base --light --seed 006a6a, then bin/shots --mask",
-      "alt": "Shapr in light mode with the teal seed: a teal frame around white terminal cards"
+      "made": "bin/shots <prefix> files --light --seed 006a6a, then bin/shots --mask",
+      "alt": "The same window in light mode with the teal seed: a teal frame around white cards"
     },
     {
-      "role": "sidebar",
-      "file": "shots/light-984061-sidebar.png",
-      "state": "base",
-      "mode": "light",
+      "role": "theme",
+      "file": "shots/dark-984061-theme.png",
+      "state": "theme",
+      "mode": "dark",
       "seed": "#984061",
-      "made": "bin/shots <prefix> base --light --seed 984061, then bin/shots --crop sidebar --mask",
-      "alt": "Shapr's sidebar in light mode with the pink seed: the demo space over pinned agents, one marked Needs you"
+      "made": "bin/shots <prefix> theme --dark --seed 984061, then bin/shots --crop 475,111,520,700 --mask",
+      "alt": "The Shapr Theme dialog with the pink seed: mode, eight seed colours, contrast, density, corners and motion"
     }
   ],
-  "notes": "Shots come from the shot loop (bin/shot-window, bin/demo with SHAPR_DEMO=/tmp/shapr-demo, bin/shots) and are masked: only the demo space and its fake agents show."
+  "notes": "Shots come from the shot loop (bin/shot-window, bin/demo with SHAPR_DEMO=/tmp/shapr-demo, bin/shots) and are masked: only the demo spaces and their fake agents show."
 }
