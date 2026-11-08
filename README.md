@@ -22,6 +22,11 @@ components. The design rules agents load live in the separate `shapr-for-agents`
 Licenses: MIT (`LICENSE`); Roboto Flex under the OFL, material-color-utilities and the Material
 Symbols icons under Apache-2.0 (`LICENSES/`).
 
+Sources: Shapr's MD3 and the rules in `skills/shapr-for-agents/` adapt ideas, not text, from
+[Material Design 3](https://m3.material.io) (Google), the
+[material-3 skill](https://github.com/hamen/material-3-skill) (MIT) and
+[Impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0).
+
 ## Install shapr-for-agents
 
 `skills/shapr-for-agents/` holds the design rules an agent follows when it changes any Herdr
