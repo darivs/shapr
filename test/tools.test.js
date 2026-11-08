@@ -25,6 +25,32 @@ test("the privacy check fails on a home path, an email address and a hostname", 
   } finally { rmSync(dir, { recursive: true }); }
 });
 
+// --history in a scratch repo: GitHub's own merge committer and a test variable such as `s.home`
+// name nobody and pass; a real hostname in a commit still fails.
+test("privacy-check --history passes what names nobody and still fails a hostname", () => {
+  const dir = mkdtempSync(join(tmpdir(), "privacy-history-"));
+  const git = (...a) => execFileSync("git", a, { cwd: dir, stdio: "pipe", env: { ...process.env, GIT_AUTHOR_NAME: "GitHub", GIT_AUTHOR_EMAIL: "noreply@github.com", GIT_COMMITTER_NAME: "GitHub", GIT_COMMITTER_EMAIL: "noreply@github.com" } });
+  const check = () => spawnSync(join(root, "bin/privacy-check"), ["--history"], { cwd: dir, encoding: "utf8" });
+  try {
+    git("init", "-q");
+    writeFileSync(join(dir, "a.test.js"), 'assert.ok(existsSync(join(s.home, folder, "x")));\nconst t = { local: 1 }; t.local;\n');
+    git("add", "-A");
+    git("-c", "core.hooksPath=/dev/null", "commit", "-q", "-m", "Merge pull request #1");
+    const ok = check();
+    assert.equal(ok.status, 0, ok.stderr);
+    const host = ["nas", ".", "home"].join("");
+    writeFileSync(join(dir, "b.txt"), `ssh ${host}\n`);
+    git("add", "-A");
+    git("-c", "core.hooksPath=/dev/null", "commit", "-q", "-m", "notes");
+    rmSync(join(dir, "b.txt"));
+    git("add", "-A");
+    git("-c", "core.hooksPath=/dev/null", "commit", "-q", "-m", "drop notes");
+    const bad = check();
+    assert.equal(bad.status, 1);
+    assert.match(bad.stderr, /\(diff\): hostname/);
+  } finally { rmSync(dir, { recursive: true }); }
+});
+
 test("the repo passes its own privacy check", () => {
   execFileSync(join(root, "bin/privacy-check"), { cwd: root, stdio: "pipe" });
 });

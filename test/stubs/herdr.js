@@ -43,7 +43,12 @@ export const appHome = () => "/app-home";
 export const exec = async (cmd, args, opts) => S().exec?.(cmd, args, opts) ?? { code: 0, stdout: "", stderr: "" };
 export const hc = async () => ({ code: 0, stdout: "", stderr: "" });
 export const readTextFile = async (p) => S().files[p] ?? null;
-export const writeTextFile = async (p, t) => { S().files[p] = t; return null; };
+// As Herdr's: writes only if the file still holds `expected` (null: it must not exist), else rejects.
+export const writeTextFile = async (p, t, expected) => {
+  if (expected === undefined || (S().files[p] ?? null) !== expected) throw new Error(`stale snapshot: ${p}`);
+  S().files[p] = t;
+  return null;
+};
 export const knownAgents = async () => [];
 export const pickFolder = async () => null;
 export const watchFolder = () => new Promise(() => {});

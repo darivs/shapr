@@ -1,0 +1,49 @@
+{
+  "out": "shapr/preview.png",
+  "canvas": {
+    "width": 1600,
+    "height": 1000,
+    "scale": 2,
+    "maxBytes": 2400000
+  },
+  "seed": "#6750A4",
+  "copy": {
+    "headline": "Your terminal, in",
+    "accent": "your colour.",
+    "captions": {
+      "main": "spaces and agents",
+      "light": "light or dark",
+      "theme": "one seed, your theme"
+    }
+  },
+  "shots": [
+    {
+      "role": "main",
+      "file": "shots/dark-6750a4-files.png",
+      "state": "files",
+      "mode": "dark",
+      "seed": "#6750A4",
+      "made": "bin/shots <prefix> files --dark --seed 6750a4, then bin/shots --mask",
+      "alt": "Shapr in dark mode with the baseline purple seed: demo spaces with two worktrees and six agents in the sidebar, an agent session in the centre, the Files panel open on the right"
+    },
+    {
+      "role": "light",
+      "file": "shots/light-6750a4-files.png",
+      "state": "files",
+      "mode": "light",
+      "seed": "#6750A4",
+      "made": "bin/shots <prefix> files --light --seed 6750a4, then bin/shots --mask",
+      "alt": "The same window in light mode with the same purple seed: a lavender frame around white cards"
+    },
+    {
+      "role": "theme",
+      "file": "shots/dark-984061-theme.png",
+      "state": "theme",
+      "mode": "dark",
+      "seed": "#984061",
+      "made": "bin/shots <prefix> theme --dark --seed 984061, then bin/shots --crop 475,111,520,700 --mask",
+      "alt": "The Shapr Theme dialog with the pink seed: mode, eight seed colours, contrast, density, corners and motion"
+    }
+  ],
+  "notes": "Shots come from the shot loop (bin/shot-window, bin/demo with SHAPR_DEMO=/tmp/shapr-demo, bin/shots) and are masked: only the demo spaces and their fake agents show. bin/demo shows Shapr after its agents settle, so no shot has a snackbar."
+}

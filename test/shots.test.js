@@ -68,7 +68,7 @@ function fixture({ zoom = 1, lines = true, layout = null } = {}) {
     }
   const file = join(dir, "shot.png");
   writeFileSync(file, encodePng({ width, height, data }));
-  const shots = (...args) => spawnSync(join(root, "bin/shots"), args, { encoding: "utf8", env: { ...process.env, HERDR_APP_HOME: home } });
+  const shots = (...args) => spawnSync(join(root, "bin/shots"), args, { encoding: "utf8", env: { ...process.env, HERDR_APP_HOME: home, SHAPR_DEMO: join(dir, "no-demo") } });
   return { dir, file, shots };
 }
 const pixel = (img, x, y) => [...img.data.subarray((y * img.width + x) * 4, (y * img.width + x) * 4 + 3)];
@@ -133,4 +133,54 @@ test("a shot is kept only while the window shows the demo space", async () => {
   assert.equal(onDemo({ space: "sp1" }, "sp1"), true);
   assert.equal(onDemo({ space: "sp2" }, "sp1"), false, "another space is on screen");
   assert.equal(onDemo({ space: "sp1" }, null), false, "no demo space is up");
+});
+
+// Several demo spaces (bin/demo up: acme-web, its two worktrees, api-gateway, docs-site): the
+// demo state says how many rows they take ($SHAPR_DEMO/rows) and how many agents it pinned
+// ($SHAPR_DEMO/agents, one a line). The mask keeps exactly those: the active space's two-line row
+// and four more (48 + 36 + 56 + 4 * 40 = window y 300, image 600), and in the agents list the
+// heading, the "Pinned" header and two rows (306 + 44 + 40 + 2 * 40 = 470, image 940).
+test("--mask keeps the rows of every demo space and every demo agent the demo state names, and no more", () => {
+  const layout = { id: "root", type: "row", children: [
+    { id: "sidebar", type: "column", size: { px: 100 }, children: [
+      { id: "brand", type: "block", size: { px: 48 } },
+      { id: "sidebar-lists", type: "column", children: [{ id: "spaces", type: "block", size: { weight: 1 } }, { id: "agents", type: "block", size: { weight: 1 } }] },
+      { id: "sidebar-footer", type: "block", size: { px: 136 } },
+    ] },
+    { id: "work", type: "column", size: { weight: 1 } },
+  ] };
+  const { dir, file } = fixture({ lines: false, layout });
+  const demo = join(dir, "demo");
+  mkdirSync(demo);
+  writeFileSync(join(demo, "rows"), "5\n");
+  writeFileSync(join(demo, "agents"), "t1\nt2\n");
+  const before = decodePng(readFileSync(file));
+  const r = spawnSync(join(root, "bin/shots"), ["--mask", file], { encoding: "utf8", env: { ...process.env, HERDR_APP_HOME: join(dir, "home"), SHAPR_DEMO: demo } });
+  assert.equal(r.status, 0, r.stderr);
+  const img = decodePng(readFileSync(file));
+  for (const [x, y] of [[30, 599], [30, 939], [150, 1300]]) assert.deepEqual(pixel(img, x, y), pixel(before, x, y), `kept ${x},${y}`);
+  const fillColor = pixel(img, 30, 600);
+  assert.notDeepEqual(fillColor, pixel(before, 30, 600));
+  for (const [x, y] of [[0, 611], [0, 940], [199, 1127]]) assert.deepEqual(pixel(img, x, y), fillColor, `masked ${x},${y}`);
+});
+
+test("a shot is kept only while the spaces list starts with the demo spaces, and only them", async () => {
+  const { demoLeads } = await import("../bin/shots");
+  const ls = (...ids) => ({ spaces: ids.map((id) => ({ id })) });
+  assert.equal(demoLeads(ls("a", "b", "c"), ["a", "b", "c"]), true);
+  assert.equal(demoLeads(ls("b", "a", "c", "x"), ["a", "b", "c"]), true, "in any order, others after");
+  assert.equal(demoLeads(ls("a", "x", "b", "c"), ["a", "b", "c"]), false, "another space among the demo rows");
+  assert.equal(demoLeads(ls("a", "b"), ["a", "b", "c"]), false, "a demo space is missing");
+  assert.equal(demoLeads(ls("a"), []), false, "no demo spaces");
+});
+
+// A dialog has no edge to find: --crop x,y,w,h cuts a box given in window px (image px at scale 2).
+test("--crop x,y,w,h cuts a box in window px", () => {
+  const { dir, file, shots } = fixture();
+  const out = join(dir, "box.png");
+  assert.equal(shots("--crop", "150,20,30,40", file, out).status, 0);
+  const img = decodePng(readFileSync(out));
+  assert.deepEqual([img.width, img.height], [60, 80]);
+  assert.deepEqual(pixel(img, 0, 0), [300 >> 2, 40 >> 3, 7]);
+  assert.notEqual(shots("--crop", "1,2,3", file, out).status, 0, "four numbers or a named area");
 });

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Every check the repo has: herdr-app check per mod (needs Herdr), the kit copies, the tests,
-# a syntax check of every .js file and script (bin/shots, bin/demo too), the skills in skills/
+# a syntax check of every .js file and script (bin/shots, bin/demo, bin/preview too), the skills in skills/
 # (bin/skill-check), and the privacy check.
 # Exits nonzero on the first failure.
 set -u
@@ -20,7 +20,7 @@ bin/sync-kit --check || fail=1
 log=$(mktemp)
 node --import ./test/loader.js --test test/ >"$log" 2>&1 && echo "tests: OK" || { cat "$log"; fail=1; }
 rm -f /tmp/shapr-tests.$$
-for f in $(git ls-files --cached --others --exclude-standard '*.js') bin/clone-mods bin/sync-kit bin/privacy-check bin/drift bin/shots bin/skill-check; do
+for f in $(git ls-files --cached --others --exclude-standard '*.js') bin/clone-mods bin/sync-kit bin/privacy-check bin/drift bin/shots bin/skill-check bin/preview; do
   node --input-type=module --check < "$f" || { echo "syntax: $f"; fail=1; }
 done
 for f in bin/check-all bin/dev-mirror bin/demo; do

@@ -150,9 +150,10 @@ export default class Settings extends View {
   // Only a settings.json that reads and parses is rewritten; the choice shows once it is written.
   async setMode(mode) {
     try {
-      const text = withMode(await readTextFile(settingsPath()), mode);
+      const before = await readTextFile(settingsPath());
+      const text = withMode(before, mode);
       if (text === null) return;
-      await writeTextFile(settingsPath(), text);
+      await writeTextFile(settingsPath(), text, before); // Herdr writes only over the text just read
       this.mode = mode;
     } catch {
       return;

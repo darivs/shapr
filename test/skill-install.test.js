@@ -1,7 +1,8 @@
-// The README's install commands for shapr-for-agents, run as written in a scratch home from a
-// scratch clone: each one puts the skill where its agent loads it (~/.claude/skills/ for Claude
+// The install commands for shapr-for-agents in docs/agent-skill.md, run as written in a scratch
+// home from a scratch clone: each one puts the skill where its agent loads it (~/.claude/skills/ for Claude
 // Code, ~/.agents/skills/ for Codex and other agents), a link follows the clone, a copy stays as
-// it was, and the removal command takes it out again without touching the clone.
+// it was, and the removal command takes it out again without touching the clone. The README shows
+// the link installs and the removal; each of its blocks is the same as the one in the docs.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -12,16 +13,23 @@ import { join } from "node:path";
 const root = new URL("..", import.meta.url).pathname;
 const SKILL = "shapr-for-agents";
 
-/** The README's install section: its sh blocks, keyed by the comment on each block's first line. */
-function commands() {
-  const readme = readFileSync(join(root, "README.md"), "utf8");
-  const section = readme.split(/^## /m).find((s) => s.startsWith(`Install ${SKILL}`)) ?? "";
+/** A text's sh blocks, keyed by the comment on each block's first line. */
+function blocksOf(text) {
   const blocks = {};
-  for (const [, body] of section.matchAll(/```sh\n([\s\S]*?)```/g)) {
+  for (const [, body] of text.matchAll(/```sh\n([\s\S]*?)```/g)) {
     const [first, ...rest] = body.split("\n");
     blocks[first.replace(/^#\s*/, "").trim()] = rest.join("\n");
   }
   return blocks;
+}
+
+/** docs/agent-skill.md's install commands. */
+const commands = () => blocksOf(readFileSync(join(root, "docs", "agent-skill.md"), "utf8"));
+
+/** The README's "Shapr for agents" section's sh blocks. */
+function readmeCommands() {
+  const readme = readFileSync(join(root, "README.md"), "utf8");
+  return blocksOf(readme.split(/^## /m).find((s) => s.startsWith("Shapr for agents")) ?? "");
 }
 
 const INSTALLS = {
@@ -53,10 +61,10 @@ function loaded(home, folder) {
   return existsSync(path) ? readFileSync(path, "utf8") : null;
 }
 
-test("each README install command puts shapr-for-agents where its agent loads it, in a fresh home and beside other skills", () => {
+test("each install command puts shapr-for-agents where its agent loads it, in a fresh home and beside other skills", () => {
   const blocks = commands();
   for (const [label, folder] of Object.entries(INSTALLS)) {
-    assert.ok(blocks[label], `README has no "${label}" command`);
+    assert.ok(blocks[label], `docs/agent-skill.md has no "${label}" command`);
     for (const existing of [false, true]) {
       const s = scratch();
       if (existing) mkdirSync(join(s.homeDir, folder, "other-skill"), { recursive: true });
@@ -101,9 +109,9 @@ function present(path) {
   try { lstatSync(path); return true; } catch { return false; }
 }
 
-test("the README's remove command takes shapr-for-agents out of both folders and leaves the clone and other skills", () => {
+test("the remove command takes shapr-for-agents out of both folders and leaves the clone and other skills", () => {
   const blocks = commands();
-  assert.ok(blocks.Remove, 'README has no "Remove" command');
+  assert.ok(blocks.Remove, 'docs/agent-skill.md has no "Remove" command');
   for (const [label, folder] of Object.entries(INSTALLS)) {
     const s = scratch();
     mkdirSync(join(s.homeDir, folder, "other-skill"), { recursive: true });
@@ -112,5 +120,13 @@ test("the README's remove command takes shapr-for-agents out of both folders and
     assert.equal(present(join(s.homeDir, folder, SKILL)), false, `${label}: still installed`);
     assert.ok(existsSync(join(s.clone, "skills", SKILL, "SKILL.md")), `${label}: the clone's skill is gone`);
     assert.ok(existsSync(join(s.homeDir, folder, "other-skill")), `${label}: the other skill is gone`);
+  }
+});
+
+test("the README shows the link installs and the removal, each as docs/agent-skill.md has it", () => {
+  const docs = commands(), readme = readmeCommands();
+  for (const label of ["Claude Code, link", "Codex and other agents, link", "Remove"]) {
+    assert.ok(readme[label], `README has no "${label}" command`);
+    assert.equal(readme[label], docs[label], label);
   }
 });

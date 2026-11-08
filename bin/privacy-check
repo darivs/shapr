@@ -8,12 +8,14 @@ import { readFileSync, statSync } from "node:fs";
 export const RULES = [
   ["home path", /(?:\/Users|\/home)\/(?!(?:x|someone|runner|user|name|me)\b|<)[A-Za-z0-9._-]+|[A-Za-z]:\\Users\\(?!(?:x|someone|user|name|me)\b)[A-Za-z0-9._-]+/g],
   ["email address", /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[a-z]{2,}\b/g],
-  ["hostname", /\b[A-Za-z0-9-]+\.(?:local|lan|home|internal|fritz\.box|localdomain)\b|\b(?:MacBook|iMac|Mac-mini|DESKTOP|LAPTOP)-[A-Za-z0-9-]+/g],
+  // A one-letter name before the suffix is a variable in code (`s.home`, `t.local`), not a host.
+  ["hostname", /\b[A-Za-z0-9-]{2,}\.(?:local|lan|home|internal|fritz\.box|localdomain)\b|\b(?:MacBook|iMac|Mac-mini|DESKTOP|LAPTOP)-[A-Za-z0-9-]+/g],
 ];
 // Placeholder folders (/Users/x) and addresses that name nobody. A host here is only skipped
 // when scanning the repo's files: findings() still reports it, so bin/skill-check flags it.
 const ALLOWED = [
   /@users\.noreply\.github\.com$/,
+  /^noreply@github\.com$/, // GitHub's own committer on merges made on github.com
   /@example\.(com|org|net)$/,
   /^build-box\.local$/, // test fixture for skill-check
 ];

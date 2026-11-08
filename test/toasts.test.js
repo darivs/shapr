@@ -54,6 +54,18 @@ test("an agent that turns blocked shows once, the loudest, and goes when answere
   assert.equal(count(v.render(), "Claude Code needs you"), 0);
 });
 
+// bin/demo relies on this: it shows Shapr only once its fake agents are blocked or done, so no
+// shot has a snackbar while the sidebar still says "Needs you".
+test("an agent already blocked or done when the float first looks posts nothing", () => {
+  const agent = { address: "t1", status: "blocked", seq: 1, focused: false, program: { name: "agent" }, tab_name: "fix", space_name: "web" };
+  reset({ agents: [agent, { ...agent, address: "t2", status: "done" }] });
+  const { v } = mount();
+  v.render();
+  const tree = v.render();
+  assert.equal(count(tree, "agent needs you"), 0);
+  assert.equal(count(tree, "agent finished"), 0);
+});
+
 test("a click runs the action and closes it; the X closes it for good", () => {
   const h = reset();
   h.shared[QUEUE] = [{ id: "n1", at: 1, title: "Agent done", level: "success", action: { name: "agent.focus", args: { terminal: "t1" } } },

@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+// Renders the gallery preview, shapr/preview.png, from docs/preview/: template.html filled from
+// manifest.json (the copy, the masked shots from the shot loop, the seed), screenshot by a headless
+// Chromium browser. Renders at the manifest's scale, and again at 1x when that file is over its
+// maxBytes.
+// Usage: bin/preview [--scale N] [--out file.png]
+// SHAPR_BROWSER picks the browser (default: Brave on macOS); it gets a throwaway profile.
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { themeFile } from "../shapr/mods/shapr-workspace-chrome/theme/scheme.js";
+
+const root = new URL("..", import.meta.url).pathname;
+const dir = join(root, "docs", "preview");
+const BROWSER = "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser";
+
+const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+
+/** The text with each {{key}} replaced by vars[key], HTML-escaped; a key with no value throws. */
+export function fill(text, values) {
+  return text.replace(/\{\{([\w.-]+)\}\}/g, (_, k) => {
+    if (!(k in values)) throw new Error(`no value for {{${k}}}`);
+    return String(values[k]).replace(/[&<>"']/g, (c) => ESC[c]);
+  });
+}
+
+const flat = (obj, prefix, out) => {
+  for (const [k, v] of Object.entries(obj ?? {})) {
+    if (v && typeof v === "object") flat(v, `${prefix}${k}.`, out);
+    else out[`${prefix}${k}`] = v;
+  }
+  return out;
+};
+
+/** The template's values: copy.*, shot.<role> (its file) and shot.<role>.alt, seed, accent. */
+export function vars(manifest) {
+  const v = flat(manifest.copy, "copy.", {});
+  for (const s of manifest.shots ?? []) { v[`shot.${s.role}`] = s.file; v[`shot.${s.role}.alt`] = s.alt ?? ""; }
+  v.seed = manifest.seed;
+  // The headline's accent: shapr-dark's primary for the seed, as the window draws it.
+  v.accent = themeFile({ seed: manifest.seed }, true).colors.solid;
+  return v;
+}
+
+/** The headless browser's arguments for one screenshot. */
+export function browserArgs({ url, out, width, height, scale, profile }) {
+  return [
+    "--headless", "--hide-scrollbars", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+    "--allow-file-access-from-files", `--user-data-dir=${profile}`,
+    `--force-device-scale-factor=${scale}`, `--window-size=${width},${height}`,
+    "--virtual-time-budget=2000", `--screenshot=${out}`, url,
+  ];
+}
+
+function render(manifest, { scale, out }) {
+  const browser = process.env.SHAPR_BROWSER ?? BROWSER;
+  // The filled page sits beside the template, so its relative paths (shots, fonts, logo) resolve.
+  const page = join(dir, ".render.html"), profile = mkdtempSync(join(tmpdir(), "shapr-preview-"));
+  writeFileSync(page, fill(readFileSync(join(dir, "template.html"), "utf8"), vars(manifest)));
+  try {
+    const { width, height } = manifest.canvas;
+    const r = spawnSync(browser, browserArgs({ url: pathToFileURL(page).href, out, width, height, scale, profile }), { encoding: "utf8" });
+    if (r.error) throw new Error(`${browser}: ${r.error.message} (set SHAPR_BROWSER)`);
+    if (r.status !== 0) throw new Error(`${browser} exited ${r.status}: ${r.stderr}`);
+  } finally {
+    rmSync(page, { force: true });
+    rmSync(profile, { recursive: true, force: true });
+  }
+  return statSync(out).size;
+}
+
+function main(argv) {
+  const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
+  let scale = manifest.canvas.scale ?? 1, out = join(root, manifest.out ?? "shapr/preview.png");
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--scale") scale = Number(argv[++i]);
+    else if (argv[i] === "--out") out = argv[++i];
+    else throw new Error("usage: bin/preview [--scale N] [--out file.png]");
+  }
+  let size = render(manifest, { scale, out });
+  if (size > (manifest.canvas.maxBytes ?? Infinity) && scale > 1) {
+    console.log(`preview: ${size} bytes at ${scale}x is over ${manifest.canvas.maxBytes}; rendering at 1x`);
+    scale = 1;
+    size = render(manifest, { scale, out });
+  }
+  console.log(`preview: ${out} (${scale}x, ${size} bytes)`);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  try { main(process.argv.slice(2)); } catch (e) { console.error(`preview: ${e.message}`); process.exit(1); }
+}
