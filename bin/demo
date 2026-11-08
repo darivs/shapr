@@ -165,6 +165,13 @@ up() {
   done <"$state/shells"
   while read -r t; do do_ terminal.pin "{\"terminal\":\"$t\",\"pinned\":true}" || true; done <"$state/agents"
   sleep 2
+  # shapr-toasts takes what is already so at its first look as no news: show Shapr afresh, by way of
+  # Herdr's main layout, now the agents are blocked or done, so no shot has a snackbar while the
+  # sidebar still says "Needs you". Its lists take a moment to fill again.
+  do_ layout.switch '{"name":"main"}'
+  sleep 1
+  do_ layout.switch '{"name":"shapr"}'
+  sleep 3
   do_ space.select "{\"id\":\"$main\"}"
   do_ tab.select "{\"id\":\"$main_tab\"}"
   echo "demo: up (space $main)"
