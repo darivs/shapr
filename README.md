@@ -9,16 +9,63 @@ components. The design rules agents load live in the separate `shapr-for-agents`
 | Path | What |
 |---|---|
 | `shapr/` | the gallery folder: what people add to their Herdr app |
+| `skills/` | `shapr-for-agents`, the design rules agents load (install below) |
 | `kit/` | the components' source (`kit/UI.md`); `bin/sync-kit` copies it into each mod |
 | `bin/dev-mirror` | mirrors `shapr/` into your Herdr app home |
 | `bin/clone-mods` | clones a shipped Herdr mod as `shapr-<name>` and records its origin |
 | `bin/drift` | Drift: lists clones whose Herdr original changed since its record (exit 1); `--accept <clone>` after porting |
-| `bin/check-all` | every check: `herdr-app check` per mod, kit copies, tests, syntax, privacy |
+| `bin/check-all` | every check: `herdr-app check` per mod, kit copies, tests, syntax, skills, privacy |
+| `bin/skill-check` | checks each skill's frontmatter, linked files and private data |
 | `bin/privacy-check` | fails on home paths, email addresses and local hostnames |
 | `test/` | `node --import ./test/loader.js --test test/` |
 
 Licenses: MIT (`LICENSE`); Roboto Flex under the OFL, material-color-utilities and the Material
 Symbols icons under Apache-2.0 (`LICENSES/`).
+
+Sources: Shapr's MD3 and the rules in `skills/shapr-for-agents/` adapt ideas, not text, from
+[Material Design 3](https://m3.material.io) (Google), the
+[material-3 skill](https://github.com/hamen/material-3-skill) (MIT) and
+[Impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0).
+
+## Install shapr-for-agents
+
+`skills/shapr-for-agents/` holds the design rules an agent follows when it changes any Herdr
+surface. Install it as you install any skill: Claude Code loads skills from `~/.claude/skills/`,
+Codex and other agents that read the shared folder from `~/.agents/skills/`. Run the commands from
+your clone of this repo. A link follows the clone, so `git pull` brings the next agent the new
+rules; a copy stays as it is until you copy again.
+
+```sh
+# Claude Code, link
+mkdir -p ~/.claude/skills
+ln -sfn "$PWD/skills/shapr-for-agents" ~/.claude/skills/shapr-for-agents
+```
+
+```sh
+# Claude Code, copy
+mkdir -p ~/.claude/skills
+cp -R skills/shapr-for-agents ~/.claude/skills/
+```
+
+```sh
+# Codex and other agents, link
+mkdir -p ~/.agents/skills
+ln -sfn "$PWD/skills/shapr-for-agents" ~/.agents/skills/shapr-for-agents
+```
+
+```sh
+# Codex and other agents, copy
+mkdir -p ~/.agents/skills
+cp -R skills/shapr-for-agents ~/.agents/skills/
+```
+
+To remove it, delete the link or the copy; the skill writes nothing anywhere else, and a removed
+link leaves your clone as it was:
+
+```sh
+# Remove
+rm -rf ~/.claude/skills/shapr-for-agents ~/.agents/skills/shapr-for-agents
+```
 
 ## Keys
 
