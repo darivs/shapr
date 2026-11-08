@@ -43,3 +43,11 @@ test("check-all names a skill whose frontmatter lacks a name or description, or 
   assert.match(checkAll({ ...GOOD, "SKILL.md": "---\ndescription: Demo rules.\n---\n" + body }), /skill-check: skills\/demo\/SKILL\.md: frontmatter: name/);
   assert.match(checkAll({ ...GOOD, "SKILL.md": "---\nname: other\ndescription: Demo rules.\n---\n" + body }), /skill-check: skills\/demo\/SKILL\.md: frontmatter: name/);
 });
+
+test("check-all names a file a skill links to that is missing", () => {
+  const out = checkAll({ ...GOOD, "references/rules.md": null });
+  assert.match(out, /skill-check: skills\/demo\/SKILL\.md: missing references\/rules\.md/);
+  const deep = checkAll({ ...GOOD, "references/rules.md": "See [motion](motion.md#springs) and [Herdr](https://example.com/herdr).\n" });
+  assert.match(deep, /skill-check: skills\/demo\/references\/rules\.md: missing motion\.md/);
+  assert.doesNotMatch(deep, /missing https/);
+});
