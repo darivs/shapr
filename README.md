@@ -17,7 +17,7 @@
 
 </div>
 
-![Shapr in three seed colours: a large dark window in purple with the demo space and its agents in the sidebar, a teal light window behind it, and a pink sidebar crop, beside the headline "Your terminal, in your colour."](shapr/preview.png)
+![Shapr in three seed colours beside the headline "Your terminal, in your colour.": a large dark purple window with demo spaces, worktrees and six agents in the sidebar, an agent session in the centre and the Files panel on the right; the same window in light teal behind it; and the Shapr Theme dialog in pink](shapr/preview.png)
 
 ## Install
 
