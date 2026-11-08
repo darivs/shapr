@@ -37,6 +37,7 @@ test("bin/demo up, bin/shots r1 and bin/demo down leave the window as it was", {
   const after = json("herdr-app", "status");
   assert.equal(after.layout, before.layout);
   assert.equal(after.space, before.space);
-  assert.ok(!json("herdr-app", "ls").spaces.some((s) => s.name === "demo"), "no demo space");
+  const DEMO = ["acme-web", "dark-mode", "fix-login", "api-gateway", "docs-site"];
+  assert.ok(!json("herdr-app", "ls").spaces.some((s) => DEMO.includes(s.name)), "no demo space");
   assert.ok(!json("hc", "ls", "--json").terminals.some((t) => t.name?.startsWith("demo-")), "no fake agent");
 });

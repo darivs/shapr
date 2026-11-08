@@ -1,9 +1,13 @@
 #!/bin/sh
-# The demo space the shot loop (bin/shots) runs in, on a throwaway git repo, in the Herdr window
+# The demo spaces the shot loop (bin/shots) runs in, on throwaway git repos, in the Herdr window
 # HERDR_APP_HOME picks: run it through bin/shot-window to keep the person's own window as it is.
 #   bin/demo up     back up settings.json and the theme settings, mirror shapr/, show Shapr
-#                   Material, open the demo space first in the list, with one fake agent per status
-#   bin/demo down   end the fake agents, close the demo space, show the layout and space shown
+#                   Material, open the demo spaces first in the list (acme-web with its worktrees
+#                   dark-mode and fix-login, api-gateway, docs-site, all on throwaway repos), with
+#                   six pinned fake agents, every status among them; acme-web is shown, its agent
+#                   mid-session. $SHAPR_DEMO/space is acme-web, spaces every demo space, rows how
+#                   many rows they take in the spaces list, agents the fake agents.
+#   bin/demo down   end the fake agents, close the demo spaces, show the layout and space shown
 #                   before, restore settings.json and the theme settings; fails unless cmp finds
 #                   settings.json equal to its backup
 #   bin/demo agent <status> <title>   a fake agent (what `up` starts in each terminal)
@@ -18,38 +22,104 @@ do_() { herdr-app do "$@" >/dev/null; }
 field() { node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const v=JSON.parse(s)[process.argv[1]];process.stdout.write(v==null?"":typeof v==="string"?v:JSON.stringify(v))})' "$1"; }
 shared_settings() { node -e 'try{const s=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))["shapr.settings"];process.stdout.write(JSON.stringify(s??null))}catch{process.stdout.write("null")}' "$home/shared.json"; }
 
-# A fake agent: reports its status (OSC 7501), prints a plausible screen and sleeps.
+# A fake agent: reports its status (OSC 7501), prints a plausible screen and sleeps. The working
+# agent titled "Dark mode settings" prints a whole session, so the shots look like real work.
 agent() {
   status=$1; shift
   # Done is news only after a turn: work for a moment first.
   [ "$status" != done ] || { printf '\033]7501;state=working\007'; sleep 1; }
   printf '\033]7501;state=%s\007\033]2;%s\007' "$status" "$*"
-  printf '\033[1m%s\033[0m\n\n' "$*"
-  case $status in
-    working) printf 'Reading src/theme.js\nUpdating 3 files...\n' ;;
-    blocked) printf 'Allow edit to src/layout.json?\n\n  1. Yes\n  2. No, tell me what to change\n' ;;
-    done) printf 'Done: the build passes and the tests are green.\n' ;;
-    idle) printf 'Waiting for the next task.\n' ;;
+  b='\033[1m' d='\033[2m' c='\033[36m' g='\033[32m' r='\033[31m' y='\033[33m' o='\033[0m'
+  case "$status:$*" in
+    "working:Dark mode settings") session ;;
+    working:*) printf "${d}›${o} ${b}%s${o}\n\n  ${d}Read${o} src/limits.ts\n  ${d}Edited${o} src/limits.ts ${g}+18${o} ${r}-3${o}\n\n• Requests over the limit now get a 429 with a Retry-After header.\n\n${y}✻${o} ${d}Working for 12s${o}\n" "$*" ;;
+    blocked:*) printf "${d}›${o} ${b}%s${o}\n\n• The redirect loops because the session cookie is set after the redirect.\n\n  Allow edit to ${c}src/auth/login.ts${o}?\n\n  1. Yes\n  2. No, tell me what to change\n" "$*" ;;
+    done:*) printf "${d}›${o} ${b}%s${o}\n\n  ${d}Ran${o} npm run e2e\n  ${d}└${o} ${g}31 passed${o}, 0 failed\n\n• Done: the build passes and the tests are green.\n" "$*" ;;
+    idle:*) printf "${d}›${o} ${b}%s${o}\n\n• Waiting for the next task.\n" "$*" ;;
   esac
-  exec sleep 86400
+  # Herdr names an agent by its program: it sleeps as "agent" (a link to sleep), not "sleep".
+  exec "${SHAPR_DEMO_SLEEP:-sleep}" 86400
 }
 
-# The throwaway repo: a few files and one commit, then one changed, one added, one deleted.
-repo() {
-  r=$1
-  mkdir -p "$r/src"
-  git -C "$r" init -q -b main
-  printf '# Demo\n\nA small app to show the shot loop.\n' >"$r/README.md"
-  printf 'export const theme = { seed: "#6750A4", density: "standard" };\n' >"$r/src/theme.js"
-  printf '{\n  "name": "demo",\n  "panels": ["files", "changes"]\n}\n' >"$r/src/layout.json"
-  printf 'export function greet(name) {\n  return `Hello, ${name}`;\n}\n' >"$r/src/greet.js"
-  printf 'node_modules/\n' >"$r/.gitignore"
-  git -C "$r" add -A
-  git -C "$r" -c core.hooksPath=/dev/null -c user.name=demo -c user.email=demo@example.com commit -q -m "feat: a first version"
-  printf 'export const theme = { seed: "#006A6A", density: "compact" };\nexport const corners = "round";\n' >"$r/src/theme.js"
-  printf 'export function slug(text) {\n  return text.toLowerCase().replace(/\\s+/g, "-");\n}\n' >"$r/src/slug.js"
-  git -C "$r" add src/slug.js
-  git -C "$r" rm -q src/greet.js
+# The main agent's session: a task, tool steps, notes and a status line, then an empty prompt.
+session() {
+  printf "${d}›${o} ${b}Add a dark mode toggle to the settings page${o}\n\n"
+  printf "  ${d}Read 4 files${o}\n\n"
+  printf "• The settings live in ${c}src/settings/options.ts${o}. I'll add a Theme option next to\n  Language and read it in the app shell.\n\n"
+  printf "  ${d}Edited${o} src/settings/options.ts ${g}+12${o} ${r}-2${o}\n"
+  printf "  ${d}Edited${o} src/app/shell.tsx ${g}+8${o} ${r}-1${o}\n"
+  printf "  ${d}Edited${o} src/styles/theme.css ${g}+24${o}\n\n"
+  printf "• Theme (System, Light, Dark) is saved with the other settings, and the shell sets\n  ${c}data-theme${o} on the root element, so every page follows it.\n\n"
+  printf "  ${d}Ran${o} npm test\n  ${d}└${o} ${g}48 passed${o}, 0 failed\n\n"
+  printf "• Next: the header icons still use fixed colours. Switching them to ${c}currentColor${o}\n  so they follow the theme too.\n\n"
+  printf "${y}✻${o} ${d}Working for 42s · 3 files changed · esc to stop${o}\n\n"
+  printf "${d}%s${o}\n${b}›${o} " "────────────────────────────────────────────────────────────────────────────"
+}
+
+# A throwaway repo: its files and one commit.
+commit() {
+  git -C "$1" add -A
+  git -C "$1" -c core.hooksPath=/dev/null -c user.name=demo -c user.email=demo@example.com commit -q -m "$2"
+}
+
+# The demo repos: acme-web (a small web app, with two worktrees and uncommitted changes),
+# api-gateway and docs-site.
+repos() {
+  w=$state/acme-web
+  mkdir -p "$w/.github/workflows" "$w/docs" "$w/public" "$w/src/app" "$w/src/settings" "$w/src/styles" "$w/tests"
+  git -C "$w" init -q -b main
+  printf '# acme-web\n\nThe Acme storefront.\n' >"$w/README.md"
+  printf 'node_modules/\ndist/\n' >"$w/.gitignore"
+  printf '{\n  "name": "acme-web",\n  "scripts": { "test": "vitest run", "e2e": "playwright test" }\n}\n' >"$w/package.json"
+  printf '{ "compilerOptions": { "strict": true, "jsx": "react-jsx" } }\n' >"$w/tsconfig.json"
+  printf 'name: ci\non: [push]\n' >"$w/.github/workflows/ci.yml"
+  printf '# Settings\n' >"$w/docs/settings.md"
+  printf '<svg xmlns="http://www.w3.org/2000/svg"/>\n' >"$w/public/favicon.svg"
+  printf 'export function Shell() {\n  return null;\n}\n' >"$w/src/app/shell.tsx"
+  printf 'export const options = { language: "en" };\n' >"$w/src/settings/options.ts"
+  printf ':root { color-scheme: light; }\n' >"$w/src/styles/theme.css"
+  printf 'import { options } from "../src/settings/options";\n' >"$w/tests/settings.test.ts"
+  commit "$w" "feat: a first version"
+  git -C "$w" worktree add -q -b dark-mode "$state/acme-web-dark-mode"
+  git -C "$w" worktree add -q -b fix-login "$state/acme-web-fix-login"
+  printf 'export const options = { language: "en", theme: "system" };\n' >"$w/src/settings/options.ts"
+  printf 'export function Shell({ theme }) {\n  return theme;\n}\n' >"$w/src/app/shell.tsx"
+  printf ':root { color-scheme: light dark; }\n[data-theme="dark"] { --bg: #111; }\n' >"$w/src/styles/theme.css"
+  for n in api-gateway docs-site; do
+    mkdir -p "$state/$n/src"
+    git -C "$state/$n" init -q -b main
+    printf '# %s\n' "$n" >"$state/$n/README.md"
+    printf 'export {};\n' >"$state/$n/src/index.ts"
+    commit "$state/$n" "feat: a first version"
+  done
+}
+
+# A space on <folder> named <name> with one tab <tab>: its id into $space, the tab into $tab and
+# the shell into $shell.
+space() {
+  out=$(herdr-app do space.new "{\"name\":\"$1\",\"folder\":\"$2\",\"tab\":\"$3\"}")
+  space=$(printf '%s' "$out" | field space)
+  tab=$(printf '%s' "$out" | field tab)
+  shell=$(printf '%s' "$out" | field terminal)
+  [ -n "$space" ] && [ -n "$tab" ] || { echo "demo: space.new answered $out" >&2; exit 1; }
+  echo "$space" >>"$state/spaces"
+  echo "$shell" >>"$state/shells"
+}
+
+# One more tab <name> in $space on <folder>: the tab into $tab.
+tab() {
+  out=$(herdr-app do tab.new "{\"name\":\"$1\",\"space\":\"$space\",\"folder\":\"$2\"}")
+  tab=$(printf '%s' "$out" | field tab)
+  printf '%s' "$out" | field terminal >>"$state/shells"
+  echo >>"$state/shells"
+}
+
+# A fake agent <status> <title> in $space's tab $tab, on <folder>.
+spawn() {
+  t=$(hc run --json --bg --keep --no-parent --cwd "$3" --name "demo-$(wc -l <"$state/agents" | tr -d ' ')" \
+    --label "herdr.space=$space" --label "herdr.tab=$tab" -- env SHAPR_DEMO_SLEEP="$state/bin/agent" "$root/bin/demo" agent "$1" "$2" | field address)
+  [ -n "$t" ] || { echo "demo: no agent for $2" >&2; exit 1; }
+  echo "$t" >>"$state/agents"
 }
 
 up() {
@@ -60,40 +130,44 @@ up() {
   herdr-app status >"$state/status.json"
   field layout <"$state/status.json" >"$state/layout"
   field space <"$state/status.json" >"$state/prev-space"
-  rm -rf "$state/repo"
-  repo "$state/repo"
+  for f in bin acme-web acme-web-dark-mode acme-web-fix-login api-gateway docs-site spaces shells agents; do rm -rf "${state:?}/$f"; done
+  : >"$state/spaces"; : >"$state/shells"; : >"$state/agents"
+  repos
+  mkdir -p "$state/bin"
+  ln -sfn "$(command -v sleep)" "$state/bin/agent"
   "$root/bin/dev-mirror"
   do_ layout.switch '{"name":"shapr"}'
-  out=$(herdr-app do space.new "{\"name\":\"demo\",\"folder\":\"$state/repo\",\"tab\":\"agents\"}")
-  space=$(printf '%s' "$out" | field space)
-  tab=$(printf '%s' "$out" | field tab)
-  shell=$(printf '%s' "$out" | field terminal)
-  [ -n "$space" ] && [ -n "$tab" ] || { echo "demo: space.new answered $out" >&2; exit 1; }
-  echo "$space" >"$state/space"
-  do_ space.move "{\"id\":\"$space\",\"index\":1}"
-  # The done agent waits in a second tab: one shown is seen, and a seen done turns idle.
-  out=$(herdr-app do tab.new "{\"name\":\"review\",\"space\":\"$space\",\"folder\":\"$state/repo\"}")
-  review=$(printf '%s' "$out" | field tab)
-  shell2=$(printf '%s' "$out" | field terminal)
-  do_ tab.select "{\"id\":\"$tab\"}"
-  : >"$state/agents"
-  for s in "working:Theme tokens:$tab" "blocked:Layout file:$tab" "idle:Docs:$tab" "done:Test run:$review"; do
-    status=${s%%:*} rest=${s#*:}
-    title=${rest%%:*} where=${rest#*:}
-    t=$(hc run --json --bg --keep --no-parent --cwd "$state/repo" --name "demo-$status" \
-      --label "herdr.space=$space" --label "herdr.tab=$where" -- "$root/bin/demo" agent "$status" "$title" | field address)
-    [ -n "$t" ] || t=demo-$status
-    echo "$t" >>"$state/agents"
-  done
+  w=$state/acme-web
+  space acme-web "$w" "Dark mode settings"; main=$space; main_tab=$tab
+  spawn working "Dark mode settings" "$w"
+  tab "E2E tests" "$w"; spawn done "E2E tests" "$w"
+  space dark-mode "$state/acme-web-dark-mode" "Theme tokens"; spawn idle "Theme tokens" "$state/acme-web-dark-mode"
+  space fix-login "$state/acme-web-fix-login" "Login redirect"; spawn blocked "Login redirect" "$state/acme-web-fix-login"
+  space api-gateway "$state/api-gateway" "Rate limits"; spawn working "Rate limits" "$state/api-gateway"
+  space docs-site "$state/docs-site" "Quick start"; spawn idle "Quick start" "$state/docs-site"
+  echo "$main" >"$state/space"
+  # The demo spaces lead the spaces list, in this order (shapr-spaces keeps each worktree under
+  # its checkout); the mask keeps exactly their rows.
+  i=1
+  while read -r id; do do_ space.move "{\"id\":\"$id\",\"index\":$i}"; i=$((i + 1)); done <"$state/spaces"
+  wc -l <"$state/spaces" | tr -d ' ' >"$state/rows"
   # Only the agents in the tabs, pinned so they lead the agents list (pins end with their terminal).
-  for t in $shell $shell2; do
+  # Each shell closes once its tab shows its agent too, or the tab would close with it.
+  n=$(wc -l <"$state/agents" | tr -d ' ')
+  i=0
+  until [ "$(herdr-app ls | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const a=require("fs").readFileSync(process.argv[1],"utf8").split("\n").filter(Boolean);let n=0;for(const sp of JSON.parse(s).spaces)for(const tb of sp.tabs)for(const t of tb.terminals)if(a.includes(t.terminal))n++;process.stdout.write(String(n))})' "$state/agents")" -ge "$n" ] || [ "$i" -ge 20 ]; do
+    sleep 0.5; i=$((i + 1))
+  done
+  while read -r t; do
+    [ -n "$t" ] || continue
     pane=$(herdr-app ls | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const sp of JSON.parse(s).spaces)for(const tb of sp.tabs)for(const t of tb.terminals)if(t.terminal===process.argv[1])process.stdout.write(t.pane)})' "$t")
     [ -z "$pane" ] || do_ pane.close "{\"pane\":\"$pane\"}" || true
-  done
+  done <"$state/shells"
   while read -r t; do do_ terminal.pin "{\"terminal\":\"$t\",\"pinned\":true}" || true; done <"$state/agents"
-  sleep 1
-  do_ space.select "{\"id\":\"$space\"}"
-  echo "demo: up (space $space)"
+  sleep 2
+  do_ space.select "{\"id\":\"$main\"}"
+  do_ tab.select "{\"id\":\"$main_tab\"}"
+  echo "demo: up (space $main)"
 }
 
 down() {
@@ -104,7 +178,11 @@ down() {
       hc rm "$t" >/dev/null 2>&1 || true
     done <"$state/agents"
   fi
-  [ ! -e "$state/space" ] || herdr-app do space.close "{\"id\":\"$(cat "$state/space")\",\"confirmed\":true}" >/dev/null || true
+  if [ -e "$state/spaces" ]; then
+    while read -r id; do herdr-app do space.close "{\"id\":\"$id\",\"confirmed\":true}" >/dev/null || true; done <"$state/spaces"
+  elif [ -e "$state/space" ]; then
+    herdr-app do space.close "{\"id\":\"$(cat "$state/space")\",\"confirmed\":true}" >/dev/null || true
+  fi
   [ ! -s "$state/layout" ] || do_ layout.switch "{\"name\":\"$(cat "$state/layout")\"}"
   [ ! -s "$state/prev-space" ] || do_ space.select "{\"id\":\"$(cat "$state/prev-space")\"}" || true
   "$root/bin/shots" --restore-theme "$state/theme.json"
