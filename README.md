@@ -9,11 +9,13 @@ components. The design rules agents load live in the separate `shapr-for-agents`
 | Path | What |
 |---|---|
 | `shapr/` | the gallery folder: what people add to their Herdr app |
+| `skills/` | `shapr-for-agents`, the design rules agents load (install below) |
 | `kit/` | the components' source (`kit/UI.md`); `bin/sync-kit` copies it into each mod |
 | `bin/dev-mirror` | mirrors `shapr/` into your Herdr app home |
 | `bin/clone-mods` | clones a shipped Herdr mod as `shapr-<name>` and records its origin |
 | `bin/drift` | Drift: lists clones whose Herdr original changed since its record (exit 1); `--accept <clone>` after porting |
-| `bin/check-all` | every check: `herdr-app check` per mod, kit copies, tests, syntax, privacy |
+| `bin/check-all` | every check: `herdr-app check` per mod, kit copies, tests, syntax, skills, privacy |
+| `bin/skill-check` | checks each skill's frontmatter, linked files and private data |
 | `bin/privacy-check` | fails on home paths, email addresses and local hostnames |
 | `test/` | `node --import ./test/loader.js --test test/` |
 

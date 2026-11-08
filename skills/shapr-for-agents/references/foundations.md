@@ -1,6 +1,6 @@
 # Foundations
 
-The rules both styles share. A style's own file sets the values (type sizes, radii, motion); these rules decide where they go.
+The rules every style follows. The style's own file sets the values (type sizes, radii, motion); these rules decide where they go.
 
 ## Hierarchy
 
