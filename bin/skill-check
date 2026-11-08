@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Checks every skill in skills/ (or the skill folders given): SKILL.md opens with frontmatter
-// whose name is the folder's and whose description is set.
+// whose name is the folder's and whose description is set, and every file its markdown links to exists.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 /** The frontmatter's top-level keys: { key: value }, or null when SKILL.md has none. */
 export function frontmatter(text) {
@@ -29,6 +29,25 @@ export function problems(dir) {
   if (fm.name !== name) out.push([skill, `frontmatter: name must be "${name}", the folder's`]);
   if (!fm.description) out.push([skill, "frontmatter: description missing"]);
   else if (fm.description.length > 1024) out.push([skill, "frontmatter: description over 1024 characters"]);
+  for (const f of files(dir).filter((f) => f.endsWith(".md")))
+    for (const target of links(readFileSync(f, "utf8")))
+      if (!existsSync(join(dirname(f), target))) out.push([f, `missing ${target}`]);
+  return out;
+}
+
+/** Every file under a folder. */
+function files(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
+    d.isDirectory() ? files(join(dir, d.name)) : [join(dir, d.name)]);
+}
+
+/** The local files a markdown text links to: [text](path), without anchors, URLs or mail links. */
+export function links(text) {
+  const out = [];
+  for (const m of text.matchAll(/\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/g)) {
+    const target = decodeURI(m[1].split("#")[0]);
+    if (target && !/^[a-z][a-z0-9+.-]*:/i.test(target)) out.push(target);
+  }
   return out;
 }
 
