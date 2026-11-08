@@ -64,7 +64,9 @@ test("each README install command puts shapr-for-agents where its agent loads it
       const text = loaded(s.homeDir, folder);
       assert.ok(text, `${label}${existing ? " (folder exists)" : ""}: no ~/${folder}/${SKILL}/SKILL.md`);
       assert.match(text, new RegExp(`^---\\nname: ${SKILL}\\n`), label);
-      assert.ok(existsSync(join(s.homeDir, folder, SKILL, "references/operate.md")), `${label}: the references are missing`);
+      for (const [, ref] of text.matchAll(/\]\((references\/[^)#]+)/g)) {
+        assert.ok(existsSync(join(s.homeDir, folder, SKILL, ref)), `${label}: ${ref} is missing`);
+      }
       if (existing) assert.ok(existsSync(join(s.homeDir, folder, "other-skill")), `${label}: the other skill is gone`);
     }
   }
