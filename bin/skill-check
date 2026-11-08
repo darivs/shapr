@@ -1,0 +1,44 @@
+#!/usr/bin/env node
+// Checks every skill in skills/ (or the skill folders given): SKILL.md opens with frontmatter
+// whose name is the folder's and whose description is set.
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { basename, join } from "node:path";
+
+/** The frontmatter's top-level keys: { key: value }, or null when SKILL.md has none. */
+export function frontmatter(text) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!m) return null;
+  const out = {};
+  let key = null;
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (kv) { key = kv[1]; out[key] = /^[>|][+-]?$/.test(kv[2]) ? "" : kv[2].replace(/^(["'])(.*)\1$/, "$2"); }
+    else if (key && /^\s+\S/.test(line)) out[key] = (out[key] + " " + line.trim()).trim();
+  }
+  return out;
+}
+
+/** Every problem in one skill folder: [file, problem]. */
+export function problems(dir) {
+  const skill = join(dir, "SKILL.md");
+  if (!existsSync(skill)) return [[skill, "no SKILL.md"]];
+  const fm = frontmatter(readFileSync(skill, "utf8"));
+  if (!fm) return [[skill, "frontmatter: missing"]];
+  const out = [];
+  const name = basename(dir);
+  if (fm.name !== name) out.push([skill, `frontmatter: name must be "${name}", the folder's`]);
+  if (!fm.description) out.push([skill, "frontmatter: description missing"]);
+  else if (fm.description.length > 1024) out.push([skill, "frontmatter: description over 1024 characters"]);
+  return out;
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  const dirs = args.length ? args : existsSync("skills")
+    ? readdirSync("skills", { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => join("skills", d.name))
+    : [];
+  let bad = 0;
+  for (const d of dirs) for (const [f, p] of problems(d)) { bad++; console.error(`skill-check: ${f}: ${p}`); }
+  if (bad) { console.error(`skill-check: ${bad} finding${bad > 1 ? "s" : ""}`); process.exit(1); }
+  console.log("skill-check: OK");
+}
