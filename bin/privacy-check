@@ -16,7 +16,6 @@ export const RULES = [
 const ALLOWED = [
   /@users\.noreply\.github\.com$/,
   /^noreply@github\.com$/, // GitHub's own committer on merges made on github.com
-
   /@example\.(com|org|net)$/,
   /^build-box\.local$/, // test fixture for skill-check
 ];

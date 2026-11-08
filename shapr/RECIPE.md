@@ -10,14 +10,14 @@ restyle every part at once. For herdr-app 0.1.13.
 
 ## What you see
 
-Left to right, on the theme's `canvas` (MD3 surface: `#e9ddff` light, `#141218` dark at the
-default seed `#6750A4`), no title bar, the macOS traffic lights at 12, 17. Type is Roboto Flex
+Left to right, on the theme's `canvas` (primary tone 90, `#e9ddff`, in light; MD3 surface,
+`#141218`, in dark; at the default seed `#6750A4`), no title bar, the macOS traffic lights at 12, 17. Type is Roboto Flex
 throughout (the MD3 type scale in thin weights: display and headline 300, title large, body and
 labels 400, title medium and small 500).
 
 - **Sidebar** (268px; 44–480; under 160px it turns into a rail), on `canvas`:
   - **Brand bar** (48px, drags the window): after the traffic lights (76px left pad on macOS,
-    16 elsewhere) Herdr's 24px mark (`frame/welcome/herdr.png`, rounded 8) and "Herdr" in title
+    16 elsewhere) Herdr's 24px mark (rounded 8) and "Herdr" in title
     medium emphasized; then two 32px standard icon buttons, Search (opens the picker) and the
     sidebar toggle (`dock_to_left`).
   - **Spaces** (half of what is left, min 90): a subheader "Spaces" with `+`, then one 40px drawer
@@ -80,9 +80,9 @@ Status colors are Herdr's own and never seed-tinted: working `#9a6700` / `#e5c07
   remembered per space.
 - **Pane header**: click focuses the pane; pointing at it floats Split right, Split down, Zoom and
   Close over its right end on the card's fill, so nothing moves. Right-click in a terminal opens the
-  terminal menu (the layout's `terminal_menu`): Split right, Split down, Zoom, where right-clicks
+  terminal menu: Split right, Split down, Zoom, where right-clicks
   go, Send back (a kept sub-agent), Close pane.
-- **Overlays**, all drawn by Shapr (`frame: "none"`) and sized by their opener to exactly what
+- **Overlays**, all drawn by Shapr with no frame of Herdr's, and sized by their opener to exactly what
   they draw: the + menu (Terminal, Start an agent with installed agents on 1–9 and two that
   aren't, New space, New worktree…, Open worktree…), the picker (Search: a 48px search bar over
   tabs, needs-you spaces first, quiet ones folded into "earlier"; ↑/↓, Enter, ctrl+d closes a tab,
@@ -211,5 +211,5 @@ Status colors are Herdr's own and never seed-tinted: working `#9a6700` / `#e5c07
   Density › Compact makes the brand and tab bars 44px.
 - `+`, a tab's right-click, a space's right-click, a terminal's right-click and Search each open
   Shapr's own MD3 surface, with no frame around it.
-- Files and Changes open the side panel; Changes lists the demo repo's changed files and their
-  diff.
+- Files and Changes open the side panel; with a space open on a git folder that has uncommitted
+  changes, Changes lists its changed files and their diff.
