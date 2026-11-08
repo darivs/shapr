@@ -169,3 +169,17 @@ test("the footer's opener gives the settings window most of the window; it draws
   const calls = open().render().__node.children[0].__node.calls;
   assert.ok(calls.some(([m, a]) => m === "h" && a[0] === settingsHeight()));
 });
+
+test("Mode writes Herdr's appearance into settings.json and shows the choice; other keys stay", async () => {
+  const h = reset({ files: { "/app-home/settings.json": '{"zoom":1.2}\n' } });
+  const v = open();
+  await new Promise((r) => setTimeout(r));
+  click(v.render(), "settings-mode-dark");
+  await new Promise((r) => setTimeout(r, 10));
+  assert.deepEqual(JSON.parse(h.files["/app-home/settings.json"]), { zoom: 1.2, appearance: "dark" });
+  assert.equal(v.mode, "dark");
+  click(v.render(), "settings-mode-system");
+  await new Promise((r) => setTimeout(r, 10));
+  assert.deepEqual(JSON.parse(h.files["/app-home/settings.json"]), { zoom: 1.2 });
+  assert.equal(v.mode, "system");
+});
