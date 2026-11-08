@@ -63,7 +63,7 @@ up() {
   rm -rf "$state/repo"
   repo "$state/repo"
   "$root/bin/dev-mirror"
-  do_ layout.switch '{"name":"shapr-material"}'
+  do_ layout.switch '{"name":"shapr"}'
   out=$(herdr-app do space.new "{\"name\":\"demo\",\"folder\":\"$state/repo\",\"tab\":\"agents\"}")
   space=$(printf '%s' "$out" | field space)
   tab=$(printf '%s' "$out" | field tab)

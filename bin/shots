@@ -191,7 +191,7 @@ function liveAreas(img) {
   const zoom = readJson(join(home, "settings.json"), {}).zoom ?? 1;
   const density = readJson(join(home, "shared.json"), {})["shapr.settings"]?.density;
   // The layout as Herdr keeps it; without one, the lines the shot shows.
-  const layout = readJson(join(home, "layouts", "shapr-material.json"), null);
+  const layout = readJson(join(home, "layouts", "shapr.json"), null);
   return areas(img, { u: scale * zoom, density, layout: layout?.root ?? layout });
 }
 

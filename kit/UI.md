@@ -74,7 +74,7 @@ Never write hex in a mod. shapr's themes come from `shapr-workspace-chrome/theme
 | `keycap.js` | `keycap(text)`, `shortcut([keys])` |
 | `search-bar.js` | `searchBar(input, { trailing, size })`: the MD3 search bar, a 48 pill |
 | `panel.js` | `panelCard(el)`, `panelHeader(title, { leading, detail, actions })`, `panelWell(el)`: side panels (Files, Changes) |
-| `state.js` | `icon(name)` (a kit icon's path), `chromeIcon(name)` (a Material Symbol shapr-workspace-chrome holds; the chrome mods ship together in shapr-material), `press(el, onClick, opts)`, `stopPress(el)`, `disable(el, on)` |
+| `state.js` | `icon(name)` (a kit icon's path), `chromeIcon(name)` (a Material Symbol shapr-workspace-chrome holds; the chrome mods ship together in shapr), `press(el, onClick, opts)`, `stopPress(el)`, `disable(el, on)` |
 
 The gallery (`mod.open {"name":"shapr-gallery"}`) shows each in every state.
 

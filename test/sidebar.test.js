@@ -154,7 +154,7 @@ test("no line separates the sidebar's sections, and the footer's block is the he
   }
   // Three 40 rows and 8 above and below, no divider.
   assert.equal(blockHeights()["sidebar-footer"], 136);
-  const L = JSON.parse(readFileSync(new URL("../shapr/layouts/shapr-material.json", import.meta.url), "utf8"));
+  const L = JSON.parse(readFileSync(new URL("../shapr/layouts/shapr.json", import.meta.url), "utf8"));
   const find = (n, id) => (n?.id === id ? n : (n?.children ?? []).map((c) => find(c, id)).find(Boolean));
   assert.equal(find(L, "sidebar-footer").size.px, 136);
 });

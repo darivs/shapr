@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { walk } from "./stubs/element.js";
 
-const L = JSON.parse(readFileSync(new URL("../shapr/layouts/shapr-material.json", import.meta.url), "utf8"));
+const L = JSON.parse(readFileSync(new URL("../shapr/layouts/shapr.json", import.meta.url), "utf8"));
 const nodes = (n) => [n, ...(n?.children ?? []).flatMap(nodes), ...(n?.floating ?? []).flatMap(nodes)];
 const calls = (tree) => [...walk(tree)].flatMap((n) => n?.calls ?? []);
 const cx = { notify() {}, spawn() {}, focus_handle: () => ({ focus() {} }), timer: { every() {}, after() {} } };

@@ -52,14 +52,14 @@ function decodePng(buf) {
 // (window 300) and the footer's divider at y 1200 (window 600), in one line color. Everything else
 // is a gradient (red x / 4, green y / 8, blue 7), so a cut or a box shows where it fell.
 const LINE = [73, 69, 78];
-// lines: false draws none of them; layout: the app home's shapr-material.json then.
+// lines: false draws none of them; layout: the app home's shapr.json then.
 function fixture({ zoom = 1, lines = true, layout = null } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "shots-"));
   const home = join(dir, "home");
   mkdirSync(join(home, "layouts"), { recursive: true });
   writeFileSync(join(home, "window.json"), JSON.stringify({ state: "windowed", bounds: [0, 0, 400, 700] }));
   writeFileSync(join(home, "settings.json"), JSON.stringify({ zoom }));
-  if (layout) writeFileSync(join(home, "layouts", "shapr-material.json"), JSON.stringify(layout));
+  if (layout) writeFileSync(join(home, "layouts", "shapr.json"), JSON.stringify(layout));
   const width = 800, height = 1400, data = Buffer.alloc(width * height * 4);
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {

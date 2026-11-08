@@ -51,7 +51,7 @@ test("every clone records its Herdr origin, and the layout uses only shapr mods 
     assert.match(j.cloned_from.version, /^\d+\.\d+\.\d+/, m);
     assert.ok(Object.keys(j.cloned_from.files).includes("main.js"), m);
   }
-  const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr-material.json"), "utf8"));
+  const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr.json"), "utf8"));
   const used = [];
   (function w(n) { if (n?.content?.mod) used.push(n.content.mod); if (n?.pane?.header?.content?.mod) used.push(n.pane.header.content.mod); (n?.children ?? []).forEach(w); (n?.floating ?? []).forEach(w); if (n?.content?.pane) w(n.content); })(L);
   for (const m of used) assert.ok(m.startsWith("shapr-") || m === "pane", m);
@@ -78,7 +78,7 @@ test("openers size their overlays to what the overlays draw", async () => {
   assert.equal(K.terminalMenuSpec("p2", "t8").height, K.menuHeight({ items: 6, dividers: 1 }));
   assert.equal(K.renameSpec("tab", "t1").props.value, "fix");
   for (const spec of [K.newMenuSpec(), K.tabMenuSpec("t1", "s1"), K.renameSpec("tab", "t1"), K.settingsSpec()]) assert.equal(spec.frame, "none");
-  const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr-material.json"), "utf8"));
+  const L = JSON.parse(readFileSync(join(root, "shapr/layouts/shapr.json"), "utf8"));
   const find = (n, id) => n?.id === id ? n : (n?.children ?? []).map((c) => find(c, id)).find(Boolean);
   assert.equal(find(L, "sidebar-footer").size.px, 16 + 3 * K.ROW.one);
   assert.equal(find(L, "tabs").size.px, K.H.sm + 16);

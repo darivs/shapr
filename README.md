@@ -1,10 +1,10 @@
 # Shapr
 
-Shapr restyles the Herdr app. Its first layout is **Shapr Material**: Herdr's default window in
-Material 3 Expressive, as a gallery layout. `shapr/` holds `layouts/shapr-material.json` and its
+Shapr restyles the Herdr app. Its first layout is **Shapr**: Herdr's default window in
+Material 3 Expressive, as a gallery layout. `shapr/` holds `layouts/shapr.json` and its
 `mods/shapr-…/`, cloned from Herdr's shipped layout and mods and restyled with one kit of
-components. The design rules agents load live in the separate `shapr-design` mod; a later
-`shapr-operate` layout can sit beside Shapr Material on the same kit.
+components. The design rules agents load live in the separate `shapr-for-agents` skill; a later
+`shapr-operate` layout can sit beside Shapr on the same kit.
 
 | Path | What |
 |---|---|

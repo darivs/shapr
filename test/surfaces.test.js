@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const L = JSON.parse(readFileSync(new URL("../shapr/layouts/shapr-material.json", import.meta.url), "utf8"));
+const L = JSON.parse(readFileSync(new URL("../shapr/layouts/shapr.json", import.meta.url), "utf8"));
 const nodes = (n) => [n, ...(n?.children ?? []).flatMap(nodes), ...(n?.floating ?? []).flatMap(nodes)];
 const find = (id) => nodes(L).find((n) => n.id === id);
 const lum = (h) => {
