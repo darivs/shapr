@@ -1,39 +1,67 @@
-# Shapr
+<div align="center">
 
-Shapr restyles the Herdr app. Its first layout is **Shapr**: Herdr's default window in
-Material 3 Expressive, as a gallery layout. `shapr/` holds `layouts/shapr.json` and its
-`mods/shapr-…/`, cloned from Herdr's shipped layout and mods and restyled with one kit of
-components. The design rules agents load live in the separate `shapr-for-agents` skill; a later
-`shapr-operate` layout can sit beside Shapr on the same kit.
+<img src="docs/logo-256.png" width="96" height="96" alt="Shapr logo">
 
-| Path | What |
-|---|---|
-| `shapr/` | the gallery folder: what people add to their Herdr app |
-| `skills/` | `shapr-for-agents`, the design rules agents load (install below) |
-| `kit/` | the components' source (`kit/UI.md`); `bin/sync-kit` copies it into each mod |
-| `bin/dev-mirror` | mirrors `shapr/` into your Herdr app home |
-| `bin/clone-mods` | clones a shipped Herdr mod as `shapr-<name>` and records its origin |
-| `bin/drift` | Drift: lists clones whose Herdr original changed since its record (exit 1); `--accept <clone>` after porting |
-| `bin/check-all` | every check: `herdr-app check` per mod, kit copies, tests, syntax, skills, privacy |
-| `bin/skill-check` | checks each skill's frontmatter, linked files and private data |
-| `bin/privacy-check` | fails on home paths, email addresses and local hostnames |
-| `test/` | `node --import ./test/loader.js --test test/` |
+<h1>Shapr</h1>
 
-Licenses: MIT (`LICENSE`); Roboto Flex under the OFL, material-color-utilities and the Material
-Symbols icons under Apache-2.0 (`LICENSES/`).
+<p>Herdr's window in Material 3 Expressive.</p>
 
-Sources: Shapr's MD3 and the rules in `skills/shapr-for-agents/` adapt ideas, not text, from
-[Material Design 3](https://m3.material.io) (Google), the
-[material-3 skill](https://github.com/hamen/material-3-skill) (MIT) and
-[Impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0).
+<p>
+  <a href="#install">Install</a> ·
+  <a href="#shapr-for-agents">Agent skill</a> ·
+  <a href="#keys">Keys</a> ·
+  <a href="#development">Development</a>
+</p>
 
-## Install shapr-for-agents
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+
+</div>
+
+![Shapr in three seed colours: a large dark window in purple with the demo space and its agents in the sidebar, a teal light window behind it, and a pink sidebar crop, beside the headline "Your terminal, in your colour."](shapr/preview.png)
+
+## Install
+
+Tell your Herdr agent:
+
+> add herdr.dev/layouts/darivs/shapr
+
+This works once the herdr.dev gallery lists Shapr. Until then, or to install by hand, use a clone
+of this repo (needs `git` and Node; built for herdr-app 0.1.13):
+
+```sh
+git clone https://github.com/darivs/shapr.git
+cd shapr
+bin/dev-mirror                                  # copies shapr/ into ~/.config/herdr-app
+herdr-app do layout.switch '{"name":"shapr"}'
+```
+
+`bin/dev-mirror` copies `shapr/layouts/shapr.json` and each `shapr/mods/shapr-*/` folder into
+the app home (`HERDR_APP_HOME` picks another one), writes `themes/shapr-*.json` when they are
+missing, and leaves everything else there as it was. To
+copy by hand instead, put the same layout file in `layouts/` and the mod folders in `mods/`, then
+`herdr-app check` each mod. `ctrl-shift-l` switches back to your own layout; deleting those files
+removes Shapr. Before you add it: Shapr runs `git`, `hc` and `sh`, reads `~/.ssh/config` and the
+focused folder's files, and reaches the network only through `hc machine add` (see
+[`shapr/RECIPE.md`](shapr/RECIPE.md)).
+
+## Features
+
+- **One seed colour** restyles every part at once, built into an MD3 scheme by
+  material-color-utilities, with three contrast levels.
+- **Light or dark**, following Herdr's appearance: a tinted frame around white cards in light, MD3
+  surfaces in dark.
+- **Spaces over agents** in a navigation-drawer sidebar, each agent with its status (working,
+  needs you, done, idle) everywhere it shows.
+- **Shapr's own surfaces** for every menu, dialog, picker and snackbar Herdr opens, sized to what
+  they draw and with no foreign frame.
+- **Density, corners and motion** in the Shapr Theme window: compact to comfortable, standard or
+  round, expressive springs to reduced motion.
+
+## Shapr for agents
 
 `skills/shapr-for-agents/` holds the design rules an agent follows when it changes any Herdr
-surface. Install it as you install any skill: Claude Code loads skills from `~/.claude/skills/`,
-Codex and other agents that read the shared folder from `~/.agents/skills/`. Run the commands from
-your clone of this repo. A link follows the clone, so `git pull` brings the next agent the new
-rules; a copy stays as it is until you copy again.
+surface: the MD3 rules, each mod's style line and the screenshot loop to run before calling a
+change done. Link it from your clone, so `git pull` brings the next agent the new rules:
 
 ```sh
 # Claude Code, link
@@ -42,30 +70,19 @@ ln -sfn "$PWD/skills/shapr-for-agents" ~/.claude/skills/shapr-for-agents
 ```
 
 ```sh
-# Claude Code, copy
-mkdir -p ~/.claude/skills
-cp -R skills/shapr-for-agents ~/.claude/skills/
-```
-
-```sh
 # Codex and other agents, link
 mkdir -p ~/.agents/skills
 ln -sfn "$PWD/skills/shapr-for-agents" ~/.agents/skills/shapr-for-agents
 ```
 
-```sh
-# Codex and other agents, copy
-mkdir -p ~/.agents/skills
-cp -R skills/shapr-for-agents ~/.agents/skills/
-```
-
-To remove it, delete the link or the copy; the skill writes nothing anywhere else, and a removed
-link leaves your clone as it was:
+To remove it, delete the link; the skill writes nothing anywhere else:
 
 ```sh
 # Remove
 rm -rf ~/.claude/skills/shapr-for-agents ~/.agents/skills/shapr-for-agents
 ```
+
+Copies instead of links: [docs/agent-skill.md](docs/agent-skill.md).
 
 ## Keys
 
@@ -73,3 +90,33 @@ rm -rf ~/.claude/skills/shapr-for-agents ~/.agents/skills/shapr-for-agents
 `new-menu`, `tab-menu`, `space-menu`, `terminal-menu` (the focused terminal's), `rename-tab`, `rename-space`, `theme`, and the theme settings
 `set-density-<compact|standard|comfortable>`, `set-corners-<standard|round>`,
 `set-motion-<expressive|calm|reduced>`, `set-contrast-<standard|medium|high>`, `seed-<rrggbb>`, `reset-theme`.
+Shapr ships no `keys.json`.
+
+## How it works
+
+- `shapr/` is the gallery folder: `layouts/shapr.json`, its 18 `mods/shapr-…/`, `RECIPE.md` and `preview.png`.
+- Most mods are clones of Herdr's shipped mods (`bin/clone-mods`); each `mod.json` records its original in `cloned_from`.
+- `bin/drift` lists clones whose Herdr original changed since; port the change, then `--accept` it.
+- `kit/` holds the components (`kit/UI.md`); a mod imports only from its own folder, so `bin/sync-kit` copies the kit into each one.
+- `shapr-workspace-chrome` builds the light and dark themes from the seed and writes them at run time.
+- A later `shapr-operate` layout can sit beside Shapr on the same kit.
+
+## Development
+
+```sh
+bin/check-all                                   # every check: herdr-app check, kit copies, tests, syntax, skills, privacy
+node --import ./test/loader.js --test test/     # the tests alone
+```
+
+The scripts, the shot loop and the preview: [docs/development.md](docs/development.md).
+
+## Credits and licenses
+
+Sources: Shapr's MD3 and the rules in `skills/shapr-for-agents/` adapt ideas, not text, from
+[Material Design 3](https://m3.material.io) (Google), the
+[material-3 skill](https://github.com/hamen/material-3-skill) (MIT) and
+[Impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0).
+
+Licenses: MIT (`LICENSE`); Roboto Flex under the OFL, material-color-utilities and the Material
+Symbols icons under Apache-2.0 (`LICENSES/`). Every third-party file and its license:
+[LICENSES/README.md](LICENSES/README.md).
