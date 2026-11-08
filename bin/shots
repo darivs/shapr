@@ -8,10 +8,13 @@
 //       through shapr-workspace-chrome's commands; bin/demo down puts both back.
 //       machine-add lists a demo ssh config (DEMO_SSH_CONFIG), never the person's ~/.ssh/config.
 //   bin/shots --restore-theme <file>   sets the theme settings saved in <file> (JSON) again
-//   bin/shots [--crop sidebar|work] [--mask] <in.png> [<out.png>]
-//       cuts an image to one area, and covers every sidebar row outside the demo space (bin/demo
-//       puts it first in the spaces list and pins its agents) with a solid box, so the image can
-//       be committed. Writes over <in.png> when no <out.png>.
+//   bin/shots [--crop sidebar|work|x,y,w,h] [--mask] <in.png> [<out.png>]
+//       cuts an image to one area (or a box in window px, for a dialog), and covers every sidebar
+//       row outside the demo spaces (bin/demo puts them first in the spaces list, pins its agents
+//       and records how many of each in SHAPR_DEMO) with a solid box, so the image can be
+//       committed. Writes over <in.png> when no <out.png>.
+//   A shot is deleted unless the window shows the demo space and its spaces list starts with
+//   the demo spaces.
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -150,15 +153,16 @@ const DENSITY = { compact: -4, standard: 0, comfortable: 4 };
  * boxes --mask covers. Under the brand bar (a control and 8 above and below), the demo space keeps
  * the "Spaces" heading and its one row; under the agents list's border it keeps the heading, the
  * "Pinned" header and one row an agent (bin/demo pins them). Everything else down to the next
- * divider is covered. u is image px a window px at zoom 1 (scale x zoom).
+ * divider is covered. u is image px a window px at zoom 1 (scale x zoom). spaces: how many rows
+ * the demo spaces take (the active one first); agents: how many agents bin/demo pinned.
  */
-export function areas(img, { u = 2, density = "standard", agents = 4, layout = null } = {}) {
-  if (layout) return fromLayout(img, { u, density, agents, layout });
+export function areas(img, { u = 2, density = "standard", agents = 4, spaces = 1, layout = null } = {}) {
+  if (layout) return fromLayout(img, { u, density, agents, spaces, layout });
   const edge = sidebarEdge(img), off = DENSITY[density] ?? 0, row = (40 + off) * u;
   const top = (32 + off + 16) * u, lines = dividers(img, edge).filter((y) => y > top);
   const foot = lines.at(-1) ?? img.height, list = lines.length > 1 ? lines[0] : null;
   const box = (from, to) => [0, from, edge.x, Math.max(0, to - from)];
-  const mask = [box(Math.round(top + 36 * u + row), list ?? foot)];
+  const mask = [box(Math.round(top + 36 * u + spaces * row), list ?? foot)];
   if (list !== null) mask.push(box(Math.round(list + (1 + 36 + 40) * u + agents * row), foot));
   return { sidebar: [0, 0, edge.x, img.height], work: [edge.x, 0, img.width - edge.x, img.height], mask };
 }
@@ -172,14 +176,14 @@ const node = (n, id) => (n?.id === id ? n : (n?.children ?? []).map((c) => node(
  * so its row has two lines; the agents list keeps its heading (8 above), the "Pinned" header
  * (4 above) and one row an agent.
  */
-function fromLayout(img, { u, density, agents, layout }) {
+function fromLayout(img, { u, density, agents, spaces, layout }) {
   const off = DENSITY[density] ?? 0, row = (40 + off) * u;
   const width = Math.round((node(layout, "sidebar")?.size?.px ?? 268) * u);
   const top = (32 + off + 16) * u, foot = img.height - (16 + 3 * (40 + off)) * u;
   const weight = (id) => node(layout, id)?.size?.weight ?? 1;
   const list = Math.round(top + ((foot - top) * weight("spaces")) / (weight("spaces") + weight("agents")));
   const box = (from, to) => [0, Math.round(from), width, Math.max(0, Math.round(to - from))];
-  const mask = [box(top + 36 * u + (56 + off) * u, list), box(list + (8 + 36 + 40) * u + agents * row, foot)];
+  const mask = [box(top + 36 * u + (56 + off) * u + (spaces - 1) * row, list), box(list + (8 + 36 + 40) * u + agents * row, foot)];
   return { sidebar: [0, 0, width, img.height], work: [width, 0, img.width - width, img.height], mask };
 }
 
@@ -192,7 +196,13 @@ function liveAreas(img) {
   const density = readJson(join(home, "shared.json"), {})["shapr.settings"]?.density;
   // The layout as Herdr keeps it; without one, the lines the shot shows.
   const layout = readJson(join(home, "layouts", "shapr.json"), null);
-  return areas(img, { u: scale * zoom, density, layout: layout?.root ?? layout });
+  // The demo state (bin/demo up): the rows its spaces take and its pinned agents, so the mask
+  // keeps exactly those. Without it, one space and four agent rows.
+  const demo = demoDir();
+  const rows = existsSync(join(demo, "rows")) ? Number(readFileSync(join(demo, "rows"), "utf8").trim()) || 1 : 1;
+  const pinned = existsSync(join(demo, "agents")) ? readFileSync(join(demo, "agents"), "utf8").split("\n").filter(Boolean).length : 4;
+  const u = scale * zoom;
+  return { ...areas(img, { u, density, spaces: rows, agents: pinned, layout: layout?.root ?? layout }), u };
 }
 
 /** --mask, then --crop, on one image file. */
@@ -200,12 +210,13 @@ function edit(file, out, { cropTo, mask }) {
   let img = decodePng(readFileSync(file));
   const a = liveAreas(img);
   if (mask) img = fill(img, a.mask, background(img, a.sidebar));
-  if (cropTo) img = crop(img, a[cropTo]);
+  if (cropTo) img = crop(img, a[cropTo] ?? cropTo.split(",").map((n) => Number(n) * a.u));
   writeFileSync(out, encodePng(img));
 }
 
 // The app ---------------------------------------------------------------------------------------
 
+const demoDir = () => process.env.SHAPR_DEMO ?? join(process.env.TMPDIR ?? "/tmp", "shapr-demo");
 const app = (...args) => execFileSync("herdr-app", args, { encoding: "utf8" });
 // A command; one with nothing to act on (overlay.close with no overlay open) is no failure.
 const run = (name, args) => {
@@ -221,8 +232,23 @@ const panel = (child) => () => { run("layout.select", { stack: "panel-body", chi
 const hidePanel = () => run("layout.hide", { id: "panel" });
 // The demo space bin/demo up opened (SHAPR_DEMO/space), or null when none is up.
 function demoSpace() {
-  const f = join(process.env.SHAPR_DEMO ?? join(process.env.TMPDIR ?? "/tmp", "shapr-demo"), "space");
+  const f = join(demoDir(), "space");
   return existsSync(f) ? readFileSync(f, "utf8").trim() || null : null;
+}
+// Every demo space's id (SHAPR_DEMO/spaces), else the one in SHAPR_DEMO/space.
+function demoSpaces() {
+  const f = join(demoDir(), "spaces");
+  if (existsSync(f)) return readFileSync(f, "utf8").split("\n").filter(Boolean);
+  const one = demoSpace();
+  return one ? [one] : [];
+}
+/**
+ * Whether the window's spaces list (herdr-app ls) starts with the demo spaces and only them: the
+ * mask keeps exactly that many rows, so any other space among them would show.
+ */
+export function demoLeads(ls, ids) {
+  const lead = (ls?.spaces ?? []).slice(0, ids.length).map((s) => s.id);
+  return ids.length > 0 && lead.length === ids.length && ids.every((id) => lead.includes(id));
 }
 /** Whether the window (herdr-app status) shows the demo space: nothing else may be in a shot. */
 export const onDemo = (status, space) => Boolean(space) && status?.space === space;
@@ -299,6 +325,11 @@ function shootEach(prefix, states, space) {
       close();
       throw new Error(`${name}: the window left the demo space; shot deleted`);
     }
+    if (!demoLeads(JSON.parse(app("ls")), demoSpaces())) {
+      rmSync(file, { force: true });
+      close();
+      throw new Error(`${name}: the spaces list does not start with the demo spaces; shot deleted`);
+    }
     after?.();
   }
   close();
@@ -316,7 +347,7 @@ function main(argv) {
     else rest.push(a);
   }
   if (opts.restore) return setTheme(readJson(opts.restore, null) ?? {}, { reset: true });
-  if (opts.cropTo !== undefined && !["sidebar", "work"].includes(opts.cropTo)) throw new Error("--crop sidebar|work");
+  if (opts.cropTo !== undefined && !["sidebar", "work"].includes(opts.cropTo) && !/^\d+,\d+,\d+,\d+$/.test(opts.cropTo)) throw new Error("--crop sidebar|work|x,y,w,h");
   if (opts.mask || opts.cropTo) {
     const [file, out = file] = rest;
     if (!file || !existsSync(file)) throw new Error("usage: bin/shots [--crop sidebar|work] [--mask] <in.png> [<out.png>]");
