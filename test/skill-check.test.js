@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { tmpdir, userInfo } from "node:os";
 import { join } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -50,4 +50,13 @@ test("check-all names a file a skill links to that is missing", () => {
   const deep = checkAll({ ...GOOD, "references/rules.md": "See [motion](motion.md#springs) and [Herdr](https://example.com/herdr).\n" });
   assert.match(deep, /skill-check: skills\/demo\/references\/rules\.md: missing motion\.md/);
   assert.doesNotMatch(deep, /missing https/);
+});
+
+test("check-all names a skill that holds an IP address, the account's name or a host", () => {
+  const rules = (text) => checkAll({ ...GOOD, "references/rules.md": "# Rules\n\n" + text + "\n" });
+  assert.match(rules("Shoot the window on 10.0.4.17."), /skill-check: skills\/demo\/references\/rules\.md: IP address: 10\.0\.4\.17/);
+  assert.doesNotMatch(rules("Serve it on 127.0.0.1 or 192.0.2.10."), /IP address/);
+  const account = userInfo().username;
+  assert.match(rules(`Ask ${account} first.`), new RegExp(`skill-check: skills/demo/references/rules\\.md: account name: ${account}`));
+  assert.match(rules("Run it on build-box.local."), /skills\/demo\/references\/rules\.md: hostname: build-box\.local/);
 });
