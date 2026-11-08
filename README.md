@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/logo-256.png" width="96" height="96" alt="Shapr logo">
+<img src="docs/logo-mark.png" width="150" alt="Shapr logo: a cloud sheep with a purple horn">
 
 <h1>Shapr</h1>
 
