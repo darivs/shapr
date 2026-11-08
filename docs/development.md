@@ -42,5 +42,5 @@ window leaves the demo space or its spaces list does not start with the demo spa
 `shapr/preview.png` is the gallery's picture and the README's hero. `docs/preview/manifest.json`
 holds its copy, its seed and the masked shots in `docs/preview/shots/` (each with the state, mode
 and seed it was taken in); `template.html` lays them out at 1600 × 1000. `bin/preview` fills the
-template and screenshots it at 2x, or at 1x when 2x is over 2 MB. It uses Brave by default; set
+template and screenshots it at 2x, or at 1x when 2x is over the manifest's `maxBytes` (2.4 MB). It uses Brave by default; set
 `SHAPR_BROWSER` to any Chromium, such as `chrome-headless-shell`.
