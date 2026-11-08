@@ -38,11 +38,11 @@ function scratch() {
   cpSync(join(root, "skills"), join(clone, "skills"), { recursive: true });
   const home = join(dir, "home");
   mkdirSync(home);
-  return { clone, home };
+  return { clone, homeDir: home };
 }
 
 /** Run a README block with sh, as the person would from their clone. */
-function run(block, { clone, home }) {
+function run(block, { clone, homeDir: home }) {
   const r = spawnSync("sh", ["-e", "-c", block], { cwd: clone, encoding: "utf8", env: { PATH: process.env.PATH, HOME: home } });
   assert.equal(r.status, 0, `exit ${r.status}: ${r.stderr}`);
 }
@@ -59,13 +59,13 @@ test("each README install command puts shapr-for-agents where its agent loads it
     assert.ok(blocks[label], `README has no "${label}" command`);
     for (const existing of [false, true]) {
       const s = scratch();
-      if (existing) mkdirSync(join(s.home, folder, "other-skill"), { recursive: true });
+      if (existing) mkdirSync(join(s.homeDir, folder, "other-skill"), { recursive: true });
       run(blocks[label], s);
-      const text = loaded(s.home, folder);
+      const text = loaded(s.homeDir, folder);
       assert.ok(text, `${label}${existing ? " (folder exists)" : ""}: no ~/${folder}/${SKILL}/SKILL.md`);
       assert.match(text, new RegExp(`^---\\nname: ${SKILL}\\n`), label);
-      assert.ok(existsSync(join(s.home, folder, SKILL, "references/operate.md")), `${label}: the references are missing`);
-      if (existing) assert.ok(existsSync(join(s.home, folder, "other-skill")), `${label}: the other skill is gone`);
+      assert.ok(existsSync(join(s.homeDir, folder, SKILL, "references/operate.md")), `${label}: the references are missing`);
+      if (existing) assert.ok(existsSync(join(s.homeDir, folder, "other-skill")), `${label}: the other skill is gone`);
     }
   }
 });
@@ -75,10 +75,10 @@ test("a linked install follows the clone and a copied one stays as it was", () =
   for (const [label, folder] of Object.entries(INSTALLS)) {
     const s = scratch();
     run(blocks[label], s);
-    const before = loaded(s.home, folder);
+    const before = loaded(s.homeDir, folder);
     const edited = before + "\nA rule added after the install.\n";
     writeFileSync(join(s.clone, "skills", SKILL, "SKILL.md"), edited);
-    assert.equal(loaded(s.home, folder), label.endsWith("link") ? edited : before, label);
+    assert.equal(loaded(s.homeDir, folder), label.endsWith("link") ? edited : before, label);
   }
 });
 
@@ -92,11 +92,11 @@ test("the README's remove command takes shapr-for-agents out of both folders and
   assert.ok(blocks.Remove, 'README has no "Remove" command');
   for (const [label, folder] of Object.entries(INSTALLS)) {
     const s = scratch();
-    mkdirSync(join(s.home, folder, "other-skill"), { recursive: true });
+    mkdirSync(join(s.homeDir, folder, "other-skill"), { recursive: true });
     run(blocks[label], s);
     run(blocks.Remove, s);
-    assert.equal(present(join(s.home, folder, SKILL)), false, `${label}: still installed`);
+    assert.equal(present(join(s.homeDir, folder, SKILL)), false, `${label}: still installed`);
     assert.ok(existsSync(join(s.clone, "skills", SKILL, "SKILL.md")), `${label}: the clone's skill is gone`);
-    assert.ok(existsSync(join(s.home, folder, "other-skill")), `${label}: the other skill is gone`);
+    assert.ok(existsSync(join(s.homeDir, folder, "other-skill")), `${label}: the other skill is gone`);
   }
 });
