@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir, userInfo } from "node:os";
 import { join } from "node:path";
 
@@ -15,7 +15,7 @@ const GOOD = {
   "references/rules.md": "# Rules\n\nName colors by role.\n",
 };
 
-function checkAll(files) {
+function checkAll(files, links = {}) {
   const dir = mkdtempSync(join(tmpdir(), "skill-check-"));
   cpSync(join(root, "bin"), join(dir, "bin"), { recursive: true });
   for (const [path, text] of Object.entries(files)) {
@@ -23,6 +23,7 @@ function checkAll(files) {
     mkdirSync(join(dir, "skills/demo", path, ".."), { recursive: true });
     writeFileSync(join(dir, "skills/demo", path), text);
   }
+  for (const [path, target] of Object.entries(links)) symlinkSync(target, join(dir, "skills/demo", path));
   execFileSync("git", ["init", "-q"], { cwd: dir });
   execFileSync("git", ["add", "-A"], { cwd: dir });
   // No herdr-app here: the checks that need Herdr skip.
@@ -59,4 +60,17 @@ test("check-all names a skill that holds an IP address, the account's name or a 
   const account = userInfo().username;
   assert.match(rules(`Ask ${account} first.`), new RegExp(`skill-check: skills/demo/references/rules\\.md: account name: ${account}`));
   assert.match(rules("Run it on build-box.local."), /skills\/demo\/references\/rules\.md: hostname: build-box\.local/);
+});
+
+test("check-all names a description that YAML cannot read unquoted, and passes it quoted", () => {
+  const body = "\nRead [the rules](references/rules.md).\n";
+  assert.match(checkAll({ ...GOOD, "SKILL.md": "---\nname: demo\ndescription: Use when: changing a mod.\n---\n" + body }),
+    /skill-check: skills\/demo\/SKILL\.md: frontmatter: description is not valid YAML/);
+  assert.match(checkAll({ ...GOOD, "SKILL.md": "---\nname: demo\ndescription: \"Use when: changing a mod.\"\n---\n" + body }), /skill-check: OK/);
+});
+
+test("check-all reads through a link to a folder in a skill, a link to the skill itself included", () => {
+  const out = checkAll(GOOD, { "self": ".", "refs": "references" });
+  assert.match(out, /skill-check: OK/);
+  assert.doesNotMatch(out, /EISDIR|ELOOP|bin\/skill-check:\d+/);
 });

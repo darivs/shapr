@@ -1,26 +1,36 @@
 #!/usr/bin/env node
-// Checks every skill in skills/ (or the skill folders given): SKILL.md opens with frontmatter
+// Checks every skill in skills/ (or the skill folders given): SKILL.md opens with frontmatter YAML can read,
 // whose name is the folder's and whose description is set, every file its markdown links to
 // exists, and no file names a person's machine or account: privacy-check's rules, IP addresses,
 // and the account's own login and git user.name.
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { userInfo } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { findings } from "./privacy-check";
 
-/** The frontmatter's top-level keys: { key: value }, or null when SKILL.md has none. */
+/** The frontmatter's top-level keys: { key: value }, or null when SKILL.md has none. A key whose
+ * one-line value YAML cannot read unquoted is listed in the result's `invalid`. */
 export function frontmatter(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!m) return null;
   const out = {};
+  Object.defineProperty(out, "invalid", { value: [] });
   let key = null;
   for (const line of m[1].split(/\r?\n/)) {
     const kv = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (kv && !plainOk(kv[2])) out.invalid.push(kv[1]);
     if (kv) { key = kv[1]; out[key] = /^[>|][+-]?$/.test(kv[2]) ? "" : kv[2].replace(/^(["'])(.*)\1$/, "$2"); }
     else if (key && /^\s+\S/.test(line)) out[key] = (out[key] + " " + line.trim()).trim();
   }
   return out;
+}
+
+/** Whether YAML reads a one-line value as written: quoted whole, a block indicator, or a plain
+ * scalar with no ": ", " #", trailing ":" or leading indicator. */
+function plainOk(v) {
+  if (/^"(?:[^"\\]|\\.)*"\s*$/.test(v) || /^'(?:[^']|'')*'\s*$/.test(v) || /^[>|][+-]?$/.test(v)) return true;
+  return !/: |:$| #/.test(v) && !/^["'\[\]{}#&*!%@`,]/.test(v) && !/^[-?:](?:\s|$)/.test(v);
 }
 
 /** Every problem in one skill folder: [file, problem]. */
@@ -31,6 +41,7 @@ export function problems(dir) {
   if (!fm) return [[skill, "frontmatter: missing"]];
   const out = [];
   const name = basename(dir);
+  for (const key of fm.invalid) out.push([skill, `frontmatter: ${key} is not valid YAML; quote it`]);
   if (fm.name !== name) out.push([skill, `frontmatter: name must be "${name}", the folder's`]);
   if (!fm.description) out.push([skill, "frontmatter: description missing"]);
   else if (fm.description.length > 1024) out.push([skill, "frontmatter: description over 1024 characters"]);
@@ -68,10 +79,17 @@ export function privateNames(text) {
   return out;
 }
 
-/** Every file under a folder. */
-function files(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
-    d.isDirectory() ? files(join(dir, d.name)) : [join(dir, d.name)]);
+/** Every file under a folder, through links to folders, each folder read once. */
+function files(dir, seen = new Set()) {
+  const real = realpathSync(dir);
+  if (seen.has(real)) return [];
+  seen.add(real);
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    let st;
+    try { st = statSync(path); } catch { return []; }
+    return st.isDirectory() ? files(path, seen) : [path];
+  });
 }
 
 /** The local files a markdown text links to: [text](path), without anchors, URLs or mail links. */
