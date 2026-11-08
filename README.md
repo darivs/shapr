@@ -33,7 +33,7 @@ rules; a copy stays as it is until you copy again.
 ```sh
 # Claude Code, link
 mkdir -p ~/.claude/skills
-ln -s "$PWD/skills/shapr-for-agents" ~/.claude/skills/shapr-for-agents
+ln -sfn "$PWD/skills/shapr-for-agents" ~/.claude/skills/shapr-for-agents
 ```
 
 ```sh
@@ -45,7 +45,7 @@ cp -R skills/shapr-for-agents ~/.claude/skills/
 ```sh
 # Codex and other agents, link
 mkdir -p ~/.agents/skills
-ln -s "$PWD/skills/shapr-for-agents" ~/.agents/skills/shapr-for-agents
+ln -sfn "$PWD/skills/shapr-for-agents" ~/.agents/skills/shapr-for-agents
 ```
 
 ```sh

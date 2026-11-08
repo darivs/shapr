@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -81,6 +81,18 @@ test("a linked install follows the clone and a copied one stays as it was", () =
     const edited = before + "\nA rule added after the install.\n";
     writeFileSync(join(s.clone, "skills", SKILL, "SKILL.md"), edited);
     assert.equal(loaded(s.homeDir, folder), label.endsWith("link") ? edited : before, label);
+  }
+});
+
+test("running an install command again leaves the install working and the clone as it was", () => {
+  const blocks = commands();
+  for (const [label, folder] of Object.entries(INSTALLS)) {
+    const s = scratch();
+    const before = readdirSync(join(s.clone, "skills", SKILL)).sort();
+    run(blocks[label], s);
+    run(blocks[label], s);
+    assert.deepEqual(readdirSync(join(s.clone, "skills", SKILL)).sort(), before, `${label}: the second run wrote into the clone`);
+    assert.ok(loaded(s.homeDir, folder), `${label}: no ~/${folder}/${SKILL}/SKILL.md after the second run`);
   }
 });
 
