@@ -1,10 +1,11 @@
 <div align="center">
 
-<img src="docs/logo-mark.png" width="150" alt="Shapr logo: a cloud sheep with a purple horn">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo-hero-dark.png">
+  <img src="docs/logo-hero-light.png" width="200" alt="Shapr: a cloud sheep with a purple horn above the word Shapr">
+</picture>
 
-<h1>Shapr</h1>
-
-<p>Herdr's window in Material 3 Expressive.</p>
+<p>A Material Design 3 layout for Herdr, plus an agent skill that designs Herdr in the same style.</p>
 
 <p>
   <a href="#install">Install</a> ·
