@@ -1,6 +1,6 @@
 ---
 name: shapr-for-agents
-description: Design rules for any Herdr surface (herdr-app layouts, mods and themes in gpui-kit JavaScript) - hierarchy, color roles, type, shape, motion, agent status, the screenshot loop, and the Operate and MD3 styles. Use when creating, changing, restyling or critiquing a Herdr mod, layout or theme.
+description: Design rules for any Herdr surface (herdr-app layouts, mods and themes in gpui-kit JavaScript) - hierarchy, color roles, type, shape, motion, agent status, the screenshot loop, and the MD3 style. Use when creating, changing, restyling or critiquing a Herdr mod, layout or theme.
 ---
 
 # shapr-for-agents
@@ -9,15 +9,14 @@ Design rules for a Herdr surface: a layout, a mod, a theme. They name `theme()` 
 
 ## Style
 
-Every mod has one **style**, recorded on the first line of its `main.js`:
+Every mod has one **style**, recorded on the first line of its `main.js`. There is one style for now, **MD3** (Material 3 Expressive), and it is the default; its rules are in [`references/md3.md`](references/md3.md).
 
-| First line | Style | Rules |
-|---|---|---|
-| none | **Operate** (the default) | [`references/operate.md`](references/operate.md) |
-| `// style: operate` | Operate | [`references/operate.md`](references/operate.md) |
-| `// style: md3` | **MD3**, Material 3 Expressive | [`references/md3.md`](references/md3.md) |
+| First line | Style |
+|---|---|
+| none | MD3 (the default) |
+| `// style: md3` | MD3 |
 
-Read the line before anything else: a mod with no line takes Operate, and you keep it without a line unless the person asks for another style. A new mod takes Operate unless the person names MD3; write its line then. Say which style you apply when you plan or report a change.
+Read the line before anything else: no line and `// style: md3` both mean MD3. Give a new mod `// style: md3` as its first line. Another style may come later, with a line and rules of its own. Say which style you apply when you plan or report a change.
 
 ## Steps
 
